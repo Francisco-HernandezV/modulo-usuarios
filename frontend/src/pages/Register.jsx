@@ -27,15 +27,64 @@ function Register() {
     }
   };
 
+  const preguntasSecretas = [
+    "¿Cuál es el nombre de tu primera mascota?",
+    "¿Cuál es tu comida favorita?",
+    "¿Cuál es el nombre de tu mejor amigo de la infancia?",
+    "¿En qué ciudad naciste?",
+    "¿Cuál fue tu primer videojuego?",
+    "¿Cuál es el nombre de tu profesor favorito?",
+  ];
+
   return (
     <div>
       <h2>Registro de Usuario</h2>
       <form onSubmit={handleSubmit}>
-        <input type="text" name="nombre" placeholder="Nombre" onChange={handleChange} required /><br />
-        <input type="email" name="email" placeholder="Correo" onChange={handleChange} required /><br />
-        <input type="password" name="password" placeholder="Contraseña" onChange={handleChange} required /><br />
-        <input type="text" name="pregunta_secreta" placeholder="Pregunta secreta" onChange={handleChange} required /><br />
-        <input type="text" name="respuesta_secreta" placeholder="Respuesta secreta" onChange={handleChange} required /><br />
+        <input
+          type="text"
+          name="nombre"
+          placeholder="Nombre"
+          onChange={handleChange}
+          required
+        /><br />
+
+        <input
+          type="email"
+          name="email"
+          placeholder="Correo"
+          onChange={handleChange}
+          required
+        /><br />
+
+        <input
+          type="password"
+          name="password"
+          placeholder="Contraseña"
+          onChange={handleChange}
+          required
+        /><br />
+
+        <label>Selecciona una pregunta secreta:</label><br />
+        <select
+          name="pregunta_secreta"
+          value={form.pregunta_secreta}
+          onChange={handleChange}
+          required
+        >
+          <option value="">-- Selecciona una pregunta --</option>
+          {preguntasSecretas.map((pregunta, i) => (
+            <option key={i} value={pregunta}>{pregunta}</option>
+          ))}
+        </select><br />
+
+        <input
+          type="text"
+          name="respuesta_secreta"
+          placeholder="Respuesta secreta"
+          onChange={handleChange}
+          required
+        /><br />
+
         <button type="submit">Registrarse</button>
       </form>
 
