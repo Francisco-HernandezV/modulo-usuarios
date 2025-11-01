@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:4000/api", // Aquí apuntará al backend (cuando lo montemos)
+  baseURL: "https://modulo-usuarios-fpig.onrender.com", // Aquí apuntará al backend (cuando lo montemos)
 });
 
 export default api;
