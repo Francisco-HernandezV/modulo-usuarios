@@ -40,7 +40,7 @@ function Login() {
 
   return (
     <div style={{ maxWidth: "400px", margin: "40px auto", textAlign: "center" }}>
-      <h2>Iniciar Sesión yooooo</h2>
+      <h2>Iniciar Sesión</h2>
       <form onSubmit={handleSubmit}>
         <input
           type="email"
