@@ -4,7 +4,7 @@ import "../styles/theme.css";
 function Navbar() {
   return (
     <nav className="navbar">
-      <div className="nav-logo">Mi Proyecto</div>
+      <div className="nav-logo">DanElement Boutique</div>
       <div className="nav-links">
         <Link to="/">Inicio</Link>
         <Link to="/register">Registro</Link>
