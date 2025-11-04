@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../services/api";
 import { Link } from "react-router-dom";
+import "../styles/theme.css";
 
 function Register() {
   const [form, setForm] = useState({
@@ -20,10 +21,10 @@ function Register() {
     e.preventDefault();
     try {
       const response = await api.post("/users/register", form);
-      setMensaje("Registro exitoso ✅ Revisa tu correo para activar la cuenta.");
+      setMensaje("✅ Registro exitoso. Revisa tu correo para activar la cuenta.");
       console.log(response.data);
     } catch (error) {
-      setMensaje(error.response?.data?.message || "Error al registrar ❌");
+      setMensaje(error.response?.data?.message || "❌ Error al registrar usuario");
     }
   };
 
@@ -37,24 +38,25 @@ function Register() {
   ];
 
   return (
-    <div>
+    <div className="form-container">
       <h2>Registro de Usuario</h2>
+
       <form onSubmit={handleSubmit}>
         <input
           type="text"
           name="nombre"
-          placeholder="Nombre"
+          placeholder="Nombre completo"
           onChange={handleChange}
           required
-        /><br />
+        />
 
         <input
           type="email"
           name="email"
-          placeholder="Correo"
+          placeholder="Correo electrónico"
           onChange={handleChange}
           required
-        /><br />
+        />
 
         <input
           type="password"
@@ -62,9 +64,9 @@ function Register() {
           placeholder="Contraseña"
           onChange={handleChange}
           required
-        /><br />
+        />
 
-        <label>Selecciona una pregunta secreta:</label><br />
+        <label htmlFor="pregunta_secreta">Selecciona una pregunta secreta:</label>
         <select
           name="pregunta_secreta"
           value={form.pregunta_secreta}
@@ -73,24 +75,30 @@ function Register() {
         >
           <option value="">-- Selecciona una pregunta --</option>
           {preguntasSecretas.map((pregunta, i) => (
-            <option key={i} value={pregunta}>{pregunta}</option>
+            <option key={i} value={pregunta}>
+              {pregunta}
+            </option>
           ))}
-        </select><br />
+        </select>
 
         <input
           type="text"
           name="respuesta_secreta"
-          placeholder="Respuesta secreta"
+          placeholder="Tu respuesta secreta"
           onChange={handleChange}
           required
-        /><br />
+        />
 
         <button type="submit">Registrarse</button>
       </form>
 
-      {mensaje && <p>{mensaje}</p>}
+      {mensaje && (
+        <p className={mensaje.includes("✅") ? "mensaje-exito" : "mensaje-error"}>
+          {mensaje}
+        </p>
+      )}
 
-      <div>
+      <div className="links">
         <Link to="/">¿Ya tienes cuenta? Inicia sesión</Link>
       </div>
     </div>
