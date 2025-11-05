@@ -7,7 +7,14 @@ import googleRoutes from "./routes/googleRoutes.js";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",                   // tu entorno local
+    "https://modulo-usuarios-fpig.onrender.com" // tu dominio frontend en Vercel
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Rutas principales
