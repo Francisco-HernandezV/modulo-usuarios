@@ -4,20 +4,26 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import connection from "./config/db.js";
 import googleRoutes from "./routes/googleRoutes.js";
+
 dotenv.config();
 
 const app = express();
+
+// ✅ Configuración CORS
+const allowedOrigins = [
+  "https://modulo-usuarios.vercel.app", // tu frontend en producción
+  "http://localhost:5173"               // para desarrollo local
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173",                   // tu entorno local
-    "https://modulo-usuarios-fpig.onrender.com" // tu dominio frontend en Vercel
-  ],
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
 app.use(express.json());
 
-// Rutas principales
+// ✅ Rutas principales
 app.use("/api/users", userRoutes);
 app.use("/api/auth", googleRoutes);
 
