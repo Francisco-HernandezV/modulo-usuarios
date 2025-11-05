@@ -39,7 +39,7 @@ export const registrarUsuario = (req, res) => {
           return res.status(500).json({ message: "Error al registrar usuario", error: err });
         }
 
-        const linkActivacion = `${process.env.BASE_URL}/api/users/activar/${token}`;
+        const linkActivacion = `${process.env.BASE_URL}/api/user/activar/${token}`;
         console.log("📤 Enviando correo a:", email);
 
         const mailOptions = {
