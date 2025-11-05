@@ -17,40 +17,59 @@ const transporter = nodemailer.createTransport({
 
 // Registro
 export const registrarUsuario = (req, res) => {
-  const { nombre, email, password, pregunta_secreta, respuesta_secreta } = req.body;
-  if (!nombre || !email || !password || !pregunta_secreta || !respuesta_secreta)
-    return res.status(400).json({ message: "Faltan datos" });
+  try {
+    console.log("📩 Datos recibidos:", req.body);
 
-  const hashedPassword = bcrypt.hashSync(password, 10);
-  const hashedRespuesta = bcrypt.hashSync(respuesta_secreta, 10);
-  const token = crypto.randomBytes(32).toString("hex");
+    const { nombre, email, password, pregunta_secreta, respuesta_secreta } = req.body;
+    if (!nombre || !email || !password || !pregunta_secreta || !respuesta_secreta)
+      return res.status(400).json({ message: "Faltan datos" });
 
-  connection.query(
-    "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion) VALUES (?, ?, ?, ?, ?, ?)",
-    [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token],
-    (err) => {
-      if (err) return res.status(500).json({ message: "Error al registrar usuario", error: err });
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedRespuesta = bcrypt.hashSync(respuesta_secreta, 10);
+    const token = crypto.randomBytes(32).toString("hex");
 
-      // Enviar correo de activación
-      const linkActivacion = `${process.env.BASE_URL}/api/users/activar/${token}`;
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Activa tu cuenta",
-        html: `
-          <h2>¡Bienvenido, ${nombre}!</h2>
-          <p>Por favor, haz clic en el siguiente enlace para activar tu cuenta:</p>
-          <a href="${linkActivacion}" target="_blank">Activar cuenta</a>
-        `,
-      };
+    console.log("🧠 Insertando usuario...");
 
-      transporter.sendMail(mailOptions, (error) => {
-        if (error) return res.status(500).json({ message: "Error al enviar correo", error });
-        res.status(201).json({ message: "Usuario registrado. Revisa tu correo para activar la cuenta." });
-      });
-    }
-  );
+    connection.query(
+      "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion) VALUES (?, ?, ?, ?, ?, ?)",
+      [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token],
+      (err) => {
+        if (err) {
+          console.error("❌ Error al registrar usuario:", err);
+          return res.status(500).json({ message: "Error al registrar usuario", error: err });
+        }
+
+        const linkActivacion = `${process.env.BASE_URL}/api/users/activar/${token}`;
+        console.log("📤 Enviando correo a:", email);
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "Activa tu cuenta",
+          html: `
+            <h2>¡Bienvenido, ${nombre}!</h2>
+            <p>Por favor, haz clic en el siguiente enlace para activar tu cuenta:</p>
+            <a href="${linkActivacion}" target="_blank">Activar cuenta</a>
+          `,
+        };
+
+        transporter.sendMail(mailOptions, (error) => {
+          if (error) {
+            console.error("📧 Error al enviar correo:", error);
+            return res.status(500).json({ message: "Error al enviar correo", error });
+          }
+
+          console.log("✅ Usuario registrado correctamente:", email);
+          res.status(201).json({ message: "Usuario registrado. Revisa tu correo para activar la cuenta." });
+        });
+      }
+    );
+  } catch (error) {
+    console.error("💥 Error general en registrarUsuario:", error);
+    res.status(500).json({ message: "Error interno del servidor", error: error.message });
+  }
 };
+
 
 // Activar cuenta
 export const activarCuenta = (req, res) => {
