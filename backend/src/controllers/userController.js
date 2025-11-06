@@ -1,26 +1,33 @@
 import connection from "../config/db.js";
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import crypto from "crypto";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+/*
+
+import nodemailer from "nodemailer";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-});
+});*/
 
-export const registrarUsuario = (req, res) => {
+export const registrarUsuario = async (req, res) => {
   try {
     console.log("📩 Datos recibidos:", req.body);
 
     const { nombre, email, password, pregunta_secreta, respuesta_secreta } = req.body;
-    if (!nombre || !email || !password || !pregunta_secreta || !respuesta_secreta)
+
+    if (!nombre || !email || !password || !pregunta_secreta || !respuesta_secreta) {
       return res.status(400).json({ message: "Faltan datos" });
+    }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
     const hashedRespuesta = bcrypt.hashSync(respuesta_secreta, 10);
@@ -31,43 +38,42 @@ export const registrarUsuario = (req, res) => {
     connection.query(
       "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion) VALUES (?, ?, ?, ?, ?, ?)",
       [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token],
-      (err) => {
+      async (err) => {
         if (err) {
-          console.error("Error al registrar usuario:", err);
+          console.error("❌ Error al registrar usuario:", err);
           return res.status(500).json({ message: "Error al registrar usuario", error: err });
         }
 
         const linkActivacion = `${process.env.BASE_URL}/api/users/activar/${token}`;
-        console.log("Enviando correo a:", email);
+        console.log("📨 Enviando correo con Resend a:", email);
 
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: "Activa tu cuenta",
-          html: `
-            <h2>¡Bienvenido, ${nombre}!</h2>
-            <p>Por favor, haz clic en el siguiente enlace para activar tu cuenta:</p>
-            <a href="${linkActivacion}" target="_blank">Activar cuenta</a>
-          `,
-        };
+        try {
+          await resend.emails.send({
+            from: "Modulo Usuarios <onboarding@resend.dev>", // puedes cambiarlo si verificas tu dominio
+            to: email,
+            subject: "Activa tu cuenta",
+            html: `
+              <h2>¡Bienvenido, ${nombre}!</h2>
+              <p>Por favor, haz clic en el siguiente enlace para activar tu cuenta:</p>
+              <a href="${linkActivacion}" target="_blank">Activar cuenta</a>
+            `,
+          });
 
-        transporter.sendMail(mailOptions, (error) => {
-          if (error) {
-            console.error("📧 Error al enviar correo:", error);
-            return res.status(500).json({ message: "Error al enviar correo", error });
-          }
-
-          console.log("Usuario registrado correctamente:", email);
-          res.status(201).json({ message: "Usuario registrado. Revisa tu correo para activar la cuenta." });
-        });
+          console.log("✅ Correo enviado correctamente a:", email);
+          res.status(201).json({
+            message: "Usuario registrado. Revisa tu correo para activar la cuenta.",
+          });
+        } catch (error) {
+          console.error("📧 Error al enviar correo con Resend:", error);
+          res.status(500).json({ message: "Error al enviar correo", error });
+        }
       }
     );
   } catch (error) {
-    console.error("Error general en registrarUsuario:", error);
+    console.error("💥 Error general en registrarUsuario:", error);
     res.status(500).json({ message: "Error interno del servidor", error: error.message });
   }
 };
-
 
 export const activarCuenta = (req, res) => {
   const { token } = req.params;
