@@ -6,7 +6,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Configuración de nodemailer
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -15,7 +14,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Registro
 export const registrarUsuario = (req, res) => {
   try {
     console.log("📩 Datos recibidos:", req.body);
@@ -28,19 +26,19 @@ export const registrarUsuario = (req, res) => {
     const hashedRespuesta = bcrypt.hashSync(respuesta_secreta, 10);
     const token = crypto.randomBytes(32).toString("hex");
 
-    console.log("🧠 Insertando usuario...");
+    console.log("Insertando usuario...");
 
     connection.query(
       "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion) VALUES (?, ?, ?, ?, ?, ?)",
       [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token],
       (err) => {
         if (err) {
-          console.error("❌ Error al registrar usuario:", err);
+          console.error("Error al registrar usuario:", err);
           return res.status(500).json({ message: "Error al registrar usuario", error: err });
         }
 
-        const linkActivacion = `${process.env.BASE_URL}/api/user/activar/${token}`;
-        console.log("📤 Enviando correo a:", email);
+        const linkActivacion = `${process.env.BASE_URL}/api/users/activar/${token}`;
+        console.log("Enviando correo a:", email);
 
         const mailOptions = {
           from: process.env.EMAIL_USER,
@@ -59,19 +57,18 @@ export const registrarUsuario = (req, res) => {
             return res.status(500).json({ message: "Error al enviar correo", error });
           }
 
-          console.log("✅ Usuario registrado correctamente:", email);
+          console.log("Usuario registrado correctamente:", email);
           res.status(201).json({ message: "Usuario registrado. Revisa tu correo para activar la cuenta." });
         });
       }
     );
   } catch (error) {
-    console.error("💥 Error general en registrarUsuario:", error);
+    console.error("Error general en registrarUsuario:", error);
     res.status(500).json({ message: "Error interno del servidor", error: error.message });
   }
 };
 
 
-// Activar cuenta
 export const activarCuenta = (req, res) => {
   const { token } = req.params;
   connection.query(
@@ -85,7 +82,6 @@ export const activarCuenta = (req, res) => {
   );
 };
 
-// Login
 export const loginUsuario = (req, res) => {
   const { email, password } = req.body;
 
@@ -104,7 +100,6 @@ export const loginUsuario = (req, res) => {
   });
 };
 
-// Buscar la pregunta secreta por correo
 export const buscarPregunta = (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: "Falta el correo electrónico" });
@@ -122,7 +117,6 @@ export const buscarPregunta = (req, res) => {
   );
 };
 
-// Validar la respuesta secreta
 export const validarRespuesta = (req, res) => {
   const { email, respuesta } = req.body;
   if (!email || !respuesta)
