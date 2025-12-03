@@ -4,26 +4,37 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import connection from "./config/db.js";
 import googleRoutes from "./routes/googleRoutes.js";
+import helmet from "helmet";
+import xss from "xss-clean";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
 const app = express();
 
-// ✅ Configuración CORS
 const allowedOrigins = [
-  "https://modulo-usuarios.vercel.app", // tu frontend en producción
-  "http://localhost:5173"               // para desarrollo local
+  "https://modulo-usuarios.vercel.app",
+  "http://localhost:5173"
 ];
 
 app.use(cors({
   origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET","POST","PUT","DELETE"],
   credentials: true
 }));
 
+app.use(helmet());
+app.use(xss());
 app.use(express.json());
 
-// ✅ Rutas principales
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use(globalLimiter);
+
 app.use("/api/users", userRoutes);
 app.use("/api/auth", googleRoutes);
 
