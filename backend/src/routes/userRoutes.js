@@ -3,18 +3,22 @@ import {
   registrarUsuario,
   loginUsuario,
   activarCuenta,
-  buscarPregunta,
-  validarRespuesta,
-  actualizarPassword
+  requestPasswordReset,
+  validateResetToken,
+  resetPassword
 } from "../controllers/userController.js";
+import { registerValidator, loginValidator, recoverValidator, resetPasswordValidator } from "../middlewares/validators.js";
+import { loginLimiter, recoverLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
-router.post("/register", registrarUsuario);
-router.post("/login", loginUsuario);
+router.post("/register", registerValidator, registrarUsuario);
+router.post("/login", loginLimiter, loginValidator, loginUsuario);
 router.get("/activar/:token", activarCuenta);
-router.post("/recover", buscarPregunta);
-router.post("/recover/validate", validarRespuesta);
-router.post("/recover/reset", actualizarPassword);
+
+// Recovery flow
+router.post("/recover", recoverLimiter, recoverValidator, requestPasswordReset);
+router.post("/recover/validate", recoverLimiter, validateResetToken);
+router.post("/recover/reset", resetPasswordValidator, resetPassword);
 
 export default router;
