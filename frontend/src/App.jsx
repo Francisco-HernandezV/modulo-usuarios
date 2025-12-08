@@ -1,23 +1,31 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RecoverPassword from "./pages/RecoverPassword";
 import AccountActivation from "./pages/AccountActivation";
-import './styles/theme.css';
+
+import Home from "./pages/Home";
+import ProductDetails from "./pages/ProductDetails";
+
 function App() {
   return (
-    <Router>
-      <Navbar />
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
+
+        {/* Home público */}
+        <Route path="/" element={<Home />} />
+
+        {/* Detalle del producto */}
+        <Route path="/producto/:id" element={<ProductDetails />} />
+
+        {/* Tus rutas actuales */}
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/recover" element={<RecoverPassword />} />
-        <Route path="/activar/:token" element={<AccountActivation />} />
+        <Route path="/activate/:token" element={<AccountActivation />} />
+
       </Routes>
-      <Footer />
-    </Router>
+    </BrowserRouter>
   );
 }
 
