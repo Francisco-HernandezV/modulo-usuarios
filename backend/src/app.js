@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
-import connection from "./config/db.js";
 import googleRoutes from "./routes/googleRoutes.js";
 import helmet from "helmet";
 import xss from "xss-clean";
@@ -19,12 +18,13 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: allowedOrigins,
-  methods: ["GET","POST","PUT","DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
 app.use(helmet());
 app.use(xss());
+
 app.use(express.json());
 
 const globalLimiter = rateLimit({
@@ -39,4 +39,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", googleRoutes);
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Servidor backend en puerto ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Servidor backend en puerto ${PORT}`)
+);

@@ -1,5 +1,5 @@
 import { OAuth2Client } from "google-auth-library";
-import connection from "../config/db.js";
+import pool from "../config/db.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -20,12 +20,12 @@ export const loginConGoogle = async (req, res) => {
     const { name, email } = ticket.getPayload();
 
     // Buscar si ya existe el usuario
-    connection.query("SELECT * FROM usuarios WHERE email = ?", [email], (err, results) => {
+    pool.query("SELECT * FROM usuarios WHERE email = ?", [email], (err, results) => {
       if (err) return res.status(500).json({ message: "Error en el servidor" });
 
       // Si no existe, lo registramos automáticamente
       if (results.length === 0) {
-        connection.query(
+        pool.query(
           "INSERT INTO usuarios (nombre, email, password, cuenta_activa) VALUES (?, ?, '', 1)",
           [name, email],
           (error) => {

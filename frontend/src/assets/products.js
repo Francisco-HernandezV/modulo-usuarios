@@ -1,7 +1,8 @@
-// IMPORTAR IMÁGENES DESDE LA CARPETA ASSETS
+// IMPORTAR IMÁGENES CORRECTAMENTE
 import img1 from "./img1.jpg";
-import img1 from "./img2.jpg"
+import img2 from "./img2.jpg";
 import img3 from "./img3.jpg";
+
 export const products = [
   // --- PANTALONES (3) ---
   {
@@ -15,14 +16,14 @@ export const products = [
     id: 2,
     nombre: "Pantalón Slim Fit Azul",
     precio: 620,
-    imagen: img1,
+    imagen: img2,
     descripcion: "Pantalón slim fit azul marino, ideal para un look casual."
   },
   {
     id: 3,
     nombre: "Pantalón Jogger Deportivo",
     precio: 450,
-    imagen: img1,
+    imagen: img3,
     descripcion: "Jogger ligero y flexible, perfecto para entrenar o vestir relajado."
   },
 
@@ -31,7 +32,7 @@ export const products = [
     id: 4,
     nombre: "Playera Oversize Negra",
     precio: 280,
-    imagen: img2,
+    imagen: img1,
     descripcion: "Playera estilo oversize, suave y cómoda, color negro mate."
   },
   {
@@ -45,14 +46,14 @@ export const products = [
     id: 6,
     nombre: "Playera Roja Gráfica",
     precio: 320,
-    imagen: img2,
+    imagen: img3,
     descripcion: "Playera con estampado gráfico moderno en color rojo."
   },
   {
     id: 7,
     nombre: "Playera Azul Deportiva",
     precio: 350,
-    imagen: img2,
+    imagen: img1,
     descripcion: "Playera de tela deportiva con secado rápido."
   },
 
@@ -61,7 +62,7 @@ export const products = [
     id: 8,
     nombre: "Gorra Negra Unisex",
     precio: 180,
-    imagen: img3,
+    imagen: img2,
     descripcion: "Gorra ajustable color negro, estilo minimalista."
   }
 ];

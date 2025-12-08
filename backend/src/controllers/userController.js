@@ -1,4 +1,4 @@
-import connection from "../config/db.js";
+import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import { sendVerificationEmail, sendResetEmail } from "../services/mailService.js";
 import { generateToken, hashToken } from "../services/tokenService.js";
@@ -33,7 +33,7 @@ export const registrarUsuario = async (req, res) => {
     const tokenExp = nowPlusHours(VERIF_EXP_HOURS);
 
     // Insertar usuario (cuenta_activa = 0 por defecto)
-    connection.query(
+    pool.query(
       "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion, token_activacion_exp, cuenta_activa) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
       [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token, tokenExp],
       async (err, result) => {
@@ -65,7 +65,7 @@ export const activarCuenta = (req, res) => {
   if (!token) return res.status(400).json({ message: "Token inválido" });
 
   // Buscar usuario con token
-  connection.query(
+  pool.query(
     "SELECT id, token_activacion_exp FROM usuarios WHERE token_activacion = ?",
     [token],
     (err, results) => {
@@ -80,7 +80,7 @@ export const activarCuenta = (req, res) => {
         return res.status(400).json({ message: "Token inválido o expirado" });
       }
 
-      connection.query(
+      pool.query(
         "UPDATE usuarios SET cuenta_activa = 1, token_activacion = NULL, token_activacion_exp = NULL WHERE id = ?",
         [row.id],
         (uErr) => {
@@ -99,7 +99,7 @@ export const loginUsuario = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    connection.query("SELECT id, password, cuenta_activa, login_attempts, lock_until FROM usuarios WHERE email = ?", [email], async (err, results) => {
+    pool.query("SELECT id, password, cuenta_activa, login_attempts, lock_until FROM usuarios WHERE email = ?", [email], async (err, results) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ message: "Error del servidor" });
@@ -129,14 +129,14 @@ export const loginUsuario = async (req, res) => {
         // increment login_attempts and maybe lock
         const attempts = (user.login_attempts || 0) + 1;
         const lockUntil = attempts >= LOGIN_MAX ? nowPlusMinutes(LOGIN_LOCK_MIN) : null;
-        connection.query("UPDATE usuarios SET login_attempts = ?, lock_until = ? WHERE id = ?", [attempts, lockUntil, user.id], (uerr) => {
+        pool.query("UPDATE usuarios SET login_attempts = ?, lock_until = ? WHERE id = ?", [attempts, lockUntil, user.id], (uerr) => {
           if (uerr) console.error("Error actualizando intentos login:", uerr);
         });
         return res.status(401).json({ message: "Credenciales inválidas" });
       }
 
       // success: reset attempts
-      connection.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = ?", [user.id], (uerr) => {
+      pool.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = ?", [user.id], (uerr) => {
         if (uerr) console.error("Error reseteando intentos:", uerr);
       });
 
@@ -155,7 +155,7 @@ export const requestPasswordReset = (req, res) => {
   if (!email) return res.status(400).json({ message: "OK" }); // mensaje genérico
 
   // First check if user exists
-  connection.query("SELECT id, nombre, recovery_attempts, recovery_lock_until FROM usuarios WHERE email = ?", [email], async (err, results) => {
+  pool.query("SELECT id, nombre, recovery_attempts, recovery_lock_until FROM usuarios WHERE email = ?", [email], async (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ message: "OK" });
@@ -178,7 +178,7 @@ export const requestPasswordReset = (req, res) => {
     const tokenHash = hashToken(token);
     const expiry = nowPlusHours(RESET_EXP_HOURS);
 
-    connection.query("UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ?, recovery_attempts = 0, recovery_lock_until = NULL WHERE id = ?", [tokenHash, expiry, user.id], async (uerr) => {
+    pool.query("UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ?, recovery_attempts = 0, recovery_lock_until = NULL WHERE id = ?", [tokenHash, expiry, user.id], async (uerr) => {
       if (uerr) {
         console.error(uerr);
         return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
@@ -199,7 +199,7 @@ export const validateResetToken = (req, res) => {
   if (!token) return res.status(400).json({ message: "Token inválido" });
   const tokenHash = hashToken(token);
 
-  connection.query("SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", [tokenHash], (err, results) => {
+  pool.query("SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", [tokenHash], (err, results) => {
     if (err) {
       console.error(err);
       return res.status(400).json({ message: "Token inválido o expirado" });
@@ -223,7 +223,7 @@ export const resetPassword = async (req, res) => {
     }
 
     const tokenHash = hashToken(token);
-    connection.query("SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", [tokenHash], async (err, results) => {
+    pool.query("SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", [tokenHash], async (err, results) => {
       if (err) {
         console.error(err);
         return res.status(400).json({ message: "Token inválido o expirado" });
@@ -233,7 +233,7 @@ export const resetPassword = async (req, res) => {
       if (!row.reset_token_exp || new Date(row.reset_token_exp) < new Date()) return res.status(400).json({ message: "Token inválido o expirado" });
 
       const hashed = await bcrypt.hash(nueva_password, BCRYPT_ROUNDS);
-      connection.query("UPDATE usuarios SET password = ?, reset_token_hash = NULL, reset_token_exp = NULL WHERE id = ?", [hashed, row.id], (uerr) => {
+      pool.query("UPDATE usuarios SET password = ?, reset_token_hash = NULL, reset_token_exp = NULL WHERE id = ?", [hashed, row.id], (uerr) => {
         if (uerr) {
           console.error(uerr);
           return res.status(500).json({ message: "Error actualizando contraseña" });
