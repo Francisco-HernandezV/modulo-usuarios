@@ -37,3 +37,11 @@ body {
   cursor: pointer;
   margin-top: 20px;
 }
+
+.qr-img {
+  width: 200px;
+  display: block;
+  margin: 20px auto;
+  border-radius: 10px;
+}
+

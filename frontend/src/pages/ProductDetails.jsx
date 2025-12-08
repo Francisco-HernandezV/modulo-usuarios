@@ -1,6 +1,7 @@
 import "./ProductDetails.css";
 import { useParams } from "react-router-dom";
 import { products } from "../assets/products";
+import qrImage from "../assets/qr.jpg";
 
 function ProductDetails() {
   const { id } = useParams();
@@ -15,9 +16,15 @@ function ProductDetails() {
 
       <h1>{product.nombre}</h1>
 
-      <img src={product.imagen} className="img" />
+      {/* Imagen principal del producto */}
+      <img src={product.imagen} className="img" alt={product.nombre} />
 
+      {/* Descripción */}
       <p className="desc">{product.descripcion}</p>
+
+      {/* Imagen del QR */}
+      <h3>Código QR del producto:</h3>
+      <img src={qrImage} className="qr-img" alt="QR del producto" />
 
       <h2>${product.precio}</h2>
 
