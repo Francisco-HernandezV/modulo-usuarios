@@ -84,7 +84,7 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 20px;
-  gap: 15px;
+  gap: 20px; /* Separación aumentada para acomodar el QR más grande */
 }
 
 .header-text {
@@ -133,18 +133,20 @@ h1 {
 }
 
 .qr-img-large {
-  width: 110px; /* Aumentado considerablemente */
-  height: 110px;
+  width: 160px;  /* Aumentado a 160px */
+  height: 160px; /* Aumentado a 160px */
   border-radius: 8px;
   border: 1px solid #ddd;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
 }
 
 .qr-header-container span {
-  font-size: 0.75rem;
-  color: #888;
+  font-size: 0.8rem;
+  color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .description {
@@ -200,8 +202,9 @@ h1 {
     align-items: center;
   }
   
+  /* Ajuste responsivo del QR */
   .qr-img-large {
-    width: 90px;
-    height: 90px;
+    width: 120px;
+    height: 120px;
   }
 }
