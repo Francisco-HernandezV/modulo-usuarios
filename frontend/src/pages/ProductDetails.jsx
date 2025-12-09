@@ -1,34 +1,53 @@
+import React from "react";
 import "./ProductDetails.css";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { products } from "../assets/products";
 import qrImage from "../assets/qr.jpg";
 
 function ProductDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const product = products.find((p) => p.id == id);
 
+  if (!product) return <div className="not-found">Producto no encontrado</div>;
+
   return (
-    <div className="container">
+    <div className="page-wrapper">
+      <div className="product-card">
+        
+        {/* Columna Izquierda: Imagen */}
+        <div className="product-image-container">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            ← Volver
+          </button>
+          <img src={product.imagen} className="main-img" alt={product.nombre} />
+        </div>
 
-      <button className="back-btn" onClick={() => history.back()}>
-        ← Regresar
-      </button>
+        {/* Columna Derecha: Información */}
+        <div className="product-info">
+          <span className="category-tag">Moda Urbana</span>
+          <h1>{product.nombre}</h1>
+          
+          <div className="price-container">
+            <span className="currency">$</span>
+            <span className="amount">{product.precio}</span>
+          </div>
 
-      <h1>{product.nombre}</h1>
+          <p className="description">{product.descripcion}</p>
 
-      {/* Imagen principal del producto */}
-      <img src={product.imagen} className="img" alt={product.nombre} />
+          <div className="actions">
+            <button className="buy-btn">
+              Añadir al Carrito
+            </button>
+          </div>
 
-      {/* Descripción */}
-      <p className="desc">{product.descripcion}</p>
+          <div className="qr-section">
+            <p>Escanea para ver en móvil:</p>
+            <img src={qrImage} className="qr-img" alt="QR del producto" />
+          </div>
+        </div>
 
-      {/* Imagen del QR */}
-      <h3>Código QR del producto:</h3>
-      <img src={qrImage} className="qr-img" alt="QR del producto" />
-
-      <h2>${product.precio}</h2>
-
-      <button className="buy-btn">Comprar</button>
+      </div>
     </div>
   );
 }
