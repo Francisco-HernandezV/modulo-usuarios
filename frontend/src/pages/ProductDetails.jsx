@@ -41,10 +41,6 @@ function ProductDetails() {
             </button>
           </div>
 
-          <div className="qr-section">
-            <p>Escanea para ver en móvil:</p>
-            <img src={qrImage} className="qr-img" alt="QR del producto" />
-          </div>
         </div>
 
       </div>
