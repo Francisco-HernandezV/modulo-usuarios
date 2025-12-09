@@ -29,15 +29,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative; /* Importante para el botón absoluto */
+  position: relative;
   padding: 40px;
-  min-height: 400px; /* Altura mínima para asegurar espacio */
+  min-height: 400px;
 }
 
-/* Botón Volver - AHORA EN LA ESQUINA INFERIOR IZQUIERDA */
+/* Botón Volver */
 .back-btn {
   position: absolute;
-  bottom: 30px; /* Cambiado de top a bottom */
+  bottom: 30px;
   left: 30px;
   background: white;
   border: 1px solid #ddd;
@@ -75,10 +75,24 @@
   padding: 50px 40px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: center; /* Centra verticalmente si hay espacio */
+}
+
+/* NUEVO: Contenedor Flexible para Título y QR */
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.header-text {
+  flex: 1; /* Toma el espacio disponible */
 }
 
 .category-tag {
+  display: block;
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 1px;
@@ -88,15 +102,15 @@
 }
 
 h1 {
-  margin: 0 0 15px 0;
+  margin: 0 0 10px 0;
   font-size: 2rem;
   color: #1a1a1a;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .price-container {
-  margin-bottom: 25px;
   color: #1a1a1a;
+  margin-top: 5px;
 }
 
 .currency {
@@ -110,50 +124,39 @@ h1 {
   font-weight: 700;
 }
 
+/* NUEVO: Estilos para el QR grande */
+.qr-header-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0; /* Evita que se aplaste */
+}
+
+.qr-img-large {
+  width: 110px; /* Aumentado considerablemente */
+  height: 110px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 5px;
+}
+
+.qr-header-container span {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .description {
   color: #666;
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   font-size: 0.95rem;
-}
-
-/* --- Sección QR Nueva --- */
-.qr-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fafafa;
-  border: 1px solid #eee;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 25px; /* Espacio antes del botón comprar */
-}
-
-.qr-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.qr-text strong {
-  font-size: 0.9rem;
-  color: #333;
-}
-
-.qr-text span {
-  font-size: 0.8rem;
-  color: #888;
-}
-
-.qr-img {
-  width: 70px;
-  height: 70px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
 }
 
 /* Botón Comprar */
 .actions {
-  margin-top: auto;
+  margin-top: auto; /* Empuja el botón al fondo si sobra espacio */
 }
 
 .buy-btn {
@@ -184,11 +187,21 @@ h1 {
 
   .product-image-container {
     padding: 30px;
-    padding-bottom: 70px; /* Espacio extra para el botón volver en móvil */
+    padding-bottom: 70px;
   }
   
   .back-btn {
     bottom: 20px;
     left: 20px;
+  }
+
+  /* Ajuste móvil para que el QR no aplaste el título */
+  .product-header {
+    align-items: center;
+  }
+  
+  .qr-img-large {
+    width: 90px;
+    height: 90px;
   }
 }

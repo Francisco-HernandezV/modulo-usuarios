@@ -15,11 +15,10 @@ function ProductDetails() {
     <div className="page-wrapper">
       <div className="product-card">
         
-        {/* Columna Izquierda: Imagen + Botón Volver (Abajo) */}
+        {/* Columna Izquierda: Imagen + Botón Volver */}
         <div className="product-image-container">
           <img src={product.imagen} className="main-img" alt={product.nombre} />
           
-          {/* Botón movido al inferior izquierdo */}
           <button className="back-btn" onClick={() => navigate(-1)}>
             ← Volver
           </button>
@@ -27,24 +26,29 @@ function ProductDetails() {
 
         {/* Columna Derecha: Información */}
         <div className="product-info">
-          <span className="category-tag">Moda Urbana</span>
-          <h1>{product.nombre}</h1>
           
-          <div className="price-container">
-            <span className="currency">$</span>
-            <span className="amount">{product.precio}</span>
+          {/* --- NUEVO ENCABEZADO: Texto a la izq, QR a la der --- */}
+          <div className="product-header">
+            <div className="header-text">
+              <span className="category-tag">Moda Urbana</span>
+              <h1>{product.nombre}</h1>
+              
+              <div className="price-container">
+                <span className="currency">$</span>
+                <span className="amount">{product.precio}</span>
+              </div>
+            </div>
+
+            {/* QR movido aquí y más grande */}
+            <div className="qr-header-container">
+              <img src={qrImage} className="qr-img-large" alt="Código QR" />
+              <span>Escanear</span>
+            </div>
           </div>
 
           <p className="description">{product.descripcion}</p>
 
-          {/* Sección QR Reintegrada */}
-          <div className="qr-section">
-            <div className="qr-text">
-              <strong>Escanea el producto</strong>
-              <span>Ver disponibilidad en móvil</span>
-            </div>
-            <img src={qrImage} className="qr-img" alt="Código QR" />
-          </div>
+          {/* (Sección QR antigua eliminada de aquí) */}
 
           <div className="actions">
             <button className="buy-btn">
