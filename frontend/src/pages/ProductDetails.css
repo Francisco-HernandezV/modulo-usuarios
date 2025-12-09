@@ -1,13 +1,13 @@
 body {
   margin: 0;
   font-family: Poppins;
-  background: #000000;
+  background: #f1f1f1;
 }
 
 .container {
   max-width: 700px;
   margin: 40px auto;
-  background: white;
+  background: rgb(0, 0, 0);
   padding: 20px;
   border-radius: 10px;
 }
