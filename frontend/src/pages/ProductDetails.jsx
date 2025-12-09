@@ -15,12 +15,14 @@ function ProductDetails() {
     <div className="page-wrapper">
       <div className="product-card">
         
-        {/* Columna Izquierda: Imagen */}
+        {/* Columna Izquierda: Imagen + Botón Volver (Abajo) */}
         <div className="product-image-container">
+          <img src={product.imagen} className="main-img" alt={product.nombre} />
+          
+          {/* Botón movido al inferior izquierdo */}
           <button className="back-btn" onClick={() => navigate(-1)}>
             ← Volver
           </button>
-          <img src={product.imagen} className="main-img" alt={product.nombre} />
         </div>
 
         {/* Columna Derecha: Información */}
@@ -34,6 +36,15 @@ function ProductDetails() {
           </div>
 
           <p className="description">{product.descripcion}</p>
+
+          {/* Sección QR Reintegrada */}
+          <div className="qr-section">
+            <div className="qr-text">
+              <strong>Escanea el producto</strong>
+              <span>Ver disponibilidad en móvil</span>
+            </div>
+            <img src={qrImage} className="qr-img" alt="Código QR" />
+          </div>
 
           <div className="actions">
             <button className="buy-btn">

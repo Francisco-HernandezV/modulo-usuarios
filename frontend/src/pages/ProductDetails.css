@@ -1,20 +1,20 @@
 /* ProductDetails.css */
 
-/* Fondo general de la página para centrar todo */
+/* Fondo general */
 .page-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f2f5; /* Gris muy suave */
+  background-color: #f0f2f5;
   padding: 20px;
   font-family: 'Poppins', sans-serif;
 }
 
-/* La tarjeta principal */
+/* Tarjeta principal */
 .product-card {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+  grid-template-columns: 1fr 1fr;
   background: white;
   max-width: 900px;
   width: 100%;
@@ -23,33 +23,38 @@
   overflow: hidden;
 }
 
-/* --- Columna Izquierda (Imagen) --- */
+/* --- Columna Izquierda --- */
 .product-image-container {
   background-color: #f8f9fa;
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
+  position: relative; /* Importante para el botón absoluto */
   padding: 40px;
+  min-height: 400px; /* Altura mínima para asegurar espacio */
 }
 
+/* Botón Volver - AHORA EN LA ESQUINA INFERIOR IZQUIERDA */
 .back-btn {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  border: none;
-  padding: 8px 15px;
-  border-radius: 20px;
+  bottom: 30px; /* Cambiado de top a bottom */
+  left: 30px;
+  background: white;
+  border: 1px solid #ddd;
+  padding: 10px 20px;
+  border-radius: 30px;
   cursor: pointer;
   font-weight: 600;
   color: #333;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  z-index: 10;
 }
 
 .back-btn:hover {
-  background: #333;
+  background: #111;
   color: white;
+  border-color: #111;
 }
 
 .main-img {
@@ -57,7 +62,7 @@
   max-width: 350px;
   height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); /* Sombra a la imagen misma */
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
   transition: transform 0.3s ease;
 }
 
@@ -65,7 +70,7 @@
   transform: scale(1.05);
 }
 
-/* --- Columna Derecha (Info) --- */
+/* --- Columna Derecha --- */
 .product-info {
   padding: 50px 40px;
   display: flex;
@@ -108,11 +113,49 @@ h1 {
 .description {
   color: #666;
   line-height: 1.6;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   font-size: 0.95rem;
 }
 
-/* Botón de compra mejorado */
+/* --- Sección QR Nueva --- */
+.qr-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 25px; /* Espacio antes del botón comprar */
+}
+
+.qr-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.qr-text strong {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.qr-text span {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.qr-img {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+/* Botón Comprar */
+.actions {
+  margin-top: auto;
+}
+
 .buy-btn {
   background: #111;
   color: white;
@@ -132,45 +175,20 @@ h1 {
   transform: translateY(-2px);
 }
 
-/* Sección QR rediseñada para ser sutil */
-.qr-section {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.qr-section p {
-  font-size: 0.8rem;
-  color: #888;
-  margin: 0;
-}
-
-.qr-img {
-  width: 60px; /* Mucho más pequeño */
-  height: 60px;
-  border-radius: 5px;
-  border: 1px solid #eee;
-}
-
-/* --- Responsive (Móvil) --- */
+/* --- Responsive --- */
 @media (max-width: 768px) {
   .product-card {
-    grid-template-columns: 1fr; /* Una sola columna */
+    grid-template-columns: 1fr;
     max-width: 400px;
   }
 
   .product-image-container {
     padding: 30px;
+    padding-bottom: 70px; /* Espacio extra para el botón volver en móvil */
   }
   
-  .product-info {
-    padding: 30px;
-  }
-
-  h1 {
-    font-size: 1.5rem;
+  .back-btn {
+    bottom: 20px;
+    left: 20px;
   }
 }
