@@ -1,15 +1,15 @@
 import img1 from "./img1.jpg";
 import img2 from "./img2.jpg";
 import img3 from "./img3.jpg";
-import img4 from "./qr.jpg";
+import img4 from "./img4.jpg";
 
 export const products = [
   {
     id: 1,
-    nombre: "Pantalón Cargo Negro",
-    precio: 499,
+    nombre: "Blusa Cruzada con Nudo",
+    precio: 399,
     imagen: img4,
-    descripcion: "Diseño urbano y funcional con múltiples bolsillos estratégicos. Confeccionado en gabardina de alta resistencia, ofrece un corte moderno y máxima comodidad para tu rutina diaria."
+    descripcion: "Blusa estilo crop de corte cruzado en tono rosa malva. Presenta un diseño femenino con cuello solapa, mangas largas y un nudo frontal ajustable que acentúa la cintura. Su tejido ligero ofrece una caída suave, ideal para combinar con prendas de tiro alto."
   },
   {
     id: 2,
