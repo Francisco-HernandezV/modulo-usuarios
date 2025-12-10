@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import googleRoutes from "./routes/googleRoutes.js";
 import helmet from "helmet";
-// import xss from "xss-clean";  <-- ELIMINADO: Causaba el error 500 en Node 22
+import xss from "xss-clean"; // <-- ELIMINADO: Causaba el error 500 en Node 22
 import rateLimit from "express-rate-limit";
 
 dotenv.config();
@@ -23,7 +23,7 @@ app.use(cors({
 }));
 
 app.use(helmet());
-// app.use(xss()); <-- ELIMINADO: Ya no es necesario ni compatible
+app.use(xss()); // <-- ELIMINADO: Ya no es necesario ni compatible
 
 app.use(express.json());
 
