@@ -1,31 +1,27 @@
+import "dotenv/config"; // 👈 IMPORTANTE: Esto va en la línea 1
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+// import dotenv from "dotenv"; // Ya no lo necesitamos aquí abajo
 import userRoutes from "./routes/userRoutes.js";
 import googleRoutes from "./routes/googleRoutes.js";
 import helmet from "helmet";
-// import xss from "xss-clean"; <-- ELIMINADO: Causaba el error 500 en Node 22
 import rateLimit from "express-rate-limit";
 
-dotenv.config();
+// dotenv.config(); // Lo movimos arriba del todo
 
 const app = express();
-app.set("trust proxy", 1);
 
-const allowedOrigins = [
-  "https://modulo-usuarios.vercel.app",
-  "http://localhost:5173"
-];
+// 🔹 Configuración de Proxy (Vital para Render)
+app.set('trust proxy', 1);
 
+// 🔹 Configuración CORS permisiva para depuración
 app.use(cors({
-  origin: allowedOrigins,
+  origin: true, // Acepta automáticamente el origen que hace la petición
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
 app.use(helmet());
-// app.use(xss()); // <-- ELIMINADO: Ya no es necesario ni compatible
-
 app.use(express.json());
 
 const globalLimiter = rateLimit({
