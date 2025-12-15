@@ -7,14 +7,18 @@ console.log(`Port: ${process.env.SMTP_PORT}`);
 console.log(`User: ${process.env.SMTP_USER}`);
 console.log(`Pass length: ${process.env.SMTP_PASS ? process.env.SMTP_PASS.length : 'FALTA'}`);
 
+const port = parseInt(process.env.SMTP_PORT || "587", 10);
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || "587", 10),
-  secure: false, // false para puerto 587 (STARTTLS)
+  port: port,
+  secure: port === 465, // True para 465, false para otros puertos
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
-  }
+  },
+  // Agregamos un timeout para que no se quede colgado eternamente
+  connectionTimeout: 10000, 
 });
 
 // Verificar conexión al iniciar (esto nos dirá si Brevo nos rechaza de entrada)
