@@ -7,8 +7,8 @@ const VERIF_EXP_HOURS = parseInt(process.env.VERIFICATION_TOKEN_EXP_HOURS || "24
 const RESET_EXP_HOURS = parseInt(process.env.RESET_TOKEN_EXP_HOURS || "1", 10);
 const LOGIN_MAX = parseInt(process.env.LOGIN_MAX_ATTEMPTS || "5", 10);
 const LOGIN_LOCK_MIN = parseInt(process.env.LOGIN_LOCK_MINUTES || "15", 10);
-const RECOVERY_MAX = parseInt(process.env.RECOVERY_MAX_ATTEMPTS || "3", 10);
-const RECOVERY_LOCK_MIN = parseInt(process.env.RECOVERY_LOCK_MINUTES || "15", 10);
+// const RECOVERY_MAX = parseInt(process.env.RECOVERY_MAX_ATTEMPTS || "3", 10); // No se usaba en el snippet
+// const RECOVERY_LOCK_MIN = parseInt(process.env.RECOVERY_LOCK_MINUTES || "15", 10); // No se usaba en el snippet
 const BCRYPT_ROUNDS = 12;
 
 function nowPlusHours(hours) {
@@ -19,228 +19,243 @@ function nowPlusMinutes(mins) {
   return new Date(Date.now() + mins * 60 * 1000);
 }
 
+// ------------------------------------------------------------------
+// 1. REGISTRO (Corregido para enviar email)
+// ------------------------------------------------------------------
 export const registrarUsuario = async (req, res) => {
   try {
     const { nombre, email, password, pregunta_secreta, respuesta_secreta } = req.body;
 
-    // Nota: validación ya hecha por middleware
-    // Hasheos (async)
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const hashedRespuesta = await bcrypt.hash(respuesta_secreta, BCRYPT_ROUNDS);
 
-    // generar token de verificación y expiración
     const token = generateToken(32);
     const tokenExp = nowPlusHours(VERIF_EXP_HOURS);
 
-    // Insertar usuario (cuenta_activa = 0 por defecto)
-    pool.query(
+    // USO DE AWAIT: Esperamos a que la BD responda antes de seguir
+    await pool.query(
       "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion, token_activacion_exp, cuenta_activa) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
-      [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token, tokenExp],
-      async (err, result) => {
-        if (err) {
-          console.error("Error al registrar usuario:", err);
-          // evitar leak de detalles
-          return res.status(500).json({ message: "Error al registrar usuario" });
-        }
-
-        // enviar correo (si fallo, no revelemos al cliente)
-        try {
-          await sendVerificationEmail(email, nombre, token);
-        } catch (mailErr) {
-          console.error("Error enviando email de verificación:", mailErr);
-        }
-
-        return res.status(201).json({ message: "Si la cuenta fue creada, recibirás un correo con instrucciones para activar." });
-      }
+      [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token, tokenExp]
     );
 
+    // Si llegamos aquí, el usuario se guardó. Ahora intentamos enviar el correo.
+    try {
+      await sendVerificationEmail(email, nombre, token);
+    } catch (mailErr) {
+      console.error("Error enviando email de verificación:", mailErr);
+      // No retornamos error al cliente para no bloquear el registro, pero queda en logs
+    }
+
+    return res.status(201).json({ message: "Si la cuenta fue creada, recibirás un correo con instrucciones para activar." });
+
   } catch (error) {
+    // Si el error es por duplicado (código común en MySQL: ER_DUP_ENTRY)
+    if (error.code === 'ER_DUP_ENTRY') {
+        // Por seguridad, no decimos exactamente qué campo se duplicó al frontend público
+        return res.status(400).json({ message: "Datos inválidos o usuario ya existente" }); 
+    }
     console.error("Error registrarUsuario:", error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
-export const activarCuenta = (req, res) => {
-  const { token } = req.params;
-  if (!token) return res.status(400).json({ message: "Token inválido" });
+// ------------------------------------------------------------------
+// 2. ACTIVAR CUENTA
+// ------------------------------------------------------------------
+export const activarCuenta = async (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token) return res.status(400).json({ message: "Token inválido" });
 
-  // Buscar usuario con token
-  pool.query(
-    "SELECT id, token_activacion_exp FROM usuarios WHERE token_activacion = ?",
-    [token],
-    (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Error del servidor" });
-      }
-      if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
+    // Buscamos usuario con ese token
+    const [results] = await pool.query(
+      "SELECT id, token_activacion_exp FROM usuarios WHERE token_activacion = ?",
+      [token]
+    );
 
-      const row = results[0];
-      if (!row.token_activacion_exp || new Date(row.token_activacion_exp) < new Date()) {
-        return res.status(400).json({ message: "Token inválido o expirado" });
-      }
+    if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
 
-      pool.query(
-        "UPDATE usuarios SET cuenta_activa = 1, token_activacion = NULL, token_activacion_exp = NULL WHERE id = ?",
-        [row.id],
-        (uErr) => {
-          if (uErr) {
-            console.error(uErr);
-            return res.status(500).json({ message: "Error al activar cuenta" });
-          }
-          return res.json({ message: "Cuenta activada correctamente. Ya puedes iniciar sesión." });
-        }
-      );
+    const row = results[0];
+    if (!row.token_activacion_exp || new Date(row.token_activacion_exp) < new Date()) {
+      return res.status(400).json({ message: "Token inválido o expirado" });
     }
-  );
+
+    // Actualizamos
+    await pool.query(
+      "UPDATE usuarios SET cuenta_activa = 1, token_activacion = NULL, token_activacion_exp = NULL WHERE id = ?",
+      [row.id]
+    );
+
+    return res.json({ message: "Cuenta activada correctamente. Ya puedes iniciar sesión." });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al activar cuenta" });
+  }
 };
 
+// ------------------------------------------------------------------
+// 3. LOGIN
+// ------------------------------------------------------------------
 export const loginUsuario = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    pool.query("SELECT id, password, cuenta_activa, login_attempts, lock_until FROM usuarios WHERE email = ?", [email], async (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Error del servidor" });
-      }
+    const [results] = await pool.query(
+      "SELECT id, password, cuenta_activa, login_attempts, lock_until FROM usuarios WHERE email = ?", 
+      [email]
+    );
 
-      // Do not reveal if user exists
-      if (results.length === 0) {
-        // Simulate delay to mitigate timing attacks
-        await bcrypt.hash("dummy", BCRYPT_ROUNDS);
-        return res.status(401).json({ message: "Credenciales inválidas" });
-      }
+    if (results.length === 0) {
+      await bcrypt.hash("dummy", BCRYPT_ROUNDS); // Retardo simulado
+      return res.status(401).json({ message: "Credenciales inválidas" });
+    }
 
-      const user = results[0];
+    const user = results[0];
 
-      // Check lock
-      if (user.lock_until && new Date(user.lock_until) > new Date()) {
-        return res.status(423).json({ message: "Cuenta bloqueada temporalmente. Intenta más tarde." });
-      }
+    // Verificar bloqueo
+    if (user.lock_until && new Date(user.lock_until) > new Date()) {
+      return res.status(423).json({ message: "Cuenta bloqueada temporalmente. Intenta más tarde." });
+    }
 
-      // Check activated
-      if (!user.cuenta_activa) {
-        return res.status(403).json({ message: "Debes activar tu cuenta antes de iniciar sesión." });
-      }
+    // Verificar activación
+    if (!user.cuenta_activa) {
+      return res.status(403).json({ message: "Debes activar tu cuenta antes de iniciar sesión." });
+    }
 
-      const match = await bcrypt.compare(password, user.password);
-      if (!match) {
-        // increment login_attempts and maybe lock
-        const attempts = (user.login_attempts || 0) + 1;
-        const lockUntil = attempts >= LOGIN_MAX ? nowPlusMinutes(LOGIN_LOCK_MIN) : null;
-        pool.query("UPDATE usuarios SET login_attempts = ?, lock_until = ? WHERE id = ?", [attempts, lockUntil, user.id], (uerr) => {
-          if (uerr) console.error("Error actualizando intentos login:", uerr);
-        });
-        return res.status(401).json({ message: "Credenciales inválidas" });
-      }
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      const attempts = (user.login_attempts || 0) + 1;
+      const lockUntil = attempts >= LOGIN_MAX ? nowPlusMinutes(LOGIN_LOCK_MIN) : null;
+      
+      await pool.query("UPDATE usuarios SET login_attempts = ?, lock_until = ? WHERE id = ?", [attempts, lockUntil, user.id]);
+      
+      return res.status(401).json({ message: "Credenciales inválidas" });
+    }
 
-      // success: reset attempts
-      pool.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = ?", [user.id], (uerr) => {
-        if (uerr) console.error("Error reseteando intentos:", uerr);
-      });
+    // Login exitoso: resetear intentos
+    await pool.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = ?", [user.id]);
 
-      // return minimal user info
-      return res.json({ message: "Login exitoso", usuario: { id: user.id, email } });
-    });
+    return res.json({ message: "Login exitoso", usuario: { id: user.id, email } });
+
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Error interno" });
   }
 };
 
-// ---------- RECUPERACIÓN (generar token y enviar email) ----------
-export const requestPasswordReset = (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ message: "OK" }); // mensaje genérico
+// ------------------------------------------------------------------
+// 4. SOLICITAR RECUPERACIÓN (Password Reset)
+// ------------------------------------------------------------------
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "OK" }); 
 
-  // First check if user exists
-  pool.query("SELECT id, nombre, recovery_attempts, recovery_lock_until FROM usuarios WHERE email = ?", [email], async (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: "OK" });
-    }
+    const [results] = await pool.query(
+      "SELECT id, nombre, recovery_attempts, recovery_lock_until FROM usuarios WHERE email = ?", 
+      [email]
+    );
 
-    // Always respond generically at the end
     if (results.length === 0) {
       return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
     }
 
     const user = results[0];
 
-    // Check recovery lock
     if (user.recovery_lock_until && new Date(user.recovery_lock_until) > new Date()) {
       return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
     }
 
-    // generate token, store hash and expiry
     const token = generateToken(32);
     const tokenHash = hashToken(token);
     const expiry = nowPlusHours(RESET_EXP_HOURS);
 
-    pool.query("UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ?, recovery_attempts = 0, recovery_lock_until = NULL WHERE id = ?", [tokenHash, expiry, user.id], async (uerr) => {
-      if (uerr) {
-        console.error(uerr);
-        return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
-      }
-      // send email (do not fail on mail error)
-      try {
-        await sendResetEmail(email, user.nombre || "usuario", token);
-      } catch (mailErr) {
-        console.error("Error enviando reset email:", mailErr);
-      }
-      return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
-    });
-  });
+    await pool.query(
+      "UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ?, recovery_attempts = 0, recovery_lock_until = NULL WHERE id = ?", 
+      [tokenHash, expiry, user.id]
+    );
+
+    // Enviar correo de reset
+    try {
+      await sendResetEmail(email, user.nombre || "usuario", token);
+    } catch (mailErr) {
+      console.error("Error enviando reset email:", mailErr);
+    }
+
+    return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error interno" });
+  }
 };
 
-export const validateResetToken = (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ message: "Token inválido" });
-  const tokenHash = hashToken(token);
+// ------------------------------------------------------------------
+// 5. VALIDAR TOKEN DE RECUPERACIÓN
+// ------------------------------------------------------------------
+export const validateResetToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: "Token inválido" });
+    
+    const tokenHash = hashToken(token);
 
-  pool.query("SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", [tokenHash], (err, results) => {
-    if (err) {
-      console.error(err);
+    const [results] = await pool.query(
+      "SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", 
+      [tokenHash]
+    );
+
+    if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
+    
+    const row = results[0];
+    if (!row.reset_token_exp || new Date(row.reset_token_exp) < new Date()) {
       return res.status(400).json({ message: "Token inválido o expirado" });
     }
-    if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
-    const row = results[0];
-    if (!row.reset_token_exp || new Date(row.reset_token_exp) < new Date()) return res.status(400).json({ message: "Token inválido o expirado" });
+
     return res.json({ message: "Token válido" });
-  });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ message: "Error al validar token" });
+  }
 };
 
+// ------------------------------------------------------------------
+// 6. CAMBIAR CONTRASEÑA (Reset Password)
+// ------------------------------------------------------------------
 export const resetPassword = async (req, res) => {
   try {
     const { token, nueva_password } = req.body;
     if (!token || !nueva_password) return res.status(400).json({ message: "Faltan datos" });
 
-    // Check password strength server-side
-    // (assume validators did it; double-check)
     if (nueva_password.length < parseInt(process.env.PASSWORD_MIN_LENGTH || "8", 10)) {
       return res.status(400).json({ message: "Contraseña no cumple requisitos" });
     }
 
     const tokenHash = hashToken(token);
-    pool.query("SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", [tokenHash], async (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(400).json({ message: "Token inválido o expirado" });
-      }
-      if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
-      const row = results[0];
-      if (!row.reset_token_exp || new Date(row.reset_token_exp) < new Date()) return res.status(400).json({ message: "Token inválido o expirado" });
+    
+    const [results] = await pool.query(
+      "SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", 
+      [tokenHash]
+    );
 
-      const hashed = await bcrypt.hash(nueva_password, BCRYPT_ROUNDS);
-      pool.query("UPDATE usuarios SET password = ?, reset_token_hash = NULL, reset_token_exp = NULL WHERE id = ?", [hashed, row.id], (uerr) => {
-        if (uerr) {
-          console.error(uerr);
-          return res.status(500).json({ message: "Error actualizando contraseña" });
-        }
-        return res.json({ message: "Contraseña actualizada correctamente" });
-      });
-    });
+    if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
+    
+    const row = results[0];
+    if (!row.reset_token_exp || new Date(row.reset_token_exp) < new Date()) {
+      return res.status(400).json({ message: "Token inválido o expirado" });
+    }
+
+    const hashed = await bcrypt.hash(nueva_password, BCRYPT_ROUNDS);
+    
+    await pool.query(
+      "UPDATE usuarios SET password = ?, reset_token_hash = NULL, reset_token_exp = NULL WHERE id = ?", 
+      [hashed, row.id]
+    );
+
+    return res.json({ message: "Contraseña actualizada correctamente" });
+
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Error interno" });
