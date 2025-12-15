@@ -59,7 +59,9 @@ function Login() {
           required
         />
 
-        <button type="submit">Ingresar</button>
+        <div className="links">
+        <Link to="/Home">Iniciar sesión</Link>
+      </div>
       </form>
 
       <div className="divider">o</div>
