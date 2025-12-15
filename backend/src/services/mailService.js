@@ -42,7 +42,8 @@ export async function sendVerificationEmail(to, name, token) {
   
   try {
     const info = await transporter.sendMail({
-      from: `"Módulo Usuarios" <${process.env.SMTP_USER}>`,
+      // 👇 AQUÍ ES EL CAMBIO: Reemplaza la línea anterior con esta:
+      from: `"Módulo Usuarios" <usielhernandez.202318@gmail.com>`,
       to,
       subject: "Activa tu cuenta",
       html
@@ -51,7 +52,6 @@ export async function sendVerificationEmail(to, name, token) {
     console.log("Respuesta del servidor:", info.response);
   } catch (error) {
     console.error("❌ Error FATAL enviando correo:", error);
-    // No lanzamos el error para no romper el registro, pero ya lo vimos en consola
   }
 }
 
