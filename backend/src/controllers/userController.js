@@ -19,9 +19,6 @@ function nowPlusMinutes(mins) {
   return new Date(Date.now() + mins * 60 * 1000);
 }
 
-// ------------------------------------------------------------------
-// 1. REGISTRO (Corregido para enviar email)
-// ------------------------------------------------------------------
 export const registrarUsuario = async (req, res) => {
   try {
     const { nombre, email, password, pregunta_secreta, respuesta_secreta } = req.body;
@@ -32,26 +29,20 @@ export const registrarUsuario = async (req, res) => {
     const token = generateToken(32);
     const tokenExp = nowPlusHours(VERIF_EXP_HOURS);
 
-    // USO DE AWAIT: Esperamos a que la BD responda antes de seguir
     await pool.query(
       "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion, token_activacion_exp, cuenta_activa) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
       [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token, tokenExp]
     );
-
-    // Si llegamos aquí, el usuario se guardó. Ahora intentamos enviar el correo.
     try {
       await sendVerificationEmail(email, nombre, token);
     } catch (mailErr) {
       console.error("Error enviando email de verificación:", mailErr);
-      // No retornamos error al cliente para no bloquear el registro, pero queda en logs
     }
 
     return res.status(201).json({ message: "Si la cuenta fue creada, recibirás un correo con instrucciones para activar." });
 
   } catch (error) {
-    // Si el error es por duplicado (código común en MySQL: ER_DUP_ENTRY)
     if (error.code === 'ER_DUP_ENTRY') {
-        // Por seguridad, no decimos exactamente qué campo se duplicó al frontend público
         return res.status(400).json({ message: "Datos inválidos o usuario ya existente" }); 
     }
     console.error("Error registrarUsuario:", error);
@@ -59,15 +50,10 @@ export const registrarUsuario = async (req, res) => {
   }
 };
 
-// ------------------------------------------------------------------
-// 2. ACTIVAR CUENTA
-// ------------------------------------------------------------------
 export const activarCuenta = async (req, res) => {
   try {
     const { token } = req.params;
     if (!token) return res.status(400).json({ message: "Token inválido" });
-
-    // Buscamos usuario con ese token
     const [results] = await pool.query(
       "SELECT id, token_activacion_exp FROM usuarios WHERE token_activacion = ?",
       [token]
@@ -80,7 +66,6 @@ export const activarCuenta = async (req, res) => {
       return res.status(400).json({ message: "Token inválido o expirado" });
     }
 
-    // Actualizamos
     await pool.query(
       "UPDATE usuarios SET cuenta_activa = 1, token_activacion = NULL, token_activacion_exp = NULL WHERE id = ?",
       [row.id]
@@ -94,9 +79,6 @@ export const activarCuenta = async (req, res) => {
   }
 };
 
-// ------------------------------------------------------------------
-// 3. LOGIN
-// ------------------------------------------------------------------
 export const loginUsuario = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -107,18 +89,16 @@ export const loginUsuario = async (req, res) => {
     );
 
     if (results.length === 0) {
-      await bcrypt.hash("dummy", BCRYPT_ROUNDS); // Retardo simulado
+      await bcrypt.hash("dummy", BCRYPT_ROUNDS);
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
     const user = results[0];
 
-    // Verificar bloqueo
     if (user.lock_until && new Date(user.lock_until) > new Date()) {
       return res.status(423).json({ message: "Cuenta bloqueada temporalmente. Intenta más tarde." });
     }
 
-    // Verificar activación
     if (!user.cuenta_activa) {
       return res.status(403).json({ message: "Debes activar tu cuenta antes de iniciar sesión." });
     }
@@ -133,7 +113,6 @@ export const loginUsuario = async (req, res) => {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // Login exitoso: resetear intentos
     await pool.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = ?", [user.id]);
 
     return res.json({ message: "Login exitoso", usuario: { id: user.id, email } });
@@ -144,9 +123,6 @@ export const loginUsuario = async (req, res) => {
   }
 };
 
-// ------------------------------------------------------------------
-// 4. SOLICITAR RECUPERACIÓN (Password Reset)
-// ------------------------------------------------------------------
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
@@ -176,7 +152,6 @@ export const requestPasswordReset = async (req, res) => {
       [tokenHash, expiry, user.id]
     );
 
-    // Enviar correo de reset
     try {
       await sendResetEmail(email, user.nombre || "usuario", token);
     } catch (mailErr) {
@@ -191,9 +166,6 @@ export const requestPasswordReset = async (req, res) => {
   }
 };
 
-// ------------------------------------------------------------------
-// 5. VALIDAR TOKEN DE RECUPERACIÓN
-// ------------------------------------------------------------------
 export const validateResetToken = async (req, res) => {
   try {
     const { token } = req.body;
@@ -221,9 +193,6 @@ export const validateResetToken = async (req, res) => {
   }
 };
 
-// ------------------------------------------------------------------
-// 6. CAMBIAR CONTRASEÑA (Reset Password)
-// ------------------------------------------------------------------
 export const resetPassword = async (req, res) => {
   try {
     const { token, nueva_password } = req.body;
