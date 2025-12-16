@@ -184,7 +184,6 @@ h1 {
   transform: translateY(-2px);
 }
 
-/* --- Responsive --- */
 @media (max-width: 900px) {
   .product-card {
     grid-template-columns: 1fr;
@@ -204,8 +203,7 @@ h1 {
   .product-header {
     align-items: center;
   }
-  
-  /* En celular, 230px es demasiado grande, lo ajustamos a 150px */
+
   .qr-img-large {
     width: 150px;
     height: 150px;
