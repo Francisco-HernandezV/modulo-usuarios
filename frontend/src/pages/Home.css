@@ -44,7 +44,9 @@ body {
   letter-spacing: 1px;
   background: linear-gradient(90deg, #fff, #8b949e);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
+  color: transparent;
   cursor: pointer;
 }
 
