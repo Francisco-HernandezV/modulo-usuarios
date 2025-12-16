@@ -9,7 +9,6 @@ function Login() {
   const [password, setPassword] = useState("");
   const [mensaje, setMensaje] = useState("");
 
-  // 🔹 Inicio de sesión clásico
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -20,22 +19,20 @@ function Login() {
       setMensaje(error.response?.data?.message || "❌ Error al iniciar sesión");
     }
   };
-
-  // 🔹 Inicio de sesión con Google
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const token = credentialResponse.credential;
       const res = await api.post("/auth/google", { token });
-      setMensaje("✅ Inicio de sesión con Google exitoso");
+      setMensaje("Inicio de sesión con Google exitoso");
       console.log(res.data);
     } catch (error) {
       console.error(error);
-      setMensaje("❌ Error al iniciar sesión con Google");
+      setMensaje("Error al iniciar sesión con Google");
     }
   };
 
   const handleGoogleError = () => {
-    setMensaje("❌ Error al conectar con Google");
+    setMensaje("Error al conectar con Google");
   };
 
   return (
@@ -69,7 +66,7 @@ function Login() {
       <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
       {mensaje && (
-        <p className={mensaje.includes("✅") ? "mensaje-exito" : "mensaje-error"}>
+        <p className={mensaje.includes("") ? "mensaje-exito" : "mensaje-error"}>
           {mensaje}
         </p>
       )}

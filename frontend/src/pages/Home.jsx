@@ -3,7 +3,6 @@ import "./Home.css";
 import { products } from "../assets/products";
 import { useNavigate } from "react-router-dom";
 
-// Iconos SVG como componentes para mantener el código limpio
 const SearchIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 );
@@ -23,7 +22,6 @@ function Home() {
 
   return (
     <div className="home-container">
-      {/* HEADER STICKY */}
       <header className="header">
         <div className="logo">DANTELEMENT</div>
 
@@ -47,18 +45,17 @@ function Home() {
         <a href="#">Hoodies</a>
         <a href="#">Pantalones</a>
         <a href="#">Accesorios</a>
-        <a href="#" className="sale-link">OFERTAS 🔥</a>
+        <a href="#" className="sale-link">OFERTAS</a>
       </nav>
 
       {/* HERO SECTION (BANNER) */}
       <section className="hero">
         <div className="hero-content">
           <h1>STREETWEAR EVOLUCIONADO</h1>
-          <p>La nueva colección 2024 ya está disponible.</p>
+          <p>La nueva colección invierno 2025 ya está disponible.</p>
         </div>
       </section>
 
-      {/* GRID DE PRODUCTOS */}
       <main className="main-content">
         <h2 className="section-title">Últimos Lanzamientos</h2>
         
