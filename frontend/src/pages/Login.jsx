@@ -1,46 +1,40 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // 👈 Importamos useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { GoogleLogin } from "@react-oauth/google";
 import "../styles/theme.css";
 
 function Login() {
-  const navigate = useNavigate(); // 👈 Hook para redirigir
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
+  // Estado para el ojito
+  const [showPassword, setShowPassword] = useState(false);
+
   const [mensaje, setMensaje] = useState("");
-  // 👇 Nuevo estado para los errores específicos de los campos
   const [errores, setErrores] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMensaje("");
-    setErrores({}); // Limpiamos errores previos
-
+    setErrores({});
     try {
       const response = await api.post("/users/login", { email, password });
-      
-      // Si llegamos aquí, el login fue exitoso (200 OK)
       setMensaje("✅ Inicio de sesión exitoso");
       console.log(response.data);
-
-      // AQUÍ redirigimos al usuario tras un breve retraso o inmediatamente
-      // Guardar token o usuario en contexto sería el siguiente paso ideal
       setTimeout(() => {
         navigate("/Home"); 
       }, 1000);
 
     } catch (error) {
-      // 1. Errores de validación (campos vacíos o email inválido)
       if (error.response?.data?.errors) {
         const erroresBackend = {};
         error.response.data.errors.forEach((err) => {
           erroresBackend[err.path] = err.msg;
         });
         setErrores(erroresBackend);
-      } 
-      // 2. Errores de lógica (Credenciales inválidas, cuenta no activa, bloqueada)
+      }
       else {
         setMensaje(error.response?.data?.message || "❌ Error al iniciar sesión");
       }
@@ -53,7 +47,6 @@ function Login() {
       const res = await api.post("/auth/google", { token });
       setMensaje("Inicio de sesión con Google exitoso");
       console.log(res.data);
-      // También redirigimos si es con Google
       setTimeout(() => navigate("/Home"), 1000);
     } catch (error) {
       console.error(error);
@@ -64,8 +57,7 @@ function Login() {
   const handleGoogleError = () => {
     setMensaje("Error al conectar con Google");
   };
-
-  // Función auxiliar para limpiar error al escribir
+  
   const handleInputChange = (setter, fieldName, e) => {
     setter(e.target.value);
     if (errores[fieldName]) {
@@ -78,14 +70,12 @@ function Login() {
       <h2>Iniciar Sesión</h2>
 
       <form onSubmit={handleSubmit}>
-        {/* EMAIL */}
         <div style={{ marginBottom: "15px" }}>
           <input
             type="email"
             placeholder="Correo electrónico"
             value={email}
             onChange={(e) => handleInputChange(setEmail, "email", e)}
-            // Borde rojo si hay error
             style={errores.email ? { borderColor: "red", marginBottom: "5px" } : {}}
           />
           {errores.email && (
@@ -95,34 +85,58 @@ function Login() {
           )}
         </div>
 
-        {/* PASSWORD */}
-        <div style={{ marginBottom: "15px" }}>
+        {/* CONTRASEÑA CON OJITO */}
+        <div style={{ marginBottom: "15px", position: "relative" }}>
           <input
-            type="password"
+            type={showPassword ? "text" : "password"} // Cambia el tipo dinámicamente
             placeholder="Contraseña"
             value={password}
             onChange={(e) => handleInputChange(setPassword, "password", e)}
-            style={errores.password ? { borderColor: "red", marginBottom: "5px" } : {}}
+            style={errores.password ? { borderColor: "red", marginBottom: "5px", paddingRight: "40px" } : { paddingRight: "40px" }}
           />
+          
+          {/* Botón del ojito */}
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: "absolute",
+              right: "10px",
+              top: "22px", // Ajusta según la altura de tu input
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              width: "auto",
+              color: "#888" // Color del icono
+            }}
+          >
+            {showPassword ? (
+              // Icono Ojo Abierto (SVG)
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            ) : (
+              // Icono Ojo Cerrado (SVG)
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            )}
+          </button>
+
           {errores.password && (
             <small style={{ color: "red", display: "block", textAlign: "left" }}>
               {errores.password}
             </small>
           )}
         </div>
+
         <button type="submit">Iniciar sesión</button>
       </form>
-
       <div className="divider" style={{margin: "20px 0"}}>o</div>
-
       <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-
       {mensaje && (
         <p className={mensaje.includes("✅") ? "mensaje-exito" : "mensaje-error"}>
           {mensaje}
         </p>
       )}
-
       <div className="links">
         <Link to="/register">Registrarse</Link> |{" "}
         <Link to="/recover">¿Olvidaste tu contraseña?</Link>

@@ -13,11 +13,15 @@ function RecoverPassword() {
   const [email, setEmail] = useState("");
   const [pregunta, setPregunta] = useState("");
   const [respuesta, setRespuesta] = useState("");
-  const [token, setToken] = useState(""); // Token (ya sea del correo o generado por respuesta secreta)
+  const [token, setToken] = useState(""); 
   
   // Campos de nueva contraseña
   const [nuevaPass, setNuevaPass] = useState("");
   const [confirmarPass, setConfirmarPass] = useState("");
+
+  // ESTADOS PARA LOS OJITOS (Uno para cada campo)
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   
   const [mensaje, setMensaje] = useState("");
 
@@ -28,7 +32,7 @@ function RecoverPassword() {
     try {
       const res = await api.post("/users/recover/check", { email });
       setPregunta(res.data.pregunta);
-      setStep(2); // Pasar a selección de opciones
+      setStep(2); 
     } catch (error) {
       setMensaje(error.response?.data?.message || "❌ Correo no encontrado");
     }
@@ -38,7 +42,7 @@ function RecoverPassword() {
   const handleSendEmail = async () => {
     try {
       await api.post("/users/recover/send-email", { email });
-      setStep(5); // Pantalla final de correo enviado
+      setStep(5); 
     } catch (error) {
       setMensaje("Error al enviar el correo");
     }
@@ -49,9 +53,8 @@ function RecoverPassword() {
     e.preventDefault();
     try {
       const res = await api.post("/users/recover/answer", { email, respuesta });
-      // Si es correcto, el backend nos da un TOKEN temporal
       setToken(res.data.token);
-      setStep(4); // Pasar directo a cambiar contraseña
+      setStep(4); 
     } catch (error) {
       setMensaje("❌ Respuesta incorrecta");
     }
@@ -67,13 +70,12 @@ function RecoverPassword() {
 
     try {
       await api.post("/users/recover/reset", { 
-        token, // Usamos el token que nos dio la respuesta secreta
+        token, 
         nueva_password: nuevaPass 
       });
       setMensaje("✅ Contraseña actualizada correctamente");
       setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
-       // Manejo de errores de validación de contraseña (array)
        if (error.response?.data?.errors) {
          setMensaje(error.response.data.errors[0].msg);
        } else {
@@ -104,14 +106,12 @@ function RecoverPassword() {
       {step === 2 && (
         <div style={{ textAlign: "center" }}>
           <p>¿Cómo deseas recuperar tu contraseña?</p>
-          
           <button 
             onClick={() => setStep(3)} 
             style={{ marginBottom: "10px", backgroundColor: "#333" }}
           >
             🔐 Usar Pregunta Secreta
           </button>
-          
           <button 
             onClick={handleSendEmail} 
             style={{ backgroundColor: "#0d47a1" }}
@@ -149,20 +149,59 @@ function RecoverPassword() {
       {step === 4 && (
         <form onSubmit={handleResetPassword}>
           <h3>Crea tu nueva contraseña</h3>
-          <input
-            type="password"
-            placeholder="Nueva contraseña"
-            value={nuevaPass}
-            onChange={(e) => setNuevaPass(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Confirmar nueva contraseña"
-            value={confirmarPass}
-            onChange={(e) => setConfirmarPass(e.target.value)}
-            required
-          />
+          
+          {/* Nueva Contraseña */}
+          <div style={{ marginBottom: "15px", position: "relative" }}>
+            <input
+              type={showNewPass ? "text" : "password"}
+              placeholder="Nueva contraseña"
+              value={nuevaPass}
+              onChange={(e) => setNuevaPass(e.target.value)}
+              required
+              style={{ paddingRight: "40px" }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPass(!showNewPass)}
+              style={{
+                position: "absolute", right: "10px", top: "50%", transform: "translateY(-75%)",
+                background: "none", border: "none", cursor: "pointer", color: "#888"
+              }}
+            >
+              {showNewPass ? (
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              ) : (
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              )}
+            </button>
+          </div>
+
+          {/* Confirmar Contraseña */}
+          <div style={{ marginBottom: "15px", position: "relative" }}>
+            <input
+              type={showConfirmPass ? "text" : "password"}
+              placeholder="Confirmar nueva contraseña"
+              value={confirmarPass}
+              onChange={(e) => setConfirmarPass(e.target.value)}
+              required
+              style={{ paddingRight: "40px" }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPass(!showConfirmPass)}
+              style={{
+                position: "absolute", right: "10px", top: "50%", transform: "translateY(-75%)",
+                background: "none", border: "none", cursor: "pointer", color: "#888"
+              }}
+            >
+              {showConfirmPass ? (
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              ) : (
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              )}
+            </button>
+          </div>
+
           <button type="submit">Actualizar Contraseña</button>
         </form>
       )}
