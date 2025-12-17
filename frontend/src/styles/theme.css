@@ -49,6 +49,7 @@ select {
   border-radius: 8px;
   color: #fff;
   font-size: 14px;
+  box-sizing: border-box;
 }
 
 input::placeholder {
