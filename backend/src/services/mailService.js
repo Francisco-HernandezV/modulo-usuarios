@@ -56,5 +56,33 @@ export async function sendVerificationEmail(to, name, token) {
 }
 
 export async function sendResetEmail(to, name, token) {
-  // ... (puedes dejar esto igual por ahora o añadir logs similares)
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+      <h2 style="color: #0d47a1;">Recuperación de Contraseña</h2>
+      <p>Hola ${name || "Usuario"},</p>
+      <p>Usa el siguiente código para restablecer tu contraseña:</p>
+      
+      <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0; border: 1px dashed #999;">
+        ${token}
+      </div>
+
+      <p>Copia este código y pégalo en la pantalla de recuperación.</p>
+      <p style="font-size: 12px; color: #888;">Este código expira en 1 hora.</p>
+    </div>
+  `;
+
+  console.log(`📨 Enviando código ${token} a: ${to}`);
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"Soporte Seguridad" <${process.env.SMTP_USER}>`,
+      to,
+      subject: "Tu código de recuperación",
+      html
+    });
+    console.log("✅ Correo enviado. ID:", info.messageId);
+  } catch (error) {
+    console.error("❌ Error enviando correo:", error);
+    throw error; 
+  }
 }

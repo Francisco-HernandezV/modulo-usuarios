@@ -1,5 +1,6 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { sendVerificationEmail, sendResetEmail } from "../services/mailService.js";
 import { generateToken, hashToken } from "../services/tokenService.js";
 
@@ -188,7 +189,8 @@ export const requestPasswordReset = async (req, res) => {
     const [results] = await pool.query("SELECT id, nombre, recovery_lock_until FROM usuarios WHERE email = ?", [email]);
     if (results.length === 0) return res.json({ message: "Si el correo existe, se enviaron instrucciones." });
     const user = results[0];
-    const token = generateToken(32);
+    // const token = generateToken(32);
+    const token = crypto.randomInt(100000, 999999).toString();
     const tokenHash = hashToken(token);
     const expiry = nowPlusHours(RESET_EXP_HOURS);
     await pool.query(
