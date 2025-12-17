@@ -7,14 +7,11 @@ const VERIF_EXP_HOURS = parseInt(process.env.VERIFICATION_TOKEN_EXP_HOURS || "24
 const RESET_EXP_HOURS = parseInt(process.env.RESET_TOKEN_EXP_HOURS || "1", 10);
 const LOGIN_MAX = parseInt(process.env.LOGIN_MAX_ATTEMPTS || "5", 10);
 const LOGIN_LOCK_MIN = parseInt(process.env.LOGIN_LOCK_MINUTES || "15", 10);
-// const RECOVERY_MAX = parseInt(process.env.RECOVERY_MAX_ATTEMPTS || "3", 10); // No se usaba en el snippet
-// const RECOVERY_LOCK_MIN = parseInt(process.env.RECOVERY_LOCK_MINUTES || "15", 10); // No se usaba en el snippet
 const BCRYPT_ROUNDS = 12;
 
 function nowPlusHours(hours) {
   return new Date(Date.now() + hours * 60 * 60 * 1000);
 }
-
 function nowPlusMinutes(mins) {
   return new Date(Date.now() + mins * 60 * 1000);
 }
@@ -123,24 +120,49 @@ export const loginUsuario = async (req, res) => {
   }
 };
 
-export const requestPasswordReset = async (req, res) => {
+// 1. Verificar si el usuario existe y devolver su pregunta (O enviar correo si se elige esa opción después)
+export const obtenerPregunta = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: "OK" }); 
+    if (!email) return res.status(400).json({ message: "Email requerido" });
 
+    const [results] = await pool.query("SELECT id, pregunta_secreta FROM usuarios WHERE email = ?", [email]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Correo no encontrado" });
+    }
+
+    return res.json({ 
+      message: "Usuario encontrado", 
+      pregunta: results[0].pregunta_secreta 
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+export const validarRespuestaSecreta = async (req, res) => {
+  try {
+    const { email, respuesta } = req.body;
+    
     const [results] = await pool.query(
-      "SELECT id, nombre, recovery_attempts, recovery_lock_until FROM usuarios WHERE email = ?", 
+      "SELECT id, respuesta_secreta, recovery_lock_until FROM usuarios WHERE email = ?", 
       [email]
     );
 
-    if (results.length === 0) {
-      return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
-    }
-
+    if (results.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
     const user = results[0];
 
     if (user.recovery_lock_until && new Date(user.recovery_lock_until) > new Date()) {
-      return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
+      return res.status(429).json({ message: "Demasiados intentos. Intenta más tarde." });
+    }
+
+    const match = await bcrypt.compare(respuesta, user.respuesta_secreta);
+    
+    if (!match) {
+        return res.status(400).json({ message: "Respuesta incorrecta" });
     }
 
     const token = generateToken(32);
@@ -148,18 +170,37 @@ export const requestPasswordReset = async (req, res) => {
     const expiry = nowPlusHours(RESET_EXP_HOURS);
 
     await pool.query(
-      "UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ?, recovery_attempts = 0, recovery_lock_until = NULL WHERE id = ?", 
+      "UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ? WHERE id = ?", 
       [tokenHash, expiry, user.id]
     );
 
+    return res.json({ message: "Respuesta correcta", token: token });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const [results] = await pool.query("SELECT id, nombre, recovery_lock_until FROM usuarios WHERE email = ?", [email]);
+    if (results.length === 0) return res.json({ message: "Si el correo existe, se enviaron instrucciones." });
+    const user = results[0];
+    const token = generateToken(32);
+    const tokenHash = hashToken(token);
+    const expiry = nowPlusHours(RESET_EXP_HOURS);
+    await pool.query(
+      "UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ? WHERE id = ?", 
+      [tokenHash, expiry, user.id]
+    );
     try {
-      await sendResetEmail(email, user.nombre || "usuario", token);
+      await sendResetEmail(email, user.nombre || "Usuario", token);
     } catch (mailErr) {
-      console.error("Error enviando reset email:", mailErr);
+      console.error(mailErr);
     }
-
-    return res.json({ message: "Si existe la cuenta, recibirás un correo con instrucciones." });
-
+    return res.json({ message: "Correo enviado con éxito. Revisa tu bandeja." });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error interno" });

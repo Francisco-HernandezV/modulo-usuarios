@@ -3,6 +3,8 @@ import {
   registrarUsuario,
   loginUsuario,
   activarCuenta,
+  obtenerPregunta,
+  validarRespuestaSecreta,
   requestPasswordReset,
   validateResetToken,
   resetPassword
@@ -15,10 +17,10 @@ const router = express.Router();
 router.post("/register", registerValidator, registrarUsuario);
 router.post("/login", loginLimiter, loginValidator, loginUsuario);
 router.get("/activar/:token", activarCuenta);
-
-// Recovery flow
-router.post("/recover", recoverLimiter, recoverValidator, requestPasswordReset);
-router.post("/recover/validate", recoverLimiter, validateResetToken);
+router.post("/recover/check", recoverLimiter, recoverValidator, obtenerPregunta);
+router.post("/recover/answer", recoverLimiter, validarRespuestaSecreta);
+router.post("/recover/send-email", recoverLimiter, requestPasswordReset);
+router.post("/recover/validate-token", recoverLimiter, validateResetToken);
 router.post("/recover/reset", resetPasswordValidator, resetPassword);
 
 export default router;
