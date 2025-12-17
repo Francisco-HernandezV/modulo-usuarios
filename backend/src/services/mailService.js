@@ -1,80 +1,60 @@
 import nodemailer from "nodemailer";
-import dotenv from "dotenv";
 
-dotenv.config();
+// Debug: Verificar si las variables existen (sin revelar la contraseña real)
+console.log("🔧 Configurando transporte de correo...");
+console.log(`Host: ${process.env.SMTP_HOST}`);
+console.log(`Port: ${process.env.SMTP_PORT}`);
+console.log(`User: ${process.env.SMTP_USER}`);
+console.log(`Pass length: ${process.env.SMTP_PASS ? process.env.SMTP_PASS.length : 'FALTA'}`);
 
-// Configuración del transporte (Gmail, Outlook, etc.)
+const port = parseInt(process.env.SMTP_PORT || "587", 10);
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: parseInt(process.env.SMTP_PORT) === 465, // True para 465, false para otros
+  port: port,
+  secure: port === 465, // True para 465, false para otros puertos
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    pass: process.env.SMTP_PASS
   },
-  tls: {
-    rejectUnauthorized: false // Ayuda a evitar errores de certificados en desarrollo
-  }
+  // Agregamos un timeout para que no se quede colgado eternamente
+  connectionTimeout: 10000, 
 });
 
-// Verificar conexión al iniciar el servidor
-transporter.verify().then(() => {
-  console.log("✅ Servidor de Correos listo");
-}).catch((error) => {
-  console.error("❌ Error conectando al servidor de correos:", error);
+// Verificar conexión al iniciar (esto nos dirá si Brevo nos rechaza de entrada)
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error("❌ Error de conexión SMTP al inicio:", error);
+  } else {
+    console.log("✅ Servidor SMTP listo para enviar mensajes");
+  }
 });
 
 export async function sendVerificationEmail(to, name, token) {
   const link = `${process.env.BASE_URL}/activar/${token}`;
-  
   const html = `
-    <h1>Hola ${name},</h1>
-    <p>Por favor activa tu cuenta haciendo clic aquí:</p>
-    <a href="${link}">Activar Cuenta</a>
+    <h2>¡Hola ${name}!</h2>
+    <p>Haz clic en el siguiente enlace para activar tu cuenta (válido por 24 horas):</p>
+    <a href="${link}" target="_blank">Activar cuenta</a>
   `;
 
+  console.log(`📨 Intentando enviar correo a: ${to}`);
+  
   try {
-    await transporter.sendMail({
-      from: `"Soporte" <${process.env.SMTP_USER}>`,
+    const info = await transporter.sendMail({
+      // 👇 AQUÍ ES EL CAMBIO: Reemplaza la línea anterior con esta:
+      from: `"Módulo Usuarios" <usielhernandez.202318@gmail.com>`,
       to,
       subject: "Activa tu cuenta",
-      html,
+      html
     });
-    console.log("✅ Correo de verificación enviado");
+    console.log("✅ Correo enviado. ID:", info.messageId);
+    console.log("Respuesta del servidor:", info.response);
   } catch (error) {
-    console.error("❌ Error enviando verificación:", error);
+    console.error("❌ Error FATAL enviando correo:", error);
   }
 }
 
 export async function sendResetEmail(to, name, token) {
-  const html = `
-    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-      <h2 style="color: #0d47a1;">Recuperación de Contraseña</h2>
-      <p>Hola ${name || "Usuario"},</p>
-      <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-      <p>Este es tu código de recuperación:</p>
-      
-      <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-        ${token}
-      </div>
-
-      <p>Copia este código y pégalo (automáticamente) si usaste la pregunta secreta, o úsalo si se te solicita.</p>
-      <p style="font-size: 12px; color: #888;">Este código expira en 1 hora.</p>
-    </div>
-  `;
-
-  console.log(`Intentando enviar correo de recuperación a: ${to}`);
-
-  try {
-    const info = await transporter.sendMail({
-      from: `"Soporte Seguridad" <${process.env.SMTP_USER}>`,
-      to,
-      subject: "Recupera tu contraseña",
-      html,
-    });
-    console.log("Correo enviado. MessageID:", info.messageId);
-  } catch (error) {
-    console.error("Error enviando correo de recuperación:", error);
-    throw error;
-  }
+  // ... (puedes dejar esto igual por ahora o añadir logs similares)
 }
