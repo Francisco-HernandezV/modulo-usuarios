@@ -6,29 +6,23 @@ import "../styles/theme.css";
 function RecoverPassword() {
   const navigate = useNavigate();
   
-  // Estados del flujo
-  const [step, setStep] = useState(1); // 1:Email, 2:Opciones, 3:Pregunta, 4:ResetPassword, 5:LinkEnviado
-  
-  // Datos
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [pregunta, setPregunta] = useState("");
   const [respuesta, setRespuesta] = useState("");
   const [token, setToken] = useState(""); 
   
-  // Campos de nueva contraseña
   const [nuevaPass, setNuevaPass] = useState("");
   const [confirmarPass, setConfirmarPass] = useState("");
 
-  // ESTADOS PARA LOS OJITOS (Uno para cada campo)
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   
   const [mensaje, setMensaje] = useState("");
 
-  // PASO 1: Ingresar Correo y buscar si existe
   const handleCheckEmail = async (e) => {
     e.preventDefault();
-    setMensaje("");
+    setMensaje(""); 
     try {
       const res = await api.post("/users/recover/check", { email });
       setPregunta(res.data.pregunta);
@@ -38,21 +32,20 @@ function RecoverPassword() {
     }
   };
 
-  // OPCIÓN A: Enviar Correo
   const handleSendEmail = async () => {
+    setMensaje(""); 
     try {
       await api.post("/users/recover/send-email", { email });
       setStep(5); 
     } catch (error) {
-      // Aquí atrapamos el error si falla el backend
       console.error(error);
       setMensaje("Error al enviar el correo. Intenta más tarde.");
     }
   };
 
-  // OPCIÓN B: Validar Respuesta Secreta
   const handleVerifyAnswer = async (e) => {
     e.preventDefault();
+    setMensaje(""); 
     try {
       const res = await api.post("/users/recover/answer", { email, respuesta });
       setToken(res.data.token);
@@ -62,9 +55,9 @@ function RecoverPassword() {
     }
   };
 
-  // PASO FINAL: Cambiar Contraseña (usando el token obtenido)
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    setMensaje(""); 
     if (nuevaPass !== confirmarPass) {
       setMensaje("⚠️ Las contraseñas no coinciden");
       return;
@@ -86,18 +79,14 @@ function RecoverPassword() {
     }
   };
 
-  // Estilo compartido para el botón del ojito (IGUAL A LOGIN/REGISTER)
-  const eyeButtonStyle = {
-    position: "absolute",
-    right: "10px",
-    top: "22px", // Alineación corregida para coincidir con Login
-    transform: "translateY(-50%)",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: 0,
-    color: "#888"
-  };
+  // Iconos SVG reutilizables para mantener el código limpio
+  const EyeIconOpen = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+  );
+  
+  const EyeIconClosed = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+  );
 
   return (
     <div className="form-container">
@@ -122,7 +111,7 @@ function RecoverPassword() {
         <div style={{ textAlign: "center" }}>
           <p>¿Cómo deseas recuperar tu contraseña?</p>
           <button 
-            onClick={() => setStep(3)} 
+            onClick={() => { setStep(3); setMensaje(""); }} 
             style={{ marginBottom: "10px", backgroundColor: "#333" }}
           >
             🔐 Usar Pregunta Secreta
@@ -152,7 +141,7 @@ function RecoverPassword() {
           <button type="submit">Verificar Respuesta</button>
           <button 
             type="button" 
-            onClick={() => setStep(2)} 
+            onClick={() => { setStep(2); setMensaje(""); }}
             style={{ marginTop: "10px", background: "transparent", color: "#888", border: "1px solid #555" }}
           >
             Atrás
@@ -160,54 +149,44 @@ function RecoverPassword() {
         </form>
       )}
 
-      {/* --- PASO 4: CAMBIAR CONTRASEÑA (Desde Pregunta Secreta) --- */}
+      {/* --- PASO 4: CAMBIAR CONTRASEÑA --- */}
       {step === 4 && (
         <form onSubmit={handleResetPassword}>
           <h3>Crea tu nueva contraseña</h3>
           
-          {/* Nueva Contraseña */}
-          <div style={{ marginBottom: "15px", position: "relative" }}>
+          {/* Nueva Contraseña - Usando la clase CSS */}
+          <div className="password-wrapper">
             <input
               type={showNewPass ? "text" : "password"}
               placeholder="Nueva contraseña"
               value={nuevaPass}
               onChange={(e) => setNuevaPass(e.target.value)}
               required
-              style={{ paddingRight: "40px" }}
             />
             <button
               type="button"
+              className="eye-btn"
               onClick={() => setShowNewPass(!showNewPass)}
-              style={eyeButtonStyle}
             >
-              {showNewPass ? (
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              ) : (
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-              )}
+              {showNewPass ? <EyeIconOpen /> : <EyeIconClosed />}
             </button>
           </div>
 
-          {/* Confirmar Contraseña - Texto acortado para evitar overlap */}
-          <div style={{ marginBottom: "15px", position: "relative" }}>
+          {/* Confirmar Contraseña - Usando la clase CSS */}
+          <div className="password-wrapper">
             <input
               type={showConfirmPass ? "text" : "password"}
               placeholder="Confirmar contraseña" 
               value={confirmarPass}
               onChange={(e) => setConfirmarPass(e.target.value)}
               required
-              style={{ paddingRight: "40px" }}
             />
             <button
               type="button"
+              className="eye-btn"
               onClick={() => setShowConfirmPass(!showConfirmPass)}
-              style={eyeButtonStyle}
             >
-              {showConfirmPass ? (
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              ) : (
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-              )}
+              {showConfirmPass ? <EyeIconOpen /> : <EyeIconClosed />}
             </button>
           </div>
 
