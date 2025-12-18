@@ -5,28 +5,17 @@ import "../styles/theme.css";
 
 function RecoverPassword() {
   const navigate = useNavigate();
-  
-  // Estados del flujo
-  // 1:Email, 2:Opciones, 3:Pregunta, 4:ResetPassword, 5:ExitoCorreo(No usado ahora), 6:IngresarToken
   const [step, setStep] = useState(1); 
-  
-  // Datos
   const [email, setEmail] = useState("");
   const [pregunta, setPregunta] = useState("");
   const [respuesta, setRespuesta] = useState("");
   const [token, setToken] = useState(""); 
-  
-  // Campos de nueva contraseña
   const [nuevaPass, setNuevaPass] = useState("");
   const [confirmarPass, setConfirmarPass] = useState("");
-
-  // ESTADOS PARA LOS OJITOS
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
-  
   const [mensaje, setMensaje] = useState("");
 
-  // PASO 1: Ingresar Correo y buscar si existe
   const handleCheckEmail = async (e) => {
     e.preventDefault();
     setMensaje(""); 
@@ -39,12 +28,10 @@ function RecoverPassword() {
     }
   };
 
-  // OPCIÓN A: Enviar Correo -> Manda al paso 6 (Ingresar Token)
   const handleSendEmail = async () => {
     setMensaje(""); 
     try {
       await api.post("/users/recover/send-email", { email });
-      // Cambiamos al paso 6 para que ingrese el código
       setStep(6); 
       setMensaje("✅ Código enviado. Revisa tu correo.");
     } catch (error) {
@@ -53,21 +40,17 @@ function RecoverPassword() {
     }
   };
 
-  // OPCIÓN A (Continuación): Validar el token que el usuario pegó
   const handleValidateToken = async (e) => {
     e.preventDefault();
     setMensaje("");
     try {
-        // Validamos con el backend si el token es correcto
         await api.post("/users/recover/validate-token", { token });
-        // Si es válido, pasamos al cambio de contraseña
         setStep(4);
     } catch (error) {
         setMensaje("❌ Código inválido o expirado");
     }
   };
 
-  // OPCIÓN B: Validar Respuesta Secreta
   const handleVerifyAnswer = async (e) => {
     e.preventDefault();
     setMensaje(""); 
