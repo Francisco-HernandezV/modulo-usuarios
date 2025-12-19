@@ -7,43 +7,64 @@ import AccountActivation from "./pages/AccountActivation";
 import Home from "./pages/Home";
 import ProductDetails from "./pages/ProductDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
+
+// Componente para manejar inactividad dentro del Router
 function InactivityHandler() {
   const navigate = useNavigate();
-  const INACTIVITY_LIMIT = 15 * 60 * 1000; 
+  const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutos
 
   useEffect(() => {
     let timeout;
+
+    // Función para cerrar sesión por inactividad
+    const logoutUser = () => {
+      if (localStorage.getItem("token")) {
+        console.log("Sesión expirada por inactividad");
+        localStorage.removeItem("token"); // Borrar token
+        navigate("/login"); // Redirigir al login
+      }
+    };
+
     const resetTimer = () => {
+      // Si hay token (usuario logueado), reiniciamos el contador
       if (localStorage.getItem("token")) {
         clearTimeout(timeout);
         timeout = setTimeout(logoutUser, INACTIVITY_LIMIT);
       }
     };
-    const logoutUser = () => {
-      if (localStorage.getItem("token")) {
-        console.log("Sesión expirada");
-        localStorage.removeItem("token");
-        navigate("/login");
-      }
-    };
+
+    // Escuchar eventos de actividad
     window.addEventListener("mousemove", resetTimer);
-    window.addEventListener("keydown", resetTimer);
+    window.addEventListener("keypress", resetTimer);
+    window.addEventListener("click", resetTimer);
+    window.addEventListener("scroll", resetTimer);
+
+    // Iniciar el temporizador al cargar
     resetTimer();
+
+    // Limpieza al desmontar
     return () => {
       clearTimeout(timeout);
       window.removeEventListener("mousemove", resetTimer);
-      window.removeEventListener("keydown", resetTimer);
+      window.removeEventListener("keypress", resetTimer);
+      window.removeEventListener("click", resetTimer);
+      window.removeEventListener("scroll", resetTimer);
     };
   }, [navigate]);
-  return null;
+
+  return null; // Este componente es invisible
 }
 
 function App() {
   return (
     <BrowserRouter>
+      {/* El manejador de inactividad debe estar dentro del Router */}
       <InactivityHandler />
+      
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
+        
+        {/* Rutas Protegidas */}
         <Route 
           path="/Home" 
           element={
@@ -52,6 +73,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        
         <Route 
           path="/producto/:id" 
           element={
@@ -61,6 +83,7 @@ function App() {
           } 
         />
 
+        {/* Rutas Públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/recover" element={<RecoverPassword />} />
