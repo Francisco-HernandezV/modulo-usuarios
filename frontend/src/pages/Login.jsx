@@ -12,20 +12,25 @@ function Login() {
   // Estado para el ojito
   const [showPassword, setShowPassword] = useState(false);
 
-  const [mensaje, setMensaje] = useState("");
+  // Solo estado para errores, ya no para éxito
+  const [mensaje, setMensaje] = useState(""); 
   const [errores, setErrores] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMensaje("");
     setErrores({});
+    
     try {
       const response = await api.post("/users/login", { email, password });
-      setMensaje("✅ Inicio de sesión exitoso");
-      console.log(response.data);
-      setTimeout(() => {
-        navigate("/Home"); 
-      }, 1000);
+      
+      // 👇 PASO CRÍTICO 1: GUARDAR EL TOKEN
+      // Si no hacemos esto, la ProtectedRoute del Home no nos dejará entrar
+      localStorage.setItem("token", response.data.token);
+
+      // 👇 PASO CRÍTICO 2: REDIRECCIÓN INMEDIATA
+      // Sin mensajes, sin espera (setTimeout eliminado)
+      navigate("/Home"); 
 
     } catch (error) {
       if (error.response?.data?.errors) {
@@ -45,9 +50,12 @@ function Login() {
     try {
       const token = credentialResponse.credential;
       const res = await api.post("/auth/google", { token });
-      setMensaje("Inicio de sesión con Google exitoso");
-      console.log(res.data);
-      setTimeout(() => navigate("/Home"), 1000);
+      
+      // También guardamos el token si entra con Google
+      localStorage.setItem("token", res.data.token);
+      
+      // Redirección inmediata
+      navigate("/Home");
     } catch (error) {
       console.error(error);
       setMensaje("Error al iniciar sesión con Google");
@@ -88,35 +96,32 @@ function Login() {
         {/* CONTRASEÑA CON OJITO */}
         <div style={{ marginBottom: "15px", position: "relative" }}>
           <input
-            type={showPassword ? "text" : "password"} // Cambia el tipo dinámicamente
+            type={showPassword ? "text" : "password"} 
             placeholder="Contraseña"
             value={password}
             onChange={(e) => handleInputChange(setPassword, "password", e)}
             style={errores.password ? { borderColor: "red", marginBottom: "5px", paddingRight: "40px" } : { paddingRight: "40px" }}
           />
           
-          {/* Botón del ojito */}
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             style={{
               position: "absolute",
               right: "10px",
-              top: "22px", // Ajusta según la altura de tu input
+              top: "22px", 
               transform: "translateY(-50%)",
               background: "none",
               border: "none",
               cursor: "pointer",
               padding: 0,
               width: "auto",
-              color: "#888" // Color del icono
+              color: "#888" 
             }}
           >
             {showPassword ? (
-              // Icono Ojo Abierto (SVG)
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             ) : (
-              // Icono Ojo Cerrado (SVG)
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
             )}
           </button>
@@ -130,13 +135,17 @@ function Login() {
 
         <button type="submit">Iniciar sesión</button>
       </form>
+
       <div className="divider" style={{margin: "20px 0"}}>o</div>
+
       <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-      {mensaje && (
-        <p className={mensaje.includes("✅") ? "mensaje-exito" : "mensaje-error"}>
+
+      {mensaje && !mensaje.includes("exitoso") && (
+        <p className="mensaje-error">
           {mensaje}
         </p>
       )}
+
       <div className="links">
         <Link to="/register">Registrarse</Link> |{" "}
         <Link to="/recover">¿Olvidaste tu contraseña?</Link>
