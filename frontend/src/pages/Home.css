@@ -316,3 +316,18 @@ body {
     white-space: nowrap;
   }
 }
+.logout-btn-home {
+  background: none;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: transform 0.2s, color 0.3s;
+}
+
+.logout-btn-home:hover {
+  color: #ef4444;
+  transform: scale(1.1);
+}

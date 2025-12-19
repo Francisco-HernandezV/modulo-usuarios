@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { sendVerificationEmail, sendResetEmail } from "../services/mailService.js";
 import { generateToken, hashToken } from "../services/tokenService.js";
 
@@ -56,21 +57,16 @@ export const activarCuenta = async (req, res) => {
       "SELECT id, token_activacion_exp FROM usuarios WHERE token_activacion = ?",
       [token]
     );
-
     if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
-
     const row = results[0];
     if (!row.token_activacion_exp || new Date(row.token_activacion_exp) < new Date()) {
       return res.status(400).json({ message: "Token inválido o expirado" });
     }
-
     await pool.query(
       "UPDATE usuarios SET cuenta_activa = 1, token_activacion = NULL, token_activacion_exp = NULL WHERE id = ?",
       [row.id]
     );
-
     return res.json({ message: "Cuenta activada correctamente. Ya puedes iniciar sesión." });
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error al activar cuenta" });
@@ -80,9 +76,10 @@ export const activarCuenta = async (req, res) => {
 export const loginUsuario = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    
+    // 1. Buscamos usuario
     const [results] = await pool.query(
-      "SELECT id, password, cuenta_activa, login_attempts, lock_until FROM usuarios WHERE email = ?", 
+      "SELECT id, password, cuenta_activa, login_attempts, lock_until, token_version FROM usuarios WHERE email = ?", 
       [email]
     );
 
@@ -90,38 +87,53 @@ export const loginUsuario = async (req, res) => {
       await bcrypt.hash("dummy", BCRYPT_ROUNDS);
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
-
-    const user = results[0];
-
+    const user = results[0]
     if (user.lock_until && new Date(user.lock_until) > new Date()) {
-      return res.status(423).json({ message: "Cuenta bloqueada temporalmente. Intenta más tarde." });
+      return res.status(423).json({ message: "Cuenta bloqueada temporalmente por intentos fallidos. Intenta en 15 minutos." });
     }
-
     if (!user.cuenta_activa) {
-      return res.status(403).json({ message: "Debes activar tu cuenta antes de iniciar sesión." });
+      return res.status(403).json({ message: "Cuenta inactiva. Revisa tu correo." });
     }
-
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       const attempts = (user.login_attempts || 0) + 1;
-      const lockUntil = attempts >= LOGIN_MAX ? nowPlusMinutes(LOGIN_LOCK_MIN) : null;
-      
+      let lockUntil = null;
+      if (attempts >= LOGIN_MAX) {
+         lockUntil = nowPlusMinutes(LOGIN_LOCK_MIN);
+      }
       await pool.query("UPDATE usuarios SET login_attempts = ?, lock_until = ? WHERE id = ?", [attempts, lockUntil, user.id]);
-      
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      return res.status(401).json({ message: `Credenciales inválidas. Intento ${attempts} de ${LOGIN_MAX}` });
     }
-
     await pool.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = ?", [user.id]);
-
-    return res.json({ message: "Login exitoso", usuario: { id: user.id, email } });
-
+    const tokenPayload = {
+        id: user.id,
+        email: email,
+        token_version: user.token_version
+    };
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || "secreto_super_seguro", { 
+        expiresIn: "8h"
+    });
+    return res.json({ 
+        message: "Login exitoso", 
+        token, 
+        usuario: { id: user.id, email } 
+    });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Error interno" });
   }
 };
 
-// 1. Verificar si el usuario existe y devolver su pregunta (O enviar correo si se elige esa opción después)
+export const logoutUsuario = async (req, res) => {
+    try {
+        await pool.query("UPDATE usuarios SET token_version = token_version + 1 WHERE id = ?", [req.user.id]);
+        return res.json({ message: "Sesión cerrada y tokens invalidados." });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Error al cerrar sesión" });
+    }
+};
+
 export const obtenerPregunta = async (req, res) => {
   try {
     const { email } = req.body;
@@ -189,7 +201,6 @@ export const requestPasswordReset = async (req, res) => {
     const [results] = await pool.query("SELECT id, nombre, recovery_lock_until FROM usuarios WHERE email = ?", [email]);
     if (results.length === 0) return res.json({ message: "Si el correo existe, se enviaron instrucciones." });
     const user = results[0];
-    // const token = generateToken(32);
     const token = crypto.randomInt(100000, 999999).toString();
     const tokenHash = hashToken(token);
     const expiry = nowPlusHours(RESET_EXP_HOURS);
