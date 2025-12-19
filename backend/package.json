@@ -22,8 +22,7 @@
     "iconv-lite": "^0.4.24",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.15.3",
-    "nodemailer": "^7.0.10",
-    "xss-clean": "^0.1.4"
+    "nodemailer": "^7.0.10"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

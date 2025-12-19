@@ -2,11 +2,11 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet"; 
-import xss from "xss-clean"; 
 import rateLimit from "express-rate-limit"; 
 import userRoutes from "./routes/userRoutes.js";
 
 const app = express();
+
 app.set('trust proxy', 1);
 
 app.use(cors({
@@ -17,7 +17,6 @@ app.use(cors({
 
 app.use(helmet());
 app.use(express.json());
-app.use(xss()); 
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
