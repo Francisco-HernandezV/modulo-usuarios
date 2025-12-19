@@ -12,16 +12,14 @@ const port = parseInt(process.env.SMTP_PORT || "587", 10);
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: port,
-  secure: port === 465, // True para 465, false para otros puertos
+  secure: port === 465,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
   },
-  // Agregamos un timeout para que no se quede colgado eternamente
   connectionTimeout: 10000, 
 });
 
-// Verificar conexión al iniciar (esto nos dirá si Brevo nos rechaza de entrada)
 transporter.verify(function (error, success) {
   if (error) {
     console.error("❌ Error de conexión SMTP al inicio:", error);
@@ -37,12 +35,9 @@ export async function sendVerificationEmail(to, name, token) {
     <p>Haz clic en el siguiente enlace para activar tu cuenta (válido por 24 horas):</p>
     <a href="${link}" target="_blank">Activar cuenta</a>
   `;
-
   console.log(`📨 Intentando enviar correo a: ${to}`);
-  
   try {
     const info = await transporter.sendMail({
-      // 👇 AQUÍ ES EL CAMBIO: Reemplaza la línea anterior con esta:
       from: `"Módulo Usuarios" <usielhernandez.202318@gmail.com>`,
       to,
       subject: "Activa tu cuenta",
@@ -61,21 +56,19 @@ export async function sendResetEmail(to, name, token) {
       <h2 style="color: #0d47a1;">Recuperación de Contraseña</h2>
       <p>Hola ${name || "Usuario"},</p>
       <p>Usa el siguiente código para restablecer tu contraseña:</p>
-      
       <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0; border: 1px dashed #999;">
         ${token}
       </div>
-
       <p>Copia este código y pégalo en la pantalla de recuperación.</p>
       <p style="font-size: 12px; color: #888;">Este código expira en 1 hora.</p>
     </div>
   `;
-
   console.log(`📨 Enviando código ${token} a: ${to}`);
-
   try {
     const info = await transporter.sendMail({
-      from: `"Soporte Seguridad" <${process.env.SMTP_USER}>`,
+      // 👇 CORRECCIÓN AQUÍ: Antes usabas process.env.SMTP_USER (que es el ID de Brevo).
+      // Ahora usamos tu correo real para que Brevo lo acepte.
+      from: `"Soporte Seguridad" <usielhernandez.202318@gmail.com>`,
       to,
       subject: "Tu código de recuperación",
       html
