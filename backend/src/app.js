@@ -1,28 +1,23 @@
-import "dotenv/config"; // 👈 IMPORTANTE: Esto va en la línea 1
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-// import dotenv from "dotenv"; // Ya no lo necesitamos aquí abajo
+import helmet from "helmet"; 
+import xss from "xss-clean"; 
 import userRoutes from "./routes/userRoutes.js";
-import googleRoutes from "./routes/googleRoutes.js";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-
-// dotenv.config(); // Lo movimos arriba del todo
 
 const app = express();
 
-// 🔹 Configuración de Proxy (Vital para Render)
 app.set('trust proxy', 1);
 
-// 🔹 Configuración CORS permisiva para depuración
 app.use(cors({
-  origin: true, // Acepta automáticamente el origen que hace la petición
+  origin: true, 
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
-// app.use(helmet());
+app.use(helmet());
 app.use(express.json());
+app.use(xss());
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -33,7 +28,6 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 app.use("/api/users", userRoutes);
-app.use("/api/auth", googleRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () =>

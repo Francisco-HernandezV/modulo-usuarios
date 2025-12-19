@@ -1,18 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
-import { GoogleLogin } from "@react-oauth/google";
 import "../styles/theme.css";
 
 function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
-  // Estado para el ojito
   const [showPassword, setShowPassword] = useState(false);
-
-  // Solo estado para errores, ya no para éxito
   const [mensaje, setMensaje] = useState(""); 
   const [errores, setErrores] = useState({});
 
@@ -23,15 +18,8 @@ function Login() {
     
     try {
       const response = await api.post("/users/login", { email, password });
-      
-      // 👇 PASO CRÍTICO 1: GUARDAR EL TOKEN
-      // Si no hacemos esto, la ProtectedRoute del Home no nos dejará entrar
       localStorage.setItem("token", response.data.token);
-
-      // 👇 PASO CRÍTICO 2: REDIRECCIÓN INMEDIATA
-      // Sin mensajes, sin espera (setTimeout eliminado)
       navigate("/Home"); 
-
     } catch (error) {
       if (error.response?.data?.errors) {
         const erroresBackend = {};
@@ -44,26 +32,6 @@ function Login() {
         setMensaje(error.response?.data?.message || "❌ Error al iniciar sesión");
       }
     }
-  };
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      const token = credentialResponse.credential;
-      const res = await api.post("/auth/google", { token });
-      
-      // También guardamos el token si entra con Google
-      localStorage.setItem("token", res.data.token);
-      
-      // Redirección inmediata
-      navigate("/Home");
-    } catch (error) {
-      console.error(error);
-      setMensaje("Error al iniciar sesión con Google");
-    }
-  };
-
-  const handleGoogleError = () => {
-    setMensaje("Error al conectar con Google");
   };
   
   const handleInputChange = (setter, fieldName, e) => {
@@ -93,7 +61,6 @@ function Login() {
           )}
         </div>
 
-        {/* CONTRASEÑA CON OJITO */}
         <div style={{ marginBottom: "15px", position: "relative" }}>
           <input
             type={showPassword ? "text" : "password"} 
@@ -107,16 +74,8 @@ function Login() {
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             style={{
-              position: "absolute",
-              right: "10px",
-              top: "22px", 
-              transform: "translateY(-50%)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              width: "auto",
-              color: "#888" 
+              position: "absolute", right: "10px", top: "22px", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer", padding: 0, width: "auto", color: "#888" 
             }}
           >
             {showPassword ? (
@@ -136,14 +95,10 @@ function Login() {
         <button type="submit">Iniciar sesión</button>
       </form>
 
-      <div className="divider" style={{margin: "20px 0"}}>o</div>
-
-      <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+      {/* Se eliminó el DIVIDER y el botón de GOOGLE */}
 
       {mensaje && !mensaje.includes("exitoso") && (
-        <p className="mensaje-error">
-          {mensaje}
-        </p>
+        <p className="mensaje-error">{mensaje}</p>
       )}
 
       <div className="links">
