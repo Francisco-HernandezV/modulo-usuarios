@@ -12,7 +12,7 @@ import {
 } from "../controllers/userController.js";
 import { registerValidator, loginValidator, recoverValidator, resetPasswordValidator } from "../middlewares/validators.js";
 import { loginLimiter, recoverLimiter } from "../middlewares/rateLimiter.js";
-import { verifyToken } from "../middleware/authMiddleware.js";
+import { verifyToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
