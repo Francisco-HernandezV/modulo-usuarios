@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import "./Home.css";
 import { products } from "../assets/products";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api"; // 👈 Importamos API para revocar sesión
+import api from "../services/api"; 
 
 const SearchIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -13,19 +13,20 @@ const CartIcon = () => (
 const UserIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
 );
-// 👇 Nuevo Icono de Salir
 const LogoutIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
 );
 
 function Home() {
   const navigate = useNavigate();
+
+  // 1. VERIFICAR SESIÓN AL ENTRAR
   useEffect(() => {
     const verifySession = async () => {
       try {
         await api.get("/users/verify");
       } catch (error) {
-        console.log("Sesión revocada desde otro dispositivo");
+        console.log("Sesión revocada o inválida");
         localStorage.removeItem("token");
         navigate("/login");
       }
@@ -33,19 +34,40 @@ function Home() {
     verifySession();
   }, [navigate]);
 
+  // 2. 👇 ESTA ES LA FUNCIÓN QUE TE FALTABA
+  const handleLogout = async () => {
+    try {
+      await api.post("/users/logout");
+    } catch (error) {
+      console.error("Error al cerrar sesión", error);
+    } finally {
+      localStorage.removeItem("token");
+      navigate("/login");
+    }
+  };
+
+  const verProducto = (id) => {
+    navigate(`/producto/${id}`);
+  };
+
   return (
     <div className="home-container">
       <header className="header">
         <div className="logo">DANTELEMENT</div>
+
         <div className="search-wrapper">
           <input type="text" className="search-input" placeholder="Buscar..." />
           <button className="search-btn"><SearchIcon /></button>
         </div>
+
         <div className="actions">
           <span className="icon-link"><UserIcon /></span>
+          
+          {/* Este botón llamaba a handleLogout, pero no existía. ¡Ahora sí existe! */}
           <button onClick={handleLogout} className="logout-btn-home" title="Cerrar Sesión">
             <LogoutIcon />
           </button>
+
           <div className="cart-container">
             <span className="icon-link"><CartIcon /></span>
             <span className="cart-badge">2</span>
@@ -70,6 +92,7 @@ function Home() {
 
       <main className="main-content">
         <h2 className="section-title">Últimos Lanzamientos</h2>
+        
         <section className="product-grid">
           {products.map((p) => (
             <div key={p.id} className="product-card" onClick={() => verProducto(p.id)}>

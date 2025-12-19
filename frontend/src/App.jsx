@@ -8,35 +8,28 @@ import Home from "./pages/Home";
 import ProductDetails from "./pages/ProductDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Componente para manejar inactividad dentro del Router
 function InactivityHandler() {
   const navigate = useNavigate();
-  // 15 minutos en milisegundos
   const INACTIVITY_LIMIT = 15 * 60 * 1000; 
 
   useEffect(() => {
     let timeout;
 
-    // 👇 ESTA ES LA FUNCIÓN CORRECTA (se llama logoutUser)
     const logoutUser = () => {
       if (localStorage.getItem("token")) {
         console.log("Sesión expirada por inactividad");
         localStorage.removeItem("token");
         navigate("/login");
-        window.location.reload(); // Recarga para asegurar limpieza
+        window.location.reload();
       }
     };
 
     const resetTimer = () => {
-      // Si hay token, reiniciamos contador
       if (localStorage.getItem("token")) {
         clearTimeout(timeout);
-        // 👇 AQUÍ ESTABA EL ERROR: Antes decía handleLogout, debe decir logoutUser
         timeout = setTimeout(logoutUser, INACTIVITY_LIMIT);
       }
     };
-
-    // Eventos
     window.addEventListener("mousemove", resetTimer);
     window.addEventListener("keypress", resetTimer);
     window.addEventListener("click", resetTimer);
