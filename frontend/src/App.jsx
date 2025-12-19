@@ -11,38 +11,39 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // Componente para manejar inactividad dentro del Router
 function InactivityHandler() {
   const navigate = useNavigate();
-  const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutos
+  // 15 minutos en milisegundos
+  const INACTIVITY_LIMIT = 15 * 60 * 1000; 
 
   useEffect(() => {
     let timeout;
 
-    // Función para cerrar sesión por inactividad
+    // 👇 ESTA ES LA FUNCIÓN CORRECTA (se llama logoutUser)
     const logoutUser = () => {
       if (localStorage.getItem("token")) {
         console.log("Sesión expirada por inactividad");
-        localStorage.removeItem("token"); // Borrar token
-        navigate("/login"); // Redirigir al login
+        localStorage.removeItem("token");
+        navigate("/login");
+        window.location.reload(); // Recarga para asegurar limpieza
       }
     };
 
     const resetTimer = () => {
-      // Si hay token (usuario logueado), reiniciamos el contador
+      // Si hay token, reiniciamos contador
       if (localStorage.getItem("token")) {
         clearTimeout(timeout);
+        // 👇 AQUÍ ESTABA EL ERROR: Antes decía handleLogout, debe decir logoutUser
         timeout = setTimeout(logoutUser, INACTIVITY_LIMIT);
       }
     };
 
-    // Escuchar eventos de actividad
+    // Eventos
     window.addEventListener("mousemove", resetTimer);
     window.addEventListener("keypress", resetTimer);
     window.addEventListener("click", resetTimer);
     window.addEventListener("scroll", resetTimer);
 
-    // Iniciar el temporizador al cargar
     resetTimer();
 
-    // Limpieza al desmontar
     return () => {
       clearTimeout(timeout);
       window.removeEventListener("mousemove", resetTimer);
@@ -52,13 +53,13 @@ function InactivityHandler() {
     };
   }, [navigate]);
 
-  return null; // Este componente es invisible
+  return null;
 }
 
 function App() {
   return (
     <BrowserRouter>
-      {/* El manejador de inactividad debe estar dentro del Router */}
+      {/* El manejador de inactividad debe estar AQUÍ dentro */}
       <InactivityHandler />
       
       <Routes>
