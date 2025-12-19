@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "./Home.css";
 import { products } from "../assets/products";
 import { useNavigate } from "react-router-dom";
@@ -20,23 +20,18 @@ const LogoutIcon = () => (
 
 function Home() {
   const navigate = useNavigate();
-
-  const verProducto = (id) => {
-    navigate(`/producto/${id}`);
-  };
-
-  // 👇 Función para cerrar sesión correctamente
-  const handleLogout = async () => {
-    try {
-      // 1. Avisamos al backend para que invalide el token (Revocación de sesión)
-      await api.post("/users/logout");
-    } catch (error) {
-      console.error("Error cerrando sesión:", error);
-    } finally {
-      localStorage.removeItem("token");
-      navigate("/login");
-    }
-  };
+  useEffect(() => {
+    const verifySession = async () => {
+      try {
+        await api.get("/users/verify");
+      } catch (error) {
+        console.log("Sesión revocada desde otro dispositivo");
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
+    };
+    verifySession();
+  }, [navigate]);
 
   return (
     <div className="home-container">

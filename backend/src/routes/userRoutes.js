@@ -25,4 +25,5 @@ router.post("/recover/send-email", recoverLimiter, requestPasswordReset);
 router.post("/recover/validate-token", recoverLimiter, validateResetToken);
 router.post("/recover/reset", resetPasswordValidator, resetPassword);
 router.post("/logout", verifyToken, logoutUsuario);
+router.get("/verify", verifyToken, (req, res) => res.sendStatus(200));
 export default router;
