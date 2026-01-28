@@ -12,6 +12,7 @@ function UserProfile() {
   const [mensaje, setMensaje] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // Cargar datos
   useEffect(() => {
     const fetchProfile = async () => {
       try {

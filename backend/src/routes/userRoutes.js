@@ -8,7 +8,9 @@ import {
   requestPasswordReset,
   validateResetToken,
   resetPassword,
-  logoutUsuario
+  logoutUsuario,
+  getProfile,    // <--- ¡FALTABA ESTO!
+  updateProfile  // <--- ¡Y ESTO!
 } from "../controllers/userController.js";
 import { registerValidator, loginValidator, recoverValidator, resetPasswordValidator } from "../middlewares/validators.js";
 import { loginLimiter, recoverLimiter } from "../middlewares/rateLimiter.js";
@@ -26,6 +28,9 @@ router.post("/recover/validate-token", recoverLimiter, validateResetToken);
 router.post("/recover/reset", resetPasswordValidator, resetPassword);
 router.post("/logout", verifyToken, logoutUsuario);
 router.get("/verify", verifyToken, (req, res) => res.sendStatus(200));
+
+// Rutas de Perfil
 router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, updateProfile);
+
 export default router;
