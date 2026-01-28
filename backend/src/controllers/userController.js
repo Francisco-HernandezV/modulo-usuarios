@@ -311,9 +311,7 @@ export const getProfile = async (req, res) => {
 };
 export const updateProfile = async (req, res) => {
   try {
-    const { nombre, email } = req.body;
-
-    // Actualizamos nombre y email. 
+    const { nombre, email } = req.body; 
     await pool.query("UPDATE usuarios SET nombre = $1, email = $2 WHERE id = $3", [nombre, email, req.user.id]);
     
     res.json({ message: "Perfil actualizado correctamente" });

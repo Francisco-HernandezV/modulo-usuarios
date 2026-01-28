@@ -2,18 +2,16 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { products } from "../assets/products"; // Importamos tus productos
-import "../styles/theme.css";
+import { products } from "../assets/products";
+import "./Home.css"; // <--- AQUÍ ESTÁ EL CAMBIO CLAVE
 
 function Home() {
   const navigate = useNavigate();
 
   return (
     <>
-      {/* 1. NAVBAR CON EL DROPDOWN DE USUARIO */}
       <Navbar />
 
-      {/* 2. HERO SECTION (Igual a tu HTML) */}
       <section className="hero">
         <div className="hero-overlay"></div>
         <div className="hero-content">
@@ -22,9 +20,8 @@ function Home() {
           <a href="#catalogo" className="cta-button">Ver Colección</a>
         </div>
       </section>
-      
+
       <main className="main-content" id="catalogo">
-        
         <div className="section-header">
           <h2 className="section-title">Últimos Lanzamientos</h2>
           <span className="view-all" style={{cursor: "pointer"}}>Ver todo &rarr;</span>
@@ -35,8 +32,7 @@ function Home() {
             <div 
               key={p.id} 
               className="product-card" 
-              onClick={() => navigate(`/producto/${p.id}`)} // Al hacer clic, lleva al detalle
-              style={{ cursor: "pointer" }}
+              onClick={() => navigate(`/producto/${p.id}`)} 
             >
               <div className="image-wrapper">
                 <img src={p.imagen} alt={p.nombre} />
@@ -45,7 +41,6 @@ function Home() {
 
               <div className="card-info">
                 <h3>{p.nombre}</h3>
-                {/* Cortamos la descripción para que no rompa el diseño */}
                 <p className="short-desc">
                   {p.descripcion ? p.descripcion.substring(0, 25) + "..." : "Edición limitada."}
                 </p>
@@ -55,8 +50,8 @@ function Home() {
                   <button 
                     className="add-btn"
                     onClick={(e) => {
-                      e.stopPropagation(); // Evita que se abra el detalle al dar clic en "Añadir"
-                      alert("Añadido al carrito (Demo)");
+                      e.stopPropagation();
+                      alert("Añadido al carrito");
                     }}
                   >
                     Añadir
@@ -67,6 +62,7 @@ function Home() {
           ))}
         </section>
       </main>
+
       <Footer />
     </>
   );

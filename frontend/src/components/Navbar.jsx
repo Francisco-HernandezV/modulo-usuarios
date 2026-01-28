@@ -70,7 +70,7 @@ function Navbar() {
                 )}
               </div>
             )}
-          </div>
+          </div>  
 
           <div className="cart-container icon-link">
             <CartIcon />
