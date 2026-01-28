@@ -15,8 +15,7 @@
 }
 
 .hero-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.6);
 }
 
@@ -32,7 +31,7 @@
   text-transform: uppercase;
   letter-spacing: 3px;
   text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  font-family: var(--font-logo); /* Usa la fuente definida en theme.css */
+  font-family: "Montserrat", sans-serif;
   color: white;
 }
 
@@ -43,9 +42,8 @@
   margin-bottom: 25px;
 }
 
-/* BOTÓN CTA (Ver Colección) */
 .cta-button {
-  background-color: var(--color-accent);
+  background-color: #3b82f6;
   color: white;
   padding: 12px 30px;
   border-radius: 50px;
@@ -59,7 +57,7 @@
 }
 
 .cta-button:hover {
-  background-color: var(--color-accent-hover);
+  background-color: #2563eb;
   transform: translateY(-2px);
 }
 
@@ -78,113 +76,100 @@
 
 .section-title {
   font-size: 1.5rem;
-  border-left: 4px solid var(--color-accent);
+  border-left: 4px solid #3b82f6;
   padding-left: 15px;
   margin: 0;
   color: white;
 }
 
 .view-all {
-  color: var(--text-muted);
+  color: #8b949e;
   font-size: 0.9rem;
   cursor: pointer;
   transition: color 0.3s;
 }
-.view-all:hover { color: var(--color-accent); }
+.view-all:hover { color: #3b82f6; }
 
 .product-grid {
   display: grid;
-  /* 4 columnas exactas como en tu diseño */
-  grid-template-columns: repeat(4, 1fr); 
+  grid-template-columns: repeat(4, 1fr);
   gap: 30px;
   margin-bottom: 60px;
 }
 
-/* --- CARD DESIGN (Tu diseño original) --- */
+/* --- TARJETA DE PRODUCTO (Estilo HTML Original) --- */
 .product-card {
-  background: var(--bg-card);
+  /* Forzamos el fondo oscuro para que el texto blanco resalte */
+  background-color: #161b22 !important; 
+  border: 1px solid #30363d;
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.3s, box-shadow 0.3s;
-  border: 1px solid var(--border-color);
   display: flex;
-  flex-direction: column; /* Vertical */
+  flex-direction: column;
   cursor: pointer;
+  transition: transform 0.3s, border-color 0.3s;
   height: 100%;
 }
 
 .product-card:hover {
   transform: translateY(-5px);
+  border-color: #3b82f6;
   box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-  border-color: var(--color-accent);
 }
 
-/* IMAGEN (Cuadrada y fondo blanco) */
+/* Imagen cuadrada con fondo blanco */
 .image-wrapper {
   position: relative;
   width: 100%;
   padding-top: 100%; /* Ratio 1:1 */
-  background: #ffffff; 
+  background-color: #ffffff; /* Fondo blanco */
   overflow: hidden;
 }
 
 .image-wrapper img {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Ajuste perfecto */
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
   padding: 15px;
   box-sizing: border-box;
   transition: transform 0.5s;
 }
 
-.product-card:hover img {
-  transform: scale(1.08);
-}
+.product-card:hover img { transform: scale(1.08); }
 
-/* ETIQUETAS */
 .tag-new {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: var(--color-accent);
-  color: lch(0% 0 0);
-  padding: 4px 10px;
-  font-size: 10px;
-  font-weight: bold;
-  border-radius: 20px;
-  text-transform: uppercase;
+  position: absolute; top: 10px; left: 10px;
+  background-color: #3b82f6; color: white;
+  padding: 4px 10px; font-size: 10px; font-weight: bold;
+  border-radius: 20px; text-transform: uppercase;
   z-index: 10;
 }
 
-/* INFORMACIÓN */
+/* Información */
 .card-info {
-  padding: 15px 20px 20px 20px;
+  padding: 15px 20px;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  text-align: left;
 }
 
 .card-info h3 {
   font-size: 1rem;
   margin: 0 0 5px 0;
-  color: var(--text-main);
+  color: #ffffff !important; /* Texto blanco forzado */
   font-weight: 600;
-  text-align: left;
 }
 
 .short-desc {
   margin: 0 0 15px 0;
   font-size: 0.85rem;
-  color: var(--text-muted);
-  text-align: left;
+  color: #8b949e;
 }
 
-/* FOOTER DE TARJETA */
 .card-footer {
-  margin-top: auto; 
+  margin-top: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -193,41 +178,48 @@
 .price {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--text-main);
+  color: #ffffff !important;
 }
 
-/* BOTÓN AÑADIR (Tu estilo original: Transparente -> Azul) */
+/* --- BOTÓN AÑADIR (CORREGIDO) --- */
 .add-btn {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
+  background: transparent;       /* Fondo transparente por defecto */
+  border: 1px solid #3b82f6;     /* Borde Azul para que se vea */
+  color: #ffffff;                /* Texto blanco */
   padding: 6px 16px;
   border-radius: 6px;
   font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-  text-transform: uppercase;
   font-weight: 600;
-  width: auto;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-transform: uppercase;
+  min-width: 80px;               /* Ancho mínimo para que quepa el texto */
+  text-align: center;
+  display: inline-block;
 }
 
+/* Efecto Hover del Botón: Se rellena de azul */
 .product-card:hover .add-btn {
-  background: var(--color-accent);
-  color: rgb(0, 0, 0);
-  border-color: var(--color-accent);
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+/* Estilo para cuando pasas el mouse directo sobre el botón */
+.add-btn:hover {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  transform: scale(1.05);
 }
 
 /* RESPONSIVE */
 @media (max-width: 1024px) {
   .product-grid { grid-template-columns: repeat(3, 1fr); }
 }
-
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-content h1 { font-size: 2.5rem; }
 }
-
-@media (max-width: 600px) {
+@media (max-width: 480px) {
   .product-grid { grid-template-columns: 1fr; }
-  .hero-content h1 { font-size: 2rem; }
 }
