@@ -95,8 +95,6 @@ function Login() {
         <button type="submit">Iniciar sesión</button>
       </form>
 
-      {/* Se eliminó el DIVIDER y el botón de GOOGLE */}
-
       {mensaje && !mensaje.includes("exitoso") && (
         <p className="mensaje-error">{mensaje}</p>
       )}

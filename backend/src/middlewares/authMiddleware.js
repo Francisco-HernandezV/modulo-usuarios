@@ -8,9 +8,13 @@ export const verifyToken = async (req, res, next) => {
   if (!token) return res.status(401).json({ message: "Acceso denegado. No hay token." });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "secreto_super_seguro");
-    const [users] = await pool.query("SELECT token_version FROM usuarios WHERE id = ?", [decoded.id]);
-    if (users.length === 0) return res.status(401).json({ message: "Usuario no encontrado." });
-    const user = users[0];
+    
+    // Postgres: $1 y result.rows
+    const result = await pool.query("SELECT token_version FROM usuarios WHERE id = $1", [decoded.id]);
+    
+    if (result.rows.length === 0) return res.status(401).json({ message: "Usuario no encontrado." });
+    
+    const user = result.rows[0];
     if (decoded.token_version !== user.token_version) {
         return res.status(401).json({ message: "Sesión revocada. Inicia sesión nuevamente." });
     }

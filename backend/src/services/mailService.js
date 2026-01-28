@@ -1,6 +1,5 @@
 import nodemailer from "nodemailer";
 
-// Debug: Verificar si las variables existen (sin revelar la contraseña real)
 console.log("🔧 Configurando transporte de correo...");
 console.log(`Host: ${process.env.SMTP_HOST}`);
 console.log(`Port: ${process.env.SMTP_PORT}`);
@@ -66,8 +65,6 @@ export async function sendResetEmail(to, name, token) {
   console.log(`📨 Enviando código ${token} a: ${to}`);
   try {
     const info = await transporter.sendMail({
-      // 👇 CORRECCIÓN AQUÍ: Antes usabas process.env.SMTP_USER (que es el ID de Brevo).
-      // Ahora usamos tu correo real para que Brevo lo acepte.
       from: `"Soporte Seguridad" <usielhernandez.202318@gmail.com>`,
       to,
       subject: "Tu código de recuperación",

@@ -28,10 +28,12 @@ export const registrarUsuario = async (req, res) => {
     const token = generateToken(32);
     const tokenExp = nowPlusHours(VERIF_EXP_HOURS);
 
+    // POSTGRES: Usamos RETURNING id para saber qué ID se creó (opcional) y $1, $2...
     await pool.query(
-      "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion, token_activacion_exp, cuenta_activa) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
+      "INSERT INTO usuarios (nombre, email, password, pregunta_secreta, respuesta_secreta, token_activacion, token_activacion_exp, cuenta_activa) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)",
       [nombre, email, hashedPassword, pregunta_secreta, hashedRespuesta, token, tokenExp]
     );
+
     try {
       await sendVerificationEmail(email, nombre, token);
     } catch (mailErr) {
@@ -41,7 +43,7 @@ export const registrarUsuario = async (req, res) => {
     return res.status(201).json({ message: "Si la cuenta fue creada, recibirás un correo con instrucciones para activar." });
 
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === '23505') { // Código de error de Postgres para "Unique Violation" (Email duplicado)
         return res.status(400).json({ message: "Datos inválidos o usuario ya existente" }); 
     }
     console.error("Error registrarUsuario:", error);
@@ -53,17 +55,21 @@ export const activarCuenta = async (req, res) => {
   try {
     const { token } = req.params;
     if (!token) return res.status(400).json({ message: "Token inválido" });
-    const [results] = await pool.query(
-      "SELECT id, token_activacion_exp FROM usuarios WHERE token_activacion = ?",
+    
+    const result = await pool.query(
+      "SELECT id, token_activacion_exp FROM usuarios WHERE token_activacion = $1",
       [token]
     );
-    if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
-    const row = results[0];
+
+    if (result.rows.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
+    const row = result.rows[0];
+
     if (!row.token_activacion_exp || new Date(row.token_activacion_exp) < new Date()) {
       return res.status(400).json({ message: "Token inválido o expirado" });
     }
+
     await pool.query(
-      "UPDATE usuarios SET cuenta_activa = 1, token_activacion = NULL, token_activacion_exp = NULL WHERE id = ?",
+      "UPDATE usuarios SET cuenta_activa = TRUE, token_activacion = NULL, token_activacion_exp = NULL WHERE id = $1",
       [row.id]
     );
     return res.json({ message: "Cuenta activada correctamente. Ya puedes iniciar sesión." });
@@ -77,23 +83,24 @@ export const loginUsuario = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // 1. Buscamos usuario
-    const [results] = await pool.query(
-      "SELECT id, password, cuenta_activa, login_attempts, lock_until, token_version FROM usuarios WHERE email = ?", 
+    const result = await pool.query(
+      "SELECT id, password, cuenta_activa, login_attempts, lock_until, token_version FROM usuarios WHERE email = $1", 
       [email]
     );
 
-    if (results.length === 0) {
+    if (result.rows.length === 0) {
       await bcrypt.hash("dummy", BCRYPT_ROUNDS);
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
-    const user = results[0]
+    const user = result.rows[0];
+
     if (user.lock_until && new Date(user.lock_until) > new Date()) {
       return res.status(423).json({ message: "Cuenta bloqueada temporalmente por intentos fallidos. Intenta en 15 minutos." });
     }
     if (!user.cuenta_activa) {
       return res.status(403).json({ message: "Cuenta inactiva. Revisa tu correo." });
     }
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       const attempts = (user.login_attempts || 0) + 1;
@@ -101,10 +108,12 @@ export const loginUsuario = async (req, res) => {
       if (attempts >= LOGIN_MAX) {
          lockUntil = nowPlusMinutes(LOGIN_LOCK_MIN);
       }
-      await pool.query("UPDATE usuarios SET login_attempts = ?, lock_until = ? WHERE id = ?", [attempts, lockUntil, user.id]);
+      await pool.query("UPDATE usuarios SET login_attempts = $1, lock_until = $2 WHERE id = $3", [attempts, lockUntil, user.id]);
       return res.status(401).json({ message: `Credenciales inválidas. Intento ${attempts} de ${LOGIN_MAX}` });
     }
-    await pool.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = ?", [user.id]);
+
+    await pool.query("UPDATE usuarios SET login_attempts = 0, lock_until = NULL WHERE id = $1", [user.id]);
+    
     const tokenPayload = {
         id: user.id,
         email: email,
@@ -113,6 +122,7 @@ export const loginUsuario = async (req, res) => {
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || "secreto_super_seguro", { 
         expiresIn: "8h"
     });
+
     return res.json({ 
         message: "Login exitoso", 
         token, 
@@ -126,7 +136,7 @@ export const loginUsuario = async (req, res) => {
 
 export const logoutUsuario = async (req, res) => {
     try {
-        await pool.query("UPDATE usuarios SET token_version = token_version + 1 WHERE id = ?", [req.user.id]);
+        await pool.query("UPDATE usuarios SET token_version = token_version + 1 WHERE id = $1", [req.user.id]);
         return res.json({ message: "Sesión cerrada y tokens invalidados." });
     } catch (error) {
         console.error(error);
@@ -139,15 +149,15 @@ export const obtenerPregunta = async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email requerido" });
 
-    const [results] = await pool.query("SELECT id, pregunta_secreta FROM usuarios WHERE email = ?", [email]);
+    const result = await pool.query("SELECT id, pregunta_secreta FROM usuarios WHERE email = $1", [email]);
 
-    if (results.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: "Correo no encontrado" });
     }
 
     return res.json({ 
       message: "Usuario encontrado", 
-      pregunta: results[0].pregunta_secreta 
+      pregunta: result.rows[0].pregunta_secreta 
     });
 
   } catch (error) {
@@ -160,13 +170,13 @@ export const validarRespuestaSecreta = async (req, res) => {
   try {
     const { email, respuesta } = req.body;
     
-    const [results] = await pool.query(
-      "SELECT id, respuesta_secreta, recovery_lock_until FROM usuarios WHERE email = ?", 
+    const result = await pool.query(
+      "SELECT id, respuesta_secreta, recovery_lock_until FROM usuarios WHERE email = $1", 
       [email]
     );
 
-    if (results.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
-    const user = results[0];
+    if (result.rows.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
+    const user = result.rows[0];
 
     if (user.recovery_lock_until && new Date(user.recovery_lock_until) > new Date()) {
       return res.status(429).json({ message: "Demasiados intentos. Intenta más tarde." });
@@ -183,7 +193,7 @@ export const validarRespuestaSecreta = async (req, res) => {
     const expiry = nowPlusHours(RESET_EXP_HOURS);
 
     await pool.query(
-      "UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ? WHERE id = ?", 
+      "UPDATE usuarios SET reset_token_hash = $1, reset_token_exp = $2 WHERE id = $3", 
       [tokenHash, expiry, user.id]
     );
 
@@ -198,16 +208,20 @@ export const validarRespuestaSecreta = async (req, res) => {
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
-    const [results] = await pool.query("SELECT id, nombre, recovery_lock_until FROM usuarios WHERE email = ?", [email]);
-    if (results.length === 0) return res.json({ message: "Si el correo existe, se enviaron instrucciones." });
-    const user = results[0];
+    const result = await pool.query("SELECT id, nombre, recovery_lock_until FROM usuarios WHERE email = $1", [email]);
+    
+    if (result.rows.length === 0) return res.json({ message: "Si el correo existe, se enviaron instrucciones." });
+    const user = result.rows[0];
+
     const token = crypto.randomInt(100000, 999999).toString();
     const tokenHash = hashToken(token);
     const expiry = nowPlusHours(RESET_EXP_HOURS);
+
     await pool.query(
-      "UPDATE usuarios SET reset_token_hash = ?, reset_token_exp = ? WHERE id = ?", 
+      "UPDATE usuarios SET reset_token_hash = $1, reset_token_exp = $2 WHERE id = $3", 
       [tokenHash, expiry, user.id]
     );
+
     try {
       await sendResetEmail(email, user.nombre || "Usuario", token);
     } catch (mailErr) {
@@ -227,14 +241,14 @@ export const validateResetToken = async (req, res) => {
     
     const tokenHash = hashToken(token);
 
-    const [results] = await pool.query(
-      "SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", 
+    const result = await pool.query(
+      "SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = $1", 
       [tokenHash]
     );
 
-    if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
+    if (result.rows.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
     
-    const row = results[0];
+    const row = result.rows[0];
     if (!row.reset_token_exp || new Date(row.reset_token_exp) < new Date()) {
       return res.status(400).json({ message: "Token inválido o expirado" });
     }
@@ -258,14 +272,14 @@ export const resetPassword = async (req, res) => {
 
     const tokenHash = hashToken(token);
     
-    const [results] = await pool.query(
-      "SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = ?", 
+    const result = await pool.query(
+      "SELECT id, reset_token_exp FROM usuarios WHERE reset_token_hash = $1", 
       [tokenHash]
     );
 
-    if (results.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
+    if (result.rows.length === 0) return res.status(400).json({ message: "Token inválido o expirado" });
     
-    const row = results[0];
+    const row = result.rows[0];
     if (!row.reset_token_exp || new Date(row.reset_token_exp) < new Date()) {
       return res.status(400).json({ message: "Token inválido o expirado" });
     }
@@ -273,7 +287,7 @@ export const resetPassword = async (req, res) => {
     const hashed = await bcrypt.hash(nueva_password, BCRYPT_ROUNDS);
     
     await pool.query(
-      "UPDATE usuarios SET password = ?, reset_token_hash = NULL, reset_token_exp = NULL WHERE id = ?", 
+      "UPDATE usuarios SET password = $1, reset_token_hash = NULL, reset_token_exp = NULL WHERE id = $2", 
       [hashed, row.id]
     );
 
