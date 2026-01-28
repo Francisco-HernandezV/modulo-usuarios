@@ -79,6 +79,32 @@ export const activarCuenta = async (req, res) => {
   }
 };
 
+export const getProfile = async (req, res) => {
+  try {
+    const result = await pool.query("SELECT id, nombre, email FROM usuarios WHERE id = $1", [req.user.id]);
+    if (result.rows.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener perfil" });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { nombre, email } = req.body;
+    await pool.query("UPDATE usuarios SET nombre = $1, email = $2 WHERE id = $3", [nombre, email, req.user.id]);
+    
+    res.json({ message: "Perfil actualizado correctamente" });
+  } catch (error) {
+    if (error.code === '23505') {
+        return res.status(400).json({ message: "Ese correo ya está en uso por otro usuario." });
+    }
+    console.error(error);
+    res.status(500).json({ message: "Error al actualizar perfil" });
+  }
+};
+
 export const loginUsuario = async (req, res) => {
   try {
     const { email, password } = req.body;

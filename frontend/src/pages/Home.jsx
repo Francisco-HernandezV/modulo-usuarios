@@ -1,118 +1,74 @@
-import React, { useEffect } from "react";
-import "./Home.css";
-import { products } from "../assets/products";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api"; 
-
-const SearchIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-);
-const CartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-);
-const UserIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-);
-const LogoutIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-);
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import { products } from "../assets/products"; // Importamos tus productos
+import "../styles/theme.css";
 
 function Home() {
   const navigate = useNavigate();
 
-  // 1. VERIFICAR SESIÓN AL ENTRAR
-  useEffect(() => {
-    const verifySession = async () => {
-      try {
-        await api.get("/users/verify");
-      } catch (error) {
-        console.log("Sesión revocada o inválida");
-        localStorage.removeItem("token");
-        navigate("/login");
-      }
-    };
-    verifySession();
-  }, [navigate]);
-
-  // 2. 👇 ESTA ES LA FUNCIÓN QUE TE FALTABA
-  const handleLogout = async () => {
-    try {
-      await api.post("/users/logout");
-    } catch (error) {
-      console.error("Error al cerrar sesión", error);
-    } finally {
-      localStorage.removeItem("token");
-      navigate("/login");
-    }
-  };
-
-  const verProducto = (id) => {
-    navigate(`/producto/${id}`);
-  };
-
   return (
-    <div className="home-container">
-      <header className="header">
-        <div className="logo">DANTELEMENT</div>
+    <>
+      {/* 1. NAVBAR CON EL DROPDOWN DE USUARIO */}
+      <Navbar />
 
-        <div className="search-wrapper">
-          <input type="text" className="search-input" placeholder="Buscar..." />
-          <button className="search-btn"><SearchIcon /></button>
-        </div>
-
-        <div className="actions">
-          <span className="icon-link"><UserIcon /></span>
-          
-          {/* Este botón llamaba a handleLogout, pero no existía. ¡Ahora sí existe! */}
-          <button onClick={handleLogout} className="logout-btn-home" title="Cerrar Sesión">
-            <LogoutIcon />
-          </button>
-
-          <div className="cart-container">
-            <span className="icon-link"><CartIcon /></span>
-            <span className="cart-badge">2</span>
-          </div>
-        </div>
-      </header>
-
-      <nav className="nav-bar">
-        <a href="#" className="active">Todo</a>
-        <a href="#">Hoodies</a>
-        <a href="#">Pantalones</a>
-        <a href="#">Accesorios</a>
-        <a href="#" className="sale-link">OFERTAS</a>
-      </nav>
-
+      {/* 2. HERO SECTION (Igual a tu HTML) */}
       <section className="hero">
+        <div className="hero-overlay"></div>
         <div className="hero-content">
-          <h1>STREETWEAR EVOLUCIONADO</h1>
-          <p>La nueva colección invierno 2025 ya está disponible.</p>
+          <h1>ESTILO SIN LÍMITES</h1>
+          <p>Descubre la nueva colección de gorras y accesorios urbanos.</p>
+          <a href="#catalogo" className="cta-button">Ver Colección</a>
         </div>
       </section>
-
-      <main className="main-content">
-        <h2 className="section-title">Últimos Lanzamientos</h2>
+      
+      <main className="main-content" id="catalogo">
         
+        <div className="section-header">
+          <h2 className="section-title">Últimos Lanzamientos</h2>
+          <span className="view-all" style={{cursor: "pointer"}}>Ver todo &rarr;</span>
+        </div>
+
         <section className="product-grid">
           {products.map((p) => (
-            <div key={p.id} className="product-card" onClick={() => verProducto(p.id)}>
+            <div 
+              key={p.id} 
+              className="product-card" 
+              onClick={() => navigate(`/producto/${p.id}`)} // Al hacer clic, lleva al detalle
+              style={{ cursor: "pointer" }}
+            >
               <div className="image-wrapper">
                 <img src={p.imagen} alt={p.nombre} />
                 <span className="tag-new">Nuevo</span>
               </div>
-              
+
               <div className="card-info">
                 <h3>{p.nombre}</h3>
+                {/* Cortamos la descripción para que no rompa el diseño */}
+                <p className="short-desc">
+                  {p.descripcion ? p.descripcion.substring(0, 25) + "..." : "Edición limitada."}
+                </p>
+
                 <div className="card-footer">
                   <span className="price">${p.precio}</span>
-                  <button className="add-btn">Ver</button>
+                  <button 
+                    className="add-btn"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Evita que se abra el detalle al dar clic en "Añadir"
+                      alert("Añadido al carrito (Demo)");
+                    }}
+                  >
+                    Añadir
+                  </button>
                 </div>
               </div>
             </div>
           ))}
         </section>
       </main>
-    </div>
+      <Footer />
+    </>
   );
 }
 

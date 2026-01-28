@@ -26,4 +26,6 @@ router.post("/recover/validate-token", recoverLimiter, validateResetToken);
 router.post("/recover/reset", resetPasswordValidator, resetPassword);
 router.post("/logout", verifyToken, logoutUsuario);
 router.get("/verify", verifyToken, (req, res) => res.sendStatus(200));
+router.get("/profile", verifyToken, getProfile);
+router.put("/profile", verifyToken, updateProfile);
 export default router;
