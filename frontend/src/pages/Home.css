@@ -33,7 +33,7 @@
   letter-spacing: 3px;
   text-shadow: 0 4px 10px rgba(0,0,0,0.5);
   font-family: var(--font-logo); /* Usa la fuente definida en theme.css */
-  color: rgb(0, 0, 0);
+  color: white;
 }
 
 .hero-content p {
@@ -150,7 +150,7 @@
   top: 10px;
   left: 10px;
   background: var(--color-accent);
-  color: white;
+  color: lch(0% 0 0);
   padding: 4px 10px;
   font-size: 10px;
   font-weight: bold;
