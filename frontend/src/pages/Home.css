@@ -1,9 +1,10 @@
-/* Home.css - Estilos exclusivos para la página de Inicio */
+/* =========================================
+   Home.css - Diseño exacto del HTML original
+   ========================================= */
 
-/* --- HERO SECTION (Portada) --- */
+/* --- HERO SECTION --- */
 .hero {
   position: relative;
-  /* Imagen de fondo (puedes cambiar la URL por una local si prefieres) */
   background-image: url('https://images.unsplash.com/photo-1523398002811-999ca8dec234?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
   background-size: cover;
   background-position: center;
@@ -16,9 +17,8 @@
 }
 
 .hero-overlay {
-  position: absolute; 
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6); /* Oscurece la imagen para leer el texto */
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
 }
 
 .hero-content {
@@ -34,7 +34,7 @@
   letter-spacing: 3px;
   text-shadow: 0 4px 10px rgba(0,0,0,0.5);
   font-family: "Montserrat", sans-serif;
-  color: white;
+  color: #ffffff;
 }
 
 .hero-content p {
@@ -44,9 +44,8 @@
   margin-bottom: 25px;
 }
 
-/* Botón CTA (Call to Action) del Hero */
 .cta-button {
-  background-color: #3b82f6; /* Azul eléctrico */
+  background-color: #3b82f6;
   color: white;
   padding: 12px 30px;
   border-radius: 50px;
@@ -61,17 +60,16 @@
 }
 
 .cta-button:hover {
-  background-color: #2563eb; /* Azul más oscuro al pasar el mouse */
+  background-color: #2563eb;
   transform: translateY(-2px);
 }
 
-/* --- CONTENIDO PRINCIPAL --- */
+/* --- LAYOUT PRINCIPAL --- */
 .main-content {
   padding: 0 5% 60px 5%;
   flex: 1;
 }
 
-/* Encabezado de Sección (Título "Últimos Lanzamientos") */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -84,7 +82,7 @@
   border-left: 4px solid #3b82f6;
   padding-left: 15px;
   margin: 0;
-  color: white;
+  color: #ffffff;
 }
 
 .view-all {
@@ -95,128 +93,127 @@
 }
 .view-all:hover { color: #3b82f6; }
 
-/* --- GRID DE PRODUCTOS --- */
+/* GRID DE PRODUCTOS (4 Columnas) */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 columnas iguales */
+  grid-template-columns: repeat(4, 1fr);
   gap: 30px;
   margin-bottom: 60px;
 }
 
-/* TARJETA DE PRODUCTO */
+/* =========================================
+   DISEÑO DE TARJETA (ESTILO ORIGINAL HTML)
+   ========================================= */
 .product-card {
-  background-color: #161b22; /* Fondo oscuro */
-  border: 1px solid #30363d;
+  background-color: #161b22; /* Fondo oscuro de la tarjeta */
   border-radius: 12px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column; /* IMPORTANTE: Elementos verticales (Imagen arriba, texto abajo) */
-  cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
-  height: 100%; /* Para que todas las tarjetas tengan la misma altura */
+  border: 1px solid #30363d; /* Borde gris oscuro */
+  display: flex;
+  flex-direction: column; /* CRUCIAL: Apila imagen y texto verticalmente */
+  cursor: pointer;
+  height: 100%;
 }
 
 .product-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-  border-color: #3b82f6;
+  border-color: #3b82f6; /* Borde azul al pasar el mouse */
 }
 
-/* Contenedor de Imagen (Cuadrado Perfecto) */
+/* Contenedor de Imagen (Cuadrado y Fondo Blanco) */
 .image-wrapper {
   position: relative;
   width: 100%;
-  padding-top: 100%; /* Truco de CSS para mantener relación de aspecto 1:1 */
-  background-color: #ffffff; /* Fondo BLANCO para resaltar la ropa */
+  padding-top: 100%; /* Ratio 1:1 */
+  background-color: #ffffff; /* FONDO BLANCO para la imagen */
   overflow: hidden;
 }
 
 .image-wrapper img {
   position: absolute;
-  top: 0; left: 0; 
+  top: 0; left: 0;
   width: 100%; height: 100%;
-  object-fit: contain; /* La imagen se ajusta sin cortarse */
-  padding: 20px; /* Margen interno para que la ropa "respire" */
+  object-fit: contain;
+  padding: 15px; /* Espacio interno */
   box-sizing: border-box;
   transition: transform 0.5s;
 }
 
-.product-card:hover img { 
-  transform: scale(1.08); /* Efecto zoom suave */
+.product-card:hover img {
+  transform: scale(1.08);
 }
 
-/* Etiqueta "Nuevo" */
+/* Etiquetas */
 .tag-new {
-  position: absolute; 
+  position: absolute;
   top: 10px; left: 10px;
-  background-color: #3b82f6; 
-  color: white;
-  padding: 4px 10px; 
+  padding: 4px 10px;
   font-size: 10px; font-weight: bold;
-  border-radius: 20px; 
-  text-transform: uppercase;
+  border-radius: 20px; text-transform: uppercase;
   z-index: 10;
+  background-color: #3b82f6;
+  color: white;
 }
 
 /* Información de la Tarjeta */
 .card-info {
-  padding: 20px;
+  padding: 15px 20px 20px 20px;
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Empuja el footer hacia abajo si el texto es corto */
+  flex-grow: 1; /* Empuja el footer abajo */
   text-align: left;
 }
 
 .card-info h3 {
-  font-size: 1rem; 
-  margin: 0 0 8px 0; 
-  color: white; 
+  font-size: 1rem;
+  margin: 0 0 5px 0;
+  color: #ffffff; /* Texto blanco */
   font-weight: 600;
-  line-height: 1.4;
 }
 
 .short-desc {
-  margin: 0 0 15px 0; 
-  font-size: 0.85rem; 
-  color: #8b949e;
+  margin: 0 0 15px 0;
+  font-size: 0.85rem;
+  color: #8b949e; /* Texto gris */
 }
 
-/* Pie de Tarjeta (Precio y Botón) */
+/* Pie de Tarjeta */
 .card-footer {
-  margin-top: auto; 
-  display: flex; 
-  justify-content: space-between; 
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding-top: 10px;
 }
 
 .price {
-  font-size: 1.2rem; 
-  font-weight: 700; 
-  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-/* Botón Añadir (Azul Sólido) */
 .add-btn {
-  background-color: #3b82f6; 
-  border: none;
-  color: white;
-  padding: 8px 16px;
+  background: transparent; /* Fondo transparente inicial */
+  border: 1px solid #30363d; /* Borde gris inicial */
+  color: #ffffff; /* Texto blanco */
+  padding: 6px 16px;
   border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 12px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  font-family: inherit;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 600;
   width: auto;
 }
-
-.add-btn:hover {
-  background-color: #2563eb;
+.product-card:hover .add-btn {
+  background-color: #3b82f6; /* Fondo azul */
+  color: white;
+  border-color: #3b82f6; /* Borde azul */
 }
 
-/* --- RESPONSIVE --- */
+/* RESPONSIVE */
 @media (max-width: 1024px) {
   .product-grid { grid-template-columns: repeat(3, 1fr); }
 }
