@@ -8,21 +8,25 @@ import UserProfile from "./pages/UserProfile";
 import ProductDetails from "./pages/ProductDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Importamos las páginas de error
+import Error404 from "./pages/Error404";
+import Error500 from "./pages/Error500"; // Podrías usarlo en un catch global si quisieras
+import Error400 from "./pages/Error400";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* --- CORRECCIÓN AQUÍ --- */}
-        {/* Antes te mandaba al login. Ahora carga el HOME directamente */}
+        {/* Ruta Raíz */}
         <Route path="/" element={<Home />} />
         
-        {/* Rutas Públicas */}
+        {/* Auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/recover" element={<RecoverPassword />} />
         <Route path="/activar/:token" element={<AccountActivation />} />
         
-        {/* Rutas Protegidas (Solo accesibles si hay login) */}
+        {/* Protegidas */}
         <Route 
           path="/producto/:id" 
           element={
@@ -40,9 +44,13 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        
+        <Route path="*" element={<Error404 />} />
+        
+        {/* Rutas directas para probar (opcional) */}
+        <Route path="/error-500" element={<Error500 />} />
+        <Route path="/error-400" element={<Error400 />} />
 
-        {/* Cualquier ruta rara te manda al Home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
