@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "../styles/theme.css";
+import { useSearch } from "../context/SearchContext"; // <--- Importamos el hook
 
 // Iconos SVG
 const SearchIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
@@ -13,9 +14,19 @@ function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  
+  // --- LÓGICA DE BÚSQUEDA ---
+  const { searchTerm, setSearchTerm } = useSearch();
+
+  const handleSearchSubmit = (e) => {
+    // Si da Enter, lo mandamos al Home para ver resultados
+    if (e.key === 'Enter') {
+        navigate('/');
+    }
+  };
+  // --------------------------
 
   useEffect(() => {
-    // Verificar si existe token al cargar
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
   }, []);
@@ -29,7 +40,7 @@ function Navbar() {
       localStorage.removeItem("token");
       setIsLoggedIn(false);
       setShowDropdown(false);
-      navigate("/"); // Redirigir a Home
+      navigate("/");
       window.location.reload(); 
     }
   };
@@ -39,13 +50,22 @@ function Navbar() {
       <header className="header">
         <Link to="/" className="logo">DANTELEMENT</Link>
 
+        {/* --- INPUT DE BÚSQUEDA CONECTADO --- */}
         <div className="search-wrapper">
-          <input type="text" className="search-input" placeholder="Buscar productos..." />
-          <button className="search-btn"><SearchIcon /></button>
+          <input 
+            type="text" 
+            className="search-input" 
+            placeholder="Buscar productos..." 
+            value={searchTerm} // Valor del contexto
+            onChange={(e) => setSearchTerm(e.target.value)} // Actualiza contexto
+            onKeyDown={handleSearchSubmit} // Detecta Enter
+          />
+          <button className="search-btn" onClick={() => navigate('/')}>
+            <SearchIcon />
+          </button>
         </div>
 
         <div className="actions">
-          {/* USER DROPDOWN */}
           <div 
             className="user-menu-container" 
             ref={dropdownRef}
@@ -70,7 +90,7 @@ function Navbar() {
                 )}
               </div>
             )}
-          </div>  
+          </div>
 
           <div className="cart-container icon-link">
             <CartIcon />

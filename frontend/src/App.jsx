@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SearchProvider } from "./context/SearchContext"; // <--- IMPORTANTE
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RecoverPassword from "./pages/RecoverPassword";
@@ -8,51 +10,47 @@ import UserProfile from "./pages/UserProfile";
 import ProductDetails from "./pages/ProductDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Importamos las páginas de error
 import Error404 from "./pages/Error404";
-import Error500 from "./pages/Error500"; // Podrías usarlo en un catch global si quisieras
+import Error500 from "./pages/Error500";
 import Error400 from "./pages/Error400";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Ruta Raíz */}
-        <Route path="/" element={<Home />} />
-        
-        {/* Auth */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/recover" element={<RecoverPassword />} />
-        <Route path="/activar/:token" element={<AccountActivation />} />
-        
-        {/* Protegidas */}
-        <Route 
-          path="/producto/:id" 
-          element={
-            <ProtectedRoute>
-              <ProductDetails />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute>
-              <UserProfile />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route path="*" element={<Error404 />} />
-        
-        {/* Rutas directas para probar (opcional) */}
-        <Route path="/error-500" element={<Error500 />} />
-        <Route path="/error-400" element={<Error400 />} />
+    <SearchProvider> {/* <--- ENVOLVEMOS TODO AQUÍ */}
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/recover" element={<RecoverPassword />} />
+          <Route path="/activar/:token" element={<AccountActivation />} />
+          
+          <Route 
+            path="/producto/:id" 
+            element={
+              <ProtectedRoute>
+                <ProductDetails />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } 
+          />
 
-      </Routes>
-    </BrowserRouter>
+          {/* Rutas de Error */}
+          <Route path="*" element={<Error404 />} />
+          <Route path="/error-400" element={<Error400 />} />
+          <Route path="/error-500" element={<Error500 />} />
+
+        </Routes>
+      </BrowserRouter>
+    </SearchProvider>
   );
 }
 
