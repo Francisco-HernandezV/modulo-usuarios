@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SearchProvider } from "./context/SearchContext"; // <--- IMPORTANTE
+import { SearchProvider } from "./context/SearchContext";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -16,24 +16,18 @@ import Error400 from "./pages/Error400";
 
 function App() {
   return (
-    <SearchProvider> {/* <--- ENVOLVEMOS TODO AQUÍ */}
+    <SearchProvider>
       <BrowserRouter>
         <Routes>
+          {/* --- RUTAS PÚBLICAS (Cualquiera puede entrar) --- */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/recover" element={<RecoverPassword />} />
           <Route path="/activar/:token" element={<AccountActivation />} />
+          <Route path="/producto/:id" element={<ProductDetails />} />
           
-          <Route 
-            path="/producto/:id" 
-            element={
-              <ProtectedRoute>
-                <ProductDetails />
-              </ProtectedRoute>
-            } 
-          />
-          
+          {/* --- RUTAS PROTEGIDAS (Solo usuarios logueados) --- */}
           <Route 
             path="/profile" 
             element={
@@ -43,10 +37,10 @@ function App() {
             } 
           />
 
-          {/* Rutas de Error */}
-          <Route path="*" element={<Error404 />} />
+          {/* --- RUTAS DE ERROR --- */}
           <Route path="/error-400" element={<Error400 />} />
           <Route path="/error-500" element={<Error500 />} />
+          <Route path="*" element={<Error404 />} />
 
         </Routes>
       </BrowserRouter>
