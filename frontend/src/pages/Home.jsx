@@ -2,8 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { products } from "../assets/products";
-import "./Home.css"; // <--- AQUÍ ESTÁ EL CAMBIO CLAVE
+import { products } from "../assets/products"; 
+import "./Home.css"; // Importamos el CSS corregido
 
 function Home() {
   const navigate = useNavigate();
@@ -11,7 +11,6 @@ function Home() {
   return (
     <>
       <Navbar />
-
       <section className="hero">
         <div className="hero-overlay"></div>
         <div className="hero-content">
@@ -20,13 +19,11 @@ function Home() {
           <a href="#catalogo" className="cta-button">Ver Colección</a>
         </div>
       </section>
-
       <main className="main-content" id="catalogo">
         <div className="section-header">
           <h2 className="section-title">Últimos Lanzamientos</h2>
-          <span className="view-all" style={{cursor: "pointer"}}>Ver todo &rarr;</span>
+          <span className="view-all" onClick={() => console.log("Ver todo")}>Ver todo &rarr;</span>
         </div>
-
         <section className="product-grid">
           {products.map((p) => (
             <div 
@@ -38,20 +35,18 @@ function Home() {
                 <img src={p.imagen} alt={p.nombre} />
                 <span className="tag-new">Nuevo</span>
               </div>
-
               <div className="card-info">
                 <h3>{p.nombre}</h3>
                 <p className="short-desc">
-                  {p.descripcion ? p.descripcion.substring(0, 25) + "..." : "Edición limitada."}
+                  {p.descripcion ? p.descripcion.substring(0, 30) + "..." : "Edición limitada."}
                 </p>
-
                 <div className="card-footer">
                   <span className="price">${p.precio}</span>
                   <button 
                     className="add-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      alert("Añadido al carrito");
+                      alert("¡Producto añadido al carrito!");
                     }}
                   >
                     Añadir
