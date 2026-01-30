@@ -2,6 +2,9 @@ import React from "react";
 import "./ProductDetails.css";
 import { useParams, useNavigate } from "react-router-dom";
 import { products } from "../assets/products";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import Breadcrumbs from "../components/Breadcrumbs"; // <--- IMPORTAR
 import qrImage from "../assets/qr.jpg";
 
 function ProductDetails() {
@@ -12,54 +15,66 @@ function ProductDetails() {
   if (!product) return <div className="not-found">Producto no encontrado</div>;
 
   return (
-    <div className="page-wrapper">
-      <div className="product-card">
+    <>
+      <Navbar />
+      
+      <div className="page-wrapper">
         
-        {/* Columna Izquierda: Imagen + Botón Volver */}
-        <div className="product-image-container">
-          <img src={product.imagen} className="main-img" alt={product.nombre} />
-          
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            ← Volver
-          </button>
-        </div>
+        {/* --- COMPONENTE BREADCRUMBS --- */}
+        {/* Le pasamos la ruta previa (Inicio) y el nombre del producto actual */}
+        <Breadcrumbs 
+          links={[
+            { name: "Inicio", url: "/" },
+            { name: "Catálogo", url: "/" } 
+          ]}
+          current={product.nombre}
+        />
 
-        {/* Columna Derecha: Información */}
-        <div className="product-info">
+        {/* TARJETA PRINCIPAL */}
+        <div className="details-card">
           
-          {/* --- NUEVO ENCABEZADO: Texto a la izq, QR a la der --- */}
-          <div className="product-header">
-            <div className="header-text">
-              <span className="category-tag">Moda Urbana</span>
-              <h1>{product.nombre}</h1>
-              
-              <div className="price-container">
-                <span className="currency">$</span>
-                <span className="amount">{product.precio}</span>
+          {/* COLUMNA IZQUIERDA: IMAGEN */}
+          <div className="details-image-container">
+            <img src={product.imagen} className="details-main-img" alt={product.nombre} />
+          </div>
+
+          {/* COLUMNA DERECHA: CONTENIDO */}
+          <div className="details-content">
+            
+            <div className="details-header-row">
+              <div className="details-text">
+                <span className="details-category">Streetwear Collection</span>
+                <h1>{product.nombre}</h1>
+                <div className="details-price">${product.precio}</div>
+                <p className="details-description">{product.descripcion}</p>
+              </div>
+
+              <div className="details-qr">
+                <img src={qrImage} alt="QR Code" />
+                <span>Escanear</span>
               </div>
             </div>
 
-            {/* QR movido aquí y más grande */}
-            <div className="qr-header-container">
-              <img src={qrImage} className="qr-img-large" alt="Código QR" />
-              <span>Escanear</span>
+            <div className="details-actions">
+              <button 
+                className="details-add-btn"
+                onClick={() => alert("Añadido al carrito")}
+              >
+                Añadir al carrito
+              </button>
             </div>
+
           </div>
-
-          <p className="description">{product.descripcion}</p>
-
-          {/* (Sección QR antigua eliminada de aquí) */}
-
-          <div className="actions">
-            <button className="buy-btn">
-              Añadir al Carrito
-            </button>
-          </div>
-
         </div>
 
+        <button className="back-link" onClick={() => navigate(-1)}>
+          ← Volver al catálogo
+        </button>
+
       </div>
-    </div>
+
+      <Footer />
+    </>
   );
 }
 

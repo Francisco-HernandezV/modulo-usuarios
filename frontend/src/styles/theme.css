@@ -277,3 +277,51 @@ button:hover {
   .nav-bar { overflow-x: auto; justify-content: flex-start; padding-left: 20px; }
   .footer-content { grid-template-columns: 1fr; text-align: center; }
 }
+/* =========================================
+   COMPONENT: BREADCRUMBS
+   ========================================= */
+.breadcrumbs {
+  width: 100%;
+  max-width: 1100px; /* Ancho máximo igual al de las tarjetas */
+  margin: 20px auto; /* Centrado y con margen vertical */
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumbs a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.3s;
+  font-weight: 500;
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-accent);
+}
+
+.breadcrumbs .separator {
+  margin: 0 8px;
+  color: var(--border-color);
+}
+
+.breadcrumbs .current {
+  color: var(--text-main); /* Blanco */
+  font-weight: 600;
+}
+
+/* Ajuste responsive para que no pegue a los bordes en móvil */
+@media (max-width: 1150px) {
+  .breadcrumbs {
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+}

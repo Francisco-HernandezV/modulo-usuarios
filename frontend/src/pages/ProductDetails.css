@@ -1,211 +1,217 @@
 /* ProductDetails.css */
 
-/* Fondo general */
+/* Fondo general de la página */
 .page-wrapper {
+  min-height: 80vh;
+  padding: 40px 5%;
+  background-color: #0f1115; /* Fondo negro global */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* --- BREADCRUMBS --- */
+.breadcrumbs {
+  width: 100%;
+  max-width: 1100px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #8b949e;
+  text-align: left;
+}
+
+.breadcrumbs a {
+  color: #8b949e;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.breadcrumbs a:hover {
+  color: #3b82f6;
+}
+
+.breadcrumbs span {
+  margin: 0 8px;
+}
+
+.breadcrumbs .current {
+  color: white;
+  font-weight: 500;
+}
+
+/* --- TARJETA PRINCIPAL (ESTILO BOX) --- */
+.details-card {
+  display: grid;
+  grid-template-columns: 400px 1fr; /* Columna Izq fija, Der flexible */
+  gap: 40px;
+  background-color: #1f2937; /* Plateado Oscuro / Gris Azulado */
+  border: 1px solid #374151;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 1100px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+/* --- COLUMNA IZQUIERDA: IMAGEN --- */
+.details-image-container {
+  width: 100%;
+  height: 400px;
+  background-color: #ffffff; /* Fondo blanco para resaltar producto */
+  border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #f0f2f5;
-  padding: 20px;
-  font-family: 'Poppins', sans-serif;
-}
-
-/* Tarjeta principal */
-.product-card {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: white;
-  max-width: 950px;
-  width: 100%;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
-/* --- Columna Izquierda --- */
-.product-image-container {
-  background-color: #f8f9fa;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  padding: 40px;
-  min-height: 400px;
-}
-
-/* Botón Volver */
-.back-btn {
-  position: absolute;
-  bottom: 30px;
-  left: 30px;
-  background: white;
-  border: 1px solid #ddd;
-  padding: 10px 20px;
-  border-radius: 30px;
-  cursor: pointer;
-  font-weight: 600;
-  color: #333;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  z-index: 10;
-}
-
-.back-btn:hover {
-  background: #111;
-  color: white;
-  border-color: #111;
-}
-
-.main-img {
+.details-main-img {
   width: 100%;
-  max-width: 350px;
-  height: auto;
+  height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
-  transition: transform 0.3s ease;
+  padding: 20px;
+  transition: transform 0.3s;
 }
 
-.main-img:hover {
+.details-main-img:hover {
   transform: scale(1.05);
 }
 
-/* --- Columna Derecha --- */
-.product-info {
-  padding: 50px 40px;
+/* --- COLUMNA DERECHA: CONTENIDO --- */
+.details-content {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between; /* Empuja el botón al fondo */
 }
 
-/* Encabezado: Título a la izq, QR a la der */
-.product-header {
+/* Fila Superior: Texto vs QR */
+.details-header-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 25px;
-  gap: 15px; /* Reducí un poco el gap para dar espacio al QR gigante */
+  gap: 20px;
 }
 
-.header-text {
-  flex: 1; 
-  /* Asegura que el texto no desaparezca si el QR es muy grande */
-  min-width: 0; 
+.details-text {
+  flex: 1;
 }
 
-.category-tag {
+.details-category {
   display: block;
   text-transform: uppercase;
-  font-size: 12px;
+  font-size: 0.85rem;
   letter-spacing: 1px;
-  color: #888;
+  color: #3b82f6; /* Azul accent */
   font-weight: 700;
   margin-bottom: 10px;
 }
 
-h1 {
-  margin: 0 0 10px 0;
-  font-size: 2rem;
-  color: #1a1a1a;
-  line-height: 1.1;
-  /* Permitir que el título se ajuste si el QR ocupa mucho espacio */
-  word-wrap: break-word; 
-}
-
-.price-container {
-  color: #1a1a1a;
-  margin-top: 5px;
-}
-
-.currency {
-  font-size: 1.5rem;
-  vertical-align: top;
-  font-weight: 500;
-}
-
-.amount {
+.details-text h1 {
   font-size: 2.5rem;
-  font-weight: 700;
+  margin: 0 0 15px 0;
+  color: white;
+  line-height: 1.1;
+  font-family: "Montserrat", sans-serif;
 }
 
-/* --- ESTILOS DE QR ACTUALIZADOS (TAMAÑO RECUADRO AZUL) --- */
-.qr-header-container {
+.details-price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.details-description {
+  font-size: 1rem;
+  color: #d1d5db; /* Gris claro */
+  line-height: 1.6;
+  max-width: 90%;
+}
+
+/* QR Code (Top Right) */
+.details-qr {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex-shrink: 0; 
-}
-
-.qr-img-large {
-  width: 230px;  /* <-- AUMENTADO DRÁSTICAMENTE A 230px */
-  height: 230px; /* <-- AUMENTADO DRÁSTICAMENTE A 230px */
+  background: white;
+  padding: 10px;
   border-radius: 8px;
   border: 1px solid #ddd;
-  margin-bottom: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
-.qr-header-container span {
-  font-size: 0.85rem;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+.details-qr img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}
+
+.details-qr span {
+  margin-top: 5px;
+  font-size: 0.75rem;
+  color: #333;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
-.description {
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 30px;
-  font-size: 0.95rem;
+/* Botón (Bottom Right) */
+.details-actions {
+  display: flex;
+  justify-content: flex-end; /* Alineado a la derecha */
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #374151; /* Línea sutil separadora */
 }
 
-/* Botón Comprar */
-.actions {
-  margin-top: auto; 
-}
-
-.buy-btn {
-  background: #111;
+.details-add-btn {
+  background-color: transparent;
+  border: 2px solid #3b82f6;
   color: white;
-  border: none;
-  padding: 15px 30px;
+  padding: 12px 30px;
   font-size: 1rem;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  width: 100%;
-  transition: background 0.3s;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
 }
 
-.buy-btn:hover {
-  background: #333;
-  transform: translateY(-2px);
+.details-add-btn:hover {
+  background-color: #3b82f6;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
 }
 
+/* Botón Volver (Fuera de la tarjeta) */
+.back-link {
+  margin-top: 20px;
+  background: none;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+.back-link:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+/* RESPONSIVE */
 @media (max-width: 900px) {
-  .product-card {
-    grid-template-columns: 1fr;
-    max-width: 500px;
+  .details-card {
+    grid-template-columns: 1fr; /* Una sola columna en móvil */
   }
   
-  .product-image-container {
-    padding: 30px;
-    padding-bottom: 70px;
+  .details-header-row {
+    flex-direction: column-reverse; /* QR arriba o abajo del título según prefieras */
   }
-
-  .back-btn {
-    bottom: 20px;
-    left: 20px;
+  
+  .details-qr {
+    display: none; /* Ocultar QR en móvil para ahorrar espacio (opcional) */
   }
-
-  .product-header {
-    align-items: center;
-  }
-
-  .qr-img-large {
-    width: 150px;
-    height: 150px;
+  
+  .details-image-container {
+    height: 300px;
   }
 }
