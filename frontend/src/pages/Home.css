@@ -1,8 +1,6 @@
 /* frontend/src/pages/Home.css */
 
-/* =========================================
-   HERO SECTION (Portada)
-   ========================================= */
+/* --- HERO SECTION --- */
 .hero {
   position: relative;
   background-image: url('https://images.unsplash.com/photo-1523398002811-999ca8dec234?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
@@ -43,6 +41,7 @@
   margin-bottom: 25px;
 }
 
+/* BOTÓN CTA HERO */
 .cta-button {
   background-color: #3b82f6;
   color: white;
@@ -62,9 +61,7 @@
   transform: translateY(-2px);
 }
 
-/* =========================================
-   GRID DE PRODUCTOS
-   ========================================= */
+/* --- GRID DE PRODUCTOS --- */
 .main-content {
   padding: 0 5% 60px 5%;
   flex: 1;
@@ -93,26 +90,24 @@
 }
 .view-all:hover { color: #3b82f6; }
 
-/* GRID: Aquí definimos la separación y columnas */
+/* GRID: 4 Columnas */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 Columnas estrictas */
-  gap: 30px; /* Separación entre tarjetas */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
   margin-bottom: 60px;
   width: 100%;
 }
 
-/* =========================================
-   TARJETA DE PRODUCTO (DISEÑO VERTICAL)
-   ========================================= */
+/* --- TARJETA DE PRODUCTO --- */
 .product-card {
-  /* Fondo "Plateado Oscuro" / Gris oscuro azulado */
+  /* Fondo oscuro (Plateado oscuro/Azulado) */
   background-color: #1f2937 !important; 
   border: 1px solid #374151;
   border-radius: 12px;
   overflow: hidden;
   
-  /* FLEX COLUMN: Obliga a que la imagen esté arriba y el texto abajo */
+  /* Flex Column: Estructura vertical estricta */
   display: flex !important;
   flex-direction: column !important;
   
@@ -128,11 +123,11 @@
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
-/* IMAGEN: Fondo blanco cuadrado */
+/* IMAGEN: Fondo blanco y cuadrada */
 .image-wrapper {
   width: 100%;
-  aspect-ratio: 1 / 1; /* Asegura que sea un cuadrado perfecto */
-  background-color: #ffffff; /* Fondo BLANCO para la imagen */
+  aspect-ratio: 1 / 1;
+  background-color: #ffffff;
   position: relative;
   display: flex;
   justify-content: center;
@@ -143,8 +138,8 @@
 .image-wrapper img {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* La ropa se ve completa */
-  padding: 15px; /* Margen interno */
+  object-fit: contain;
+  padding: 20px; /* Un poco más de padding para que la ropa no toque los bordes */
   transition: transform 0.5s;
 }
 
@@ -170,13 +165,12 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Ocupa el espacio restante */
-  justify-content: space-between; /* Separa título del precio/botón */
+  flex-grow: 1; /* Ocupa el espacio disponible */
 }
 
 .card-info h3 {
   font-size: 1rem;
-  color: #ffffff; /* Blanco puro para contraste */
+  color: #ffffff;
   margin: 0 0 10px 0;
   font-weight: 600;
   line-height: 1.4;
@@ -185,50 +179,53 @@
 
 .short-desc {
   font-size: 0.85rem;
-  color: #9ca3af; /* Gris claro */
+  color: #9ca3af;
   margin: 0 0 20px 0;
   text-align: left;
-  display: block; /* Asegura que ocupe su línea */
 }
 
-/* PIE DE TARJETA (PRECIO Y BOTÓN) */
+/* --- FOOTER DE LA TARJETA (AQUÍ ESTÁ EL AJUSTE) --- */
 .card-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: space-between; /* Precio a la izquierda, Botón a la derecha */
+  align-items: center; /* Alineados verticalmente al centro */
   width: 100%;
-  margin-top: auto; /* Empuja al fondo */
+  margin-top: auto; /* Empuja el footer al fondo de la tarjeta */
 }
 
 .price {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #ffffff;
 }
 
-/* BOTÓN AÑADIR (VISIBLE) */
+/* --- BOTÓN AÑADIR (AJUSTADO: PEQUEÑO Y A LA DERECHA) --- */
 .add-btn {
   background-color: transparent;
-  border: 1px solid #4b5563; /* Borde gris visible por defecto */
-  color: #ffffff; /* Texto blanco */
-  padding: 8px 16px;
+  border: 1px solid #4b5563;
+  color: #ffffff;
+  
+  /* Ajuste de tamaño para que no sea grande */
+  padding: 6px 14px; 
+  font-size: 0.75rem; /* Texto más pequeño y elegante */
   border-radius: 6px;
-  font-size: 0.8rem;
   font-weight: 600;
+  
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  min-width: 80px;
+  width: auto; /* Solo ocupa lo necesario */
 }
 
-/* Hover en la TARJETA ilumina el botón */
+/* Efecto Hover en la TARJETA */
 .product-card:hover .add-btn {
   background-color: #3b82f6;
   border-color: #3b82f6;
   color: white;
 }
 
+/* Efecto Hover en el BOTÓN */
 .add-btn:hover {
   background-color: #2563eb !important;
 }
