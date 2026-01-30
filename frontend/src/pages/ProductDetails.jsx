@@ -70,9 +70,7 @@ function ProductDetails() {
         <button className="back-link" onClick={() => navigate(-1)}>
           ← Volver al catálogo
         </button>
-
       </div>
-
       <Footer />
     </>
   );
