@@ -54,6 +54,7 @@
   display: inline-block;
   text-decoration: none;
   border: none;
+  cursor: pointer;
 }
 
 .cta-button:hover {
@@ -99,15 +100,15 @@
   width: 100%;
 }
 
-/* --- TARJETA DE PRODUCTO --- */
+/* --- TARJETA DE PRODUCTO (Vertical) --- */
 .product-card {
-  /* Fondo oscuro (Plateado oscuro/Azulado) */
+  /* Fondo oscuro azulado */
   background-color: #1f2937 !important; 
   border: 1px solid #374151;
   border-radius: 12px;
   overflow: hidden;
   
-  /* Flex Column: Estructura vertical estricta */
+  /* Flex Column para forzar verticalidad */
   display: flex !important;
   flex-direction: column !important;
   
@@ -126,8 +127,8 @@
 /* IMAGEN: Fondo blanco y cuadrada */
 .image-wrapper {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  background-color: #ffffff;
+  aspect-ratio: 1 / 1; /* Cuadrado perfecto */
+  background-color: #ffffff; /* Fondo blanco */
   position: relative;
   display: flex;
   justify-content: center;
@@ -138,8 +139,8 @@
 .image-wrapper img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  padding: 20px; /* Un poco más de padding para que la ropa no toque los bordes */
+  object-fit: contain; /* Ajuste sin cortes */
+  padding: 20px;
   transition: transform 0.5s;
 }
 
@@ -147,7 +148,7 @@
   transform: scale(1.08);
 }
 
-/* ETIQUETA NUEVO */
+/* ETIQUETA NUEVO/OFERTA */
 .tag-new {
   position: absolute;
   top: 10px; left: 10px;
@@ -184,13 +185,13 @@
   text-align: left;
 }
 
-/* --- FOOTER DE LA TARJETA (AQUÍ ESTÁ EL AJUSTE) --- */
+/* --- FOOTER DE LA TARJETA --- */
 .card-footer {
   display: flex;
-  justify-content: space-between; /* Precio a la izquierda, Botón a la derecha */
-  align-items: center; /* Alineados verticalmente al centro */
+  justify-content: space-between; /* Precio Izq - Botón Der */
+  align-items: center;
   width: 100%;
-  margin-top: auto; /* Empuja el footer al fondo de la tarjeta */
+  margin-top: auto; /* Empuja al fondo */
 }
 
 .price {
@@ -199,15 +200,15 @@
   color: #ffffff;
 }
 
-/* --- BOTÓN AÑADIR (AJUSTADO: PEQUEÑO Y A LA DERECHA) --- */
+/* --- BOTÓN AÑADIR (Pequeño y ajustado) --- */
 .add-btn {
   background-color: transparent;
   border: 1px solid #4b5563;
   color: #ffffff;
   
-  /* Ajuste de tamaño para que no sea grande */
+  /* Tamaño pequeño */
   padding: 6px 14px; 
-  font-size: 0.75rem; /* Texto más pequeño y elegante */
+  font-size: 0.75rem; 
   border-radius: 6px;
   font-weight: 600;
   
@@ -215,17 +216,17 @@
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  width: auto; /* Solo ocupa lo necesario */
+  width: auto;
 }
 
-/* Efecto Hover en la TARJETA */
+/* Efecto al pasar mouse sobre la tarjeta */
 .product-card:hover .add-btn {
   background-color: #3b82f6;
   border-color: #3b82f6;
   color: white;
 }
 
-/* Efecto Hover en el BOTÓN */
+/* Efecto directo sobre el botón */
 .add-btn:hover {
   background-color: #2563eb !important;
 }

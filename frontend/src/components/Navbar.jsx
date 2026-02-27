@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 import "../styles/theme.css";
-import { useSearch } from "../context/SearchContext"; // <--- Importamos el hook
+import { useSearch } from "../context/SearchContext";
 
 // Iconos SVG
 const SearchIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
@@ -11,6 +11,7 @@ const UserIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" heigh
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation(); // Para saber en qué ruta estamos
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -19,12 +20,10 @@ function Navbar() {
   const { searchTerm, setSearchTerm } = useSearch();
 
   const handleSearchSubmit = (e) => {
-    // Si da Enter, lo mandamos al Home para ver resultados
     if (e.key === 'Enter') {
-        navigate('/');
+        navigate('/'); // Al buscar, vamos al Home para ver resultados
     }
   };
-  // --------------------------
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -50,21 +49,22 @@ function Navbar() {
       <header className="header">
         <Link to="/" className="logo">DANTELEMENT</Link>
 
-        {/* --- INPUT DE BÚSQUEDA CONECTADO --- */}
+        {/* INPUT DE BÚSQUEDA */}
         <div className="search-wrapper">
           <input 
             type="text" 
             className="search-input" 
             placeholder="Buscar productos..." 
-            value={searchTerm} // Valor del contexto
-            onChange={(e) => setSearchTerm(e.target.value)} // Actualiza contexto
-            onKeyDown={handleSearchSubmit} // Detecta Enter
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            onKeyDown={handleSearchSubmit} 
           />
           <button className="search-btn" onClick={() => navigate('/')}>
             <SearchIcon />
           </button>
         </div>
 
+        {/* ACCIONES (USER / CART) */}
         <div className="actions">
           <div 
             className="user-menu-container" 
@@ -99,11 +99,19 @@ function Navbar() {
         </div>
       </header>
 
+      {/* --- NAV SECUNDARIO (CORREGIDO) --- */}
       <nav className="nav-bar">
-        <Link to="/" className="active">Inicio</Link>
-        <Link to="#">Hombre</Link>
-        <Link to="#">Mujer</Link>
-        <Link to="#" className="sale-link">Ofertas</Link>
+        {/* Inicio actúa como vista principal */}
+        <Link to="/" className={location.pathname === "/" ? "active" : ""}>Inicio</Link>
+        
+        {/* Categorías específicas */}
+        <Link to="/catalogo/hombre" className={location.pathname.includes("hombre") ? "active" : ""}>Hombre</Link>
+        <Link to="/catalogo/mujer" className={location.pathname.includes("mujer") ? "active" : ""}>Mujer</Link>
+        
+        {/* Ofertas destacadas */}
+        <Link to="/catalogo/ofertas" className={`sale-link ${location.pathname.includes("ofertas") ? "active" : ""}`}>Ofertas</Link>
+        
+        {/* SE ELIMINÓ "VER TODO" DE AQUÍ */}
       </nav>
     </>
   );

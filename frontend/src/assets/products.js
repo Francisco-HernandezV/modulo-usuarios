@@ -4,60 +4,149 @@ import img3 from "./img3.jpg";
 import img4 from "./img4.jpg";
 
 export const products = [
+  // --- MUJER ---
   {
     id: 1,
     nombre: "Blusa Cruzada con Nudo",
     precio: 399,
     imagen: img4,
-    descripcion: "Blusa estilo crop de corte cruzado en tono rosa malva. Presenta un diseño femenino con cuello solapa, mangas largas y un nudo frontal ajustable que acentúa la cintura. Su tejido ligero ofrece una caída suave, ideal para combinar con prendas de tiro alto."
+    descripcion: "Blusa estilo crop de corte cruzado en tono rosa malva. Ideal para combinar con prendas de tiro alto.",
+    categoria: "mujer",
+    tipo: "blusas",
+    esOferta: false
   },
+  {
+    id: 9,
+    nombre: "Blusa Satín Elegante",
+    precio: 450,
+    imagen: img4,
+    descripcion: "Textura suave y brillante para noches especiales. Corte fluido que aporta sofisticación.",
+    categoria: "mujer",
+    tipo: "blusas",
+    esOferta: true
+  },
+  {
+    id: 10,
+    nombre: "Jeans Mom Fit",
+    precio: 700,
+    imagen: img1,
+    descripcion: "El corte clásico de los 90s, cintura alta y pierna recta. Comodidad y estilo retro.",
+    categoria: "mujer",
+    tipo: "pantalones",
+    esOferta: false
+  },
+  {
+    id: 11,
+    nombre: "Falda Short Urbana",
+    precio: 350,
+    imagen: img3,
+    descripcion: "Diseño asimétrico con hebillas laterales. Perfecta para un look streetwear femenino.",
+    categoria: "mujer",
+    tipo: "pantalones", /* O faldas */
+    esOferta: true
+  },
+  {
+    id: 12,
+    nombre: "Gorra Rosa Pastel",
+    precio: 150,
+    imagen: img2,
+    descripcion: "Toque suave de color para tus outfits diarios. Ajustable y transpirable.",
+    categoria: "mujer",
+    tipo: "accesorios",
+    esOferta: true
+  },
+
+  // --- HOMBRE ---
   {
     id: 2,
     nombre: "Pantalón Slim Fit Azul",
     precio: 620,
     imagen: img2,
-    descripcion: "Elegancia casual con un corte slim que estiliza la figura sin sacrificar movilidad. Su tono azul marino lo convierte en la prenda versátil ideal para la oficina o una salida nocturna."
+    descripcion: "Elegancia casual con un corte slim que estiliza la figura sin sacrificar movilidad.",
+    categoria: "hombre",
+    tipo: "pantalones",
+    esOferta: false
   },
   {
     id: 3,
-    nombre: "Pantalón Jogger Deportivo",
+    nombre: "Pantalón Jogger Cargo",
     precio: 450,
     imagen: img3,
-    descripcion: "La fusión perfecta entre estilo y confort. Tejido ligero y transpirable con cintura elástica ajustable, diseñado para potenciar tu entrenamiento o para un descanso con estilo."
+    descripcion: "Fusión perfecta entre estilo y utilidad con múltiples bolsillos. Ideal para la ciudad.",
+    categoria: "hombre",
+    tipo: "pantalones",
+    esOferta: true
   },
   {
     id: 4,
     nombre: "Playera Oversize Negra",
     precio: 280,
     imagen: img1,
-    descripcion: "Tendencia streetwear en su máxima expresión. Corte amplio (oversize) en algodón de tacto suave y caída pesada. Un básico color negro mate esencial para cualquier outfit contemporáneo."
+    descripcion: "Tendencia streetwear en su máxima expresión. Algodón de caída pesada.",
+    categoria: "hombre",
+    tipo: "playeras",
+    esOferta: false
   },
   {
     id: 5,
-    nombre: "Playera Blanca Clásica",
+    nombre: "Playera Blanca Premium",
     precio: 220,
     imagen: img2,
-    descripcion: "El 'must-have' de tu guardarropa. Algodón premium 100% transpirable que mantiene su forma lavado tras lavado. Fresca, minimalista y combinable con absolutamente todo."
+    descripcion: "El básico indispensable. Algodón Pima de alta resistencia y suavidad.",
+    categoria: "hombre",
+    tipo: "playeras",
+    esOferta: false
   },
   {
     id: 6,
-    nombre: "Playera Roja Gráfica",
+    nombre: "Playera Gráfica Urbana",
     precio: 320,
     imagen: img3,
-    descripcion: "Expresa tu personalidad con este diseño de alto impacto. Estampado gráfico de alta durabilidad sobre tela roja vibrante que no se deslava, ideal para destacar entre la multitud."
+    descripcion: "Estampado de alta densidad en espalda. Diseño rebelde para destacar.",
+    categoria: "hombre",
+    tipo: "playeras",
+    esOferta: true
   },
   {
-    id: 7,
-    nombre: "Playera Azul Deportiva",
-    precio: 350,
+    id: 13,
+    nombre: "Abrigo Parka Técnica",
+    precio: 1200,
     imagen: img1,
-    descripcion: "Rendimiento superior. Tecnología de secado rápido (Dry-Fit) que absorbe la humedad, manteniéndote fresco y ligero durante tus sesiones de ejercicio más intensas."
+    descripcion: "Protección contra el frío y la lluvia ligera. Materiales técnicos de vanguardia.",
+    categoria: "hombre",
+    tipo: "abrigos",
+    esOferta: false
   },
+  {
+    id: 14,
+    nombre: "Bomber Jacket Olive",
+    precio: 950,
+    imagen: img1,
+    descripcion: "Clásica chamarra de aviador con toque moderno. Ligera pero abrigadora.",
+    categoria: "hombre",
+    tipo: "abrigos",
+    esOferta: true
+  },
+
+  // --- ACCESORIOS / UNISEX ---
   {
     id: 8,
-    nombre: "Gorra Negra Unisex",
+    nombre: "Gorra Negra Minimal",
     precio: 180,
     imagen: img2,
-    descripcion: "El complemento final. Estructura resistente con broche ajustable para un fit personalizado. Diseño minimalista que protege del sol y aporta un toque urbano a cualquier look."
+    descripcion: "Estructura resistente y diseño limpio. El complemento final para cualquier look.",
+    categoria: "unisex",
+    tipo: "accesorios",
+    esOferta: false
+  },
+  {
+    id: 15,
+    nombre: "Bandolera Street Tech",
+    precio: 400,
+    imagen: img2,
+    descripcion: "Lleva lo esencial con seguridad. Correas ajustables y compartimentos ocultos.",
+    categoria: "unisex",
+    tipo: "accesorios",
+    esOferta: false
   }
 ];
