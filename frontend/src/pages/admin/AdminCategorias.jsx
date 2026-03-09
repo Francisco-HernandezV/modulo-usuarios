@@ -7,15 +7,6 @@ const IconEdit  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconPlus  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
-const DEMO_CATS = [
-  { id: 1, nombre: "Playeras",   activo: true  },
-  { id: 2, nombre: "Pantalones", activo: true  },
-  { id: 3, nombre: "Gorras",     activo: true  },
-  { id: 4, nombre: "Sudaderas",  activo: true  },
-  { id: 5, nombre: "Accesorios", activo: true  },
-  { id: 6, nombre: "Temporada",  activo: false },
-];
-
 const EMPTY_FORM = { nombre: "", activo: true };
 
 export default function AdminCategorias() {
@@ -34,12 +25,15 @@ export default function AdminCategorias() {
     try {
       const res = await api.get("/admin/categorias");
       setCategorias(res.data || []);
-    } catch {
-      setCategorias(DEMO_CATS);
+    } catch (error) {
+      console.error("Error al cargar:", error);
+      setCategorias([]); // Reemplazo de DEMO_CATS por un arreglo vacío
+      setAlert({ type: "error", msg: "Error al obtener categorías de la base de datos." });
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => { cargar(); }, []);
 
   // ── Alert auto-dismiss ────────────────────────────────────

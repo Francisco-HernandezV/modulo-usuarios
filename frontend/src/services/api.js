@@ -1,7 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://modulo-usuarios-fpig.onrender.com/api", // Tu URL de Render
+  //baseURL: "https://modulo-usuarios-fpig.onrender.com/api", // Tu URL de Render
+
+  baseURL: "http://localhost:4000/api",
+  withCredentials: true
 });
 
 // 👇 ESTO ES LO NUEVO: Interceptor para inyectar el token

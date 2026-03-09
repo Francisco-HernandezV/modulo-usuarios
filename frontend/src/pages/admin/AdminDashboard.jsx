@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchStats = async () => {
       try {
         const [prods, clientes, cats, inv] = await Promise.all([
@@ -28,9 +28,8 @@ export default function AdminDashboard() {
           totalCategorias: (cats.data     || []).length,
           stockBajo,
         });
-      } catch {
-        // Datos de muestra si el backend aún no responde
-        setStats({ totalProductos: 24, totalClientes: 38, totalCategorias: 6, stockBajo: 3 });
+      } catch (error) {
+        setStats({ totalProductos: 0, totalClientes: 0, totalCategorias: 0, stockBajo: 0 });
       } finally {
         setLoading(false);
       }

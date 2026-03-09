@@ -7,19 +7,23 @@ const IconEdit  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconPlus  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
-const DEMO_PRODUCTOS = [
-  { id: 1, nombre: "Playera Urban Drop",  precio_base: 350, costo: 180, categoria_id: 1, activo: true,  categoria_nombre: "Playeras"   },
-  { id: 2, nombre: "Gorra SnapBack DTE",  precio_base: 280, costo: 120, categoria_id: 3, activo: true,  categoria_nombre: "Gorras"     },
-  { id: 3, nombre: "Sudadera Oversized",  precio_base: 620, costo: 310, categoria_id: 4, activo: true,  categoria_nombre: "Sudaderas"  },
-  { id: 4, nombre: "Pantalón Cargo 2024", precio_base: 490, costo: 240, categoria_id: 2, activo: false, categoria_nombre: "Pantalones" },
-];
-
-const DEMO_CATS = [
-  { id: 1, nombre: "Playeras"  },
-  { id: 2, nombre: "Pantalones"},
-  { id: 3, nombre: "Gorras"   },
-  { id: 4, nombre: "Sudaderas" },
-];
+const cargar = async () => {
+    setLoading(true);
+    try {
+      const [pRes, cRes] = await Promise.all([
+        api.get("/admin/productos"),
+        api.get("/admin/categorias"),
+      ]);
+      setProductos(pRes.data  || []);
+      setCategorias(cRes.data || []);
+    } catch (error) {
+      setProductos([]);
+      setCategorias([]);
+      setAlert({ type: "error", msg: "Error al obtener el catálogo de productos de PostgreSQL." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
 const EMPTY_FORM = {
   nombre: "", descripcion: "", precio_base: "", costo: "", categoria_id: "", activo: true,

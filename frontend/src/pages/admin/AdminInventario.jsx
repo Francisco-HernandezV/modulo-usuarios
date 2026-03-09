@@ -7,21 +7,23 @@ const IconEdit    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="
 const IconPlus    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 const IconWarning = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 
-const DEMO_INV = [
-  { id: 1, producto_id: 1, producto_nombre: "Playera Urban Drop",  talla: "M",  color: "Negro",  sku: "DTE-PL-001-M-NG",  precio: 350, stock: 12, stock_apartado: 2 },
-  { id: 2, producto_id: 1, producto_nombre: "Playera Urban Drop",  talla: "L",  color: "Negro",  sku: "DTE-PL-001-L-NG",  precio: 350, stock: 3,  stock_apartado: 0 },
-  { id: 3, producto_id: 2, producto_nombre: "Gorra SnapBack DTE",  talla: "UN", color: "Azul",   sku: "DTE-GR-002-UN-AZ", precio: 280, stock: 8,  stock_apartado: 1 },
-  { id: 4, producto_id: 3, producto_nombre: "Sudadera Oversized",  talla: "S",  color: "Blanco", sku: "DTE-SD-003-S-BL",  precio: 620, stock: 5,  stock_apartado: 0 },
-  { id: 5, producto_id: 3, producto_nombre: "Sudadera Oversized",  talla: "M",  color: "Blanco", sku: "DTE-SD-003-M-BL",  precio: 620, stock: 0,  stock_apartado: 0 },
-  { id: 6, producto_id: 4, producto_nombre: "Pantalón Cargo 2024", talla: "32", color: "Caqui",  sku: "DTE-PT-004-32-CQ", precio: 490, stock: 1,  stock_apartado: 0 },
-];
-
-const DEMO_PRODUCTOS = [
-  { id: 1, nombre: "Playera Urban Drop"  },
-  { id: 2, nombre: "Gorra SnapBack DTE"  },
-  { id: 3, nombre: "Sudadera Oversized"  },
-  { id: 4, nombre: "Pantalón Cargo 2024" },
-];
+const cargar = async () => {
+    setLoading(true);
+    try {
+      const [vRes, pRes] = await Promise.all([
+        api.get("/admin/inventario"),
+        api.get("/admin/productos"),
+      ]);
+      setVariantes(vRes.data || []);
+      setProductos(pRes.data || []);
+    } catch (error) {
+      setVariantes([]);
+      setProductos([]);
+      setAlert({ type: "error", msg: "Error de conexión al cargar el inventario." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
 const TALLAS     = ["XS","S","M","L","XL","XXL","UN","28","30","32","34","36"];
 const EMPTY_FORM = { producto_id: "", talla: "", color: "", sku: "", precio: "", stock: "0", stock_apartado: "0" };

@@ -3,75 +3,61 @@ import api from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/theme.css";
 
+// CAMBIOS:
+// - Eliminado el Paso 2 de "selección de método" (pregunta vs correo)
+// - Eliminado el Paso 3 de "responder pregunta secreta"
+// - El flujo ahora es directo: Email → Código por correo → Nueva contraseña
+// - Pasos: 1 (email) → 2 (código) → 3 (nueva contraseña)
+
 function RecoverPassword() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); 
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [pregunta, setPregunta] = useState("");
-  const [respuesta, setRespuesta] = useState("");
-  const [token, setToken] = useState(""); 
+  const [token, setToken] = useState("");
   const [nuevaPass, setNuevaPass] = useState("");
   const [confirmarPass, setConfirmarPass] = useState("");
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  const handleCheckEmail = async (e) => {
+  // PASO 1: Enviar código al correo
+  const handleSendEmail = async (e) => {
     e.preventDefault();
-    setMensaje(""); 
-    try {
-      const res = await api.post("/users/recover/check", { email });
-      setPregunta(res.data.pregunta);
-      setStep(2); 
-    } catch (error) {
-      setMensaje(error.response?.data?.message || "❌ Correo no encontrado");
-    }
-  };
-
-  const handleSendEmail = async () => {
-    setMensaje(""); 
+    setMensaje("");
+    setEnviando(true);
     try {
       await api.post("/users/recover/send-email", { email });
-      setStep(6); 
-      setMensaje("✅ Código enviado. Revisa tu correo.");
+      setStep(2);
+      setMensaje("✅ Código enviado. Revisa tu correo (incluyendo spam).");
     } catch (error) {
-      console.error(error);
-      setMensaje("Error al enviar el correo. Intenta más tarde.");
+      setMensaje(error.response?.data?.message || "❌ Error al enviar el correo. Intenta más tarde.");
+    } finally {
+      setEnviando(false);
     }
   };
 
+  // PASO 2: Validar código
   const handleValidateToken = async (e) => {
     e.preventDefault();
     setMensaje("");
     try {
-        await api.post("/users/recover/validate-token", { token });
-        setStep(4);
+      await api.post("/users/recover/validate-token", { token });
+      setStep(3);
+      setMensaje("");
     } catch (error) {
-        setMensaje("❌ Código inválido o expirado");
+      setMensaje("❌ Código inválido o expirado");
     }
   };
 
-  const handleVerifyAnswer = async (e) => {
-    e.preventDefault();
-    setMensaje(""); 
-    try {
-      const res = await api.post("/users/recover/answer", { email, respuesta });
-      setToken(res.data.token);
-      setStep(4); 
-    } catch (error) {
-      setMensaje("❌ Respuesta incorrecta");
-    }
-  };
-
-  // PASO FINAL: Cambiar Contraseña
+  // PASO 3: Cambiar contraseña
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    setMensaje(""); 
+    setMensaje("");
     if (nuevaPass !== confirmarPass) {
       setMensaje("⚠️ Las contraseñas no coinciden");
       return;
     }
-
     try {
       await api.post("/users/recover/reset", { 
         token, 
@@ -80,15 +66,14 @@ function RecoverPassword() {
       setMensaje("✅ Contraseña actualizada correctamente");
       setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
-       if (error.response?.data?.errors) {
-         setMensaje(error.response.data.errors[0].msg);
-       } else {
-         setMensaje(error.response?.data?.message || "Error al actualizar");
-       }
+      if (error.response?.data?.errors) {
+        setMensaje(error.response.data.errors[0].msg);
+      } else {
+        setMensaje(error.response?.data?.message || "❌ Error al actualizar");
+      }
     }
   };
 
-  // Iconos SVG
   const EyeIconOpen = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
   );
@@ -101,92 +86,55 @@ function RecoverPassword() {
     <div className="form-container">
       <h2>Recuperar Contraseña</h2>
 
-      {/* --- PASO 1: EMAIL --- */}
+      {/* ── PASO 1: INGRESAR CORREO ── */}
       {step === 1 && (
-        <form onSubmit={handleCheckEmail}>
+        <form onSubmit={handleSendEmail}>
+          <p style={{ fontSize: "14px", color: "#888", marginBottom: "15px" }}>
+            Ingresa tu correo y te enviaremos un código de 6 dígitos.
+          </p>
           <input
             type="email"
-            placeholder="Ingresa tu correo electrónico"
+            placeholder="Correo electrónico"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <button type="submit">Continuar</button>
+          <button type="submit" disabled={enviando}>
+            {enviando ? "Enviando..." : "Enviar Código"}
+          </button>
         </form>
       )}
 
-      {/* --- PASO 2: SELECCIÓN DE MÉTODO --- */}
+      {/* ── PASO 2: INGRESAR CÓDIGO ── */}
       {step === 2 && (
-        <div style={{ textAlign: "center" }}>
-          <p>¿Cómo deseas recuperar tu contraseña?</p>
-          <button 
-            onClick={() => { setStep(3); setMensaje(""); }} 
-            style={{ marginBottom: "10px", backgroundColor: "#333" }}
-          >
-            🔐 Usar Pregunta Secreta
-          </button>
-          <button 
-            onClick={handleSendEmail} 
-            style={{ backgroundColor: "#0d47a1" }}
-          >
-            📧 Enviar Código al Correo
-          </button>
-        </div>
-      )}
-
-      {/* --- PASO 3: RESPONDER PREGUNTA --- */}
-      {step === 3 && (
-        <form onSubmit={handleVerifyAnswer}>
-          <p className="pregunta-texto">
-            <b>Pregunta:</b> {pregunta}
+        <form onSubmit={handleValidateToken}>
+          <p className="pregunta-texto" style={{ textAlign: "center" }}>
+            Hemos enviado un código a <b>{email}</b>.<br />
+            Cópialo y pégalo aquí:
           </p>
           <input
             type="text"
-            placeholder="Tu respuesta secreta"
-            value={respuesta}
-            onChange={(e) => setRespuesta(e.target.value)}
+            placeholder="Código de 6 dígitos"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            maxLength={6}
             required
           />
-          <button type="submit">Verificar Respuesta</button>
+          <button type="submit">Verificar Código</button>
           <button 
             type="button" 
-            onClick={() => { setStep(2); setMensaje(""); }}
+            onClick={() => { setStep(1); setMensaje(""); }}
             style={{ marginTop: "10px", background: "transparent", color: "#888", border: "1px solid #555" }}
           >
-            Atrás
+            ← Cambiar correo / Reenviar
           </button>
         </form>
       )}
 
-      {/* --- PASO 6 (NUEVO): INGRESAR TOKEN DEL CORREO --- */}
-      {step === 6 && (
-        <form onSubmit={handleValidateToken}>
-            <p className="pregunta-texto" style={{textAlign: "center"}}>
-                Hemos enviado un código a <b>{email}</b>. <br/>
-                Cópialo y pégalo aquí:
-            </p>
-            <input
-                type="text"
-                placeholder="Ingresa el código de recuperación"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                required
-            />
-            <button type="submit">Verificar Código</button>
-            <button 
-                type="button" 
-                onClick={() => { setStep(2); setMensaje(""); }}
-                style={{ marginTop: "10px", background: "transparent", color: "#888", border: "1px solid #555" }}
-            >
-                Atrás / Reenviar
-            </button>
-        </form>
-      )}
-
-      {/* --- PASO 4: CAMBIAR CONTRASEÑA --- */}
-      {step === 4 && (
+      {/* ── PASO 3: NUEVA CONTRASEÑA ── */}
+      {step === 3 && (
         <form onSubmit={handleResetPassword}>
-          <h3>Crea tu nueva contraseña</h3>
+          <h3 style={{ marginBottom: "15px" }}>Crea tu nueva contraseña</h3>
           
           {/* Nueva Contraseña */}
           <div className="password-wrapper">
@@ -228,17 +176,16 @@ function RecoverPassword() {
         </form>
       )}
 
-      {/* MENSAJES DE ERROR GLOBALES */}
+      {/* MENSAJES */}
       {mensaje && !mensaje.includes("✅") && (
         <p className="mensaje-error">{mensaje}</p>
       )}
-      
       {mensaje && mensaje.includes("✅") && (
         <p className="mensaje-exito">{mensaje}</p>
       )}
 
       <div className="links">
-        <Link to="/login">Volver al inicio</Link>
+        <Link to="/login">Volver al inicio de sesión</Link>
       </div>
     </div>
   );

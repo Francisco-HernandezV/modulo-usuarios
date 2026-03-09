@@ -7,12 +7,18 @@ const IconEdit  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconPlus  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
-const DEMO_CLIENTES = [
-  { id: 1, nombre: "Ana Gabriela Torres",    telefono: "7711234567", email: "ana@example.com", rfc: "TOGA901210XXX", creado_en: "2025-01-10" },
-  { id: 2, nombre: "Carlos Méndez López",    telefono: "7719876543", email: "",                rfc: "",              creado_en: "2025-01-15" },
-  { id: 3, nombre: "Mariana Ruiz Pérez",     telefono: "7712345678", email: "mari@example.com",rfc: "RUPM001115XXX", creado_en: "2025-01-20" },
-  { id: 4, nombre: "Roberto Hernández Cruz", telefono: "7718765432", email: "rob@example.com", rfc: "",              creado_en: "2025-02-03" },
-];
+const cargar = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/admin/clientes");
+      setClientes(res.data || []);
+    } catch (error) {
+      setClientes([]);
+      setAlert({ type: "error", msg: "Error al cargar el directorio de clientes desde la BD." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
 const EMPTY_FORM = { nombre: "", telefono: "", email: "", rfc: "", notas: "" };
 
