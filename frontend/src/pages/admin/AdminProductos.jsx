@@ -7,27 +7,19 @@ const IconEdit  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconPlus  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
-const cargar = async () => {
-    setLoading(true);
-    try {
-      const [pRes, cRes] = await Promise.all([
-        api.get("/admin/productos"),
-        api.get("/admin/categorias"),
-      ]);
-      setProductos(pRes.data  || []);
-      setCategorias(cRes.data || []);
-    } catch (error) {
-      setProductos([]);
-      setCategorias([]);
-      setAlert({ type: "error", msg: "Error al obtener el catálogo de productos de PostgreSQL." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
 const EMPTY_FORM = {
   nombre: "", descripcion: "", precio_base: "", costo: "", categoria_id: "", activo: true,
 };
+
+const getMargenBadgeClass = (margen) => {
+  const m = Number(margen);
+  if (m >= 40) return "adm-badge-green";
+  if (m >= 20) return "adm-badge-yellow";
+  return "adm-badge-red";
+};
+
+const getAlertClass = (type) => type === "success" ? "adm-alert-success" : "adm-alert-error";
+const getAlertIcon = (type) => type === "success" ? "✓" : "✕";
 
 export default function AdminProductos() {
   const [productos,  setProductos]  = useState([]);
@@ -50,12 +42,13 @@ export default function AdminProductos() {
       setProductos(pRes.data  || []);
       setCategorias(cRes.data || []);
     } catch {
-      setProductos(DEMO_PRODUCTOS);
-      setCategorias(DEMO_CATS);
+      setProductos([]);
+      setCategorias([]);
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => { cargar(); }, []);
 
   useEffect(() => {
@@ -66,9 +59,9 @@ export default function AdminProductos() {
 
   const validate = () => {
     const e = {};
-    if (!form.nombre.trim())                              e.nombre       = "Nombre obligatorio";
+    if (!form.nombre.trim())                           e.nombre       = "Nombre obligatorio";
     if (!form.precio_base || Number(form.precio_base) <= 0) e.precio_base  = "Precio válido requerido";
-    if (!form.categoria_id)                               e.categoria_id = "Selecciona una categoría";
+    if (!form.categoria_id)                            e.categoria_id = "Selecciona una categoría";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -76,6 +69,7 @@ export default function AdminProductos() {
   const openCreate = () => {
     setEditando(null); setForm(EMPTY_FORM); setErrors({}); setModal(true);
   };
+
   const openEdit = (p) => {
     setEditando(p);
     setForm({
@@ -94,9 +88,9 @@ export default function AdminProductos() {
     if (!validate()) return;
     const payload = {
       ...form,
-      precio_base:  parseFloat(form.precio_base),
-      costo:        form.costo ? parseFloat(form.costo) : null,
-      categoria_id: parseInt(form.categoria_id),
+      precio_base:  Number.parseFloat(form.precio_base),
+      costo:        form.costo ? Number.parseFloat(form.costo) : null,
+      categoria_id: Number.parseInt(form.categoria_id, 10),
     };
     try {
       if (editando) {
@@ -133,24 +127,25 @@ export default function AdminProductos() {
   const fmt = (n) =>
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 
+  const handleOverlayKey = (e, callback) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      callback();
+    }
+  };
+
   return (
     <AdminLayout pageTitle="Catálogo de Productos" breadcrumb="Productos">
-
       {alert && (
-        <div className={`adm-alert ${alert.type === "success" ? "adm-alert-success" : "adm-alert-error"}`}>
-          {alert.type === "success" ? "✓" : "✕"} {alert.msg}
+        <div className={`adm-alert ${getAlertClass(alert.type)}`}>
+          {getAlertIcon(alert.type)} {alert.msg}
         </div>
       )}
-
-      {/* Header */}
       <div className="adm-section-header">
         <h3 className="adm-section-title">Productos ({productos.length})</h3>
-        <button className="adm-btn adm-btn-primary" onClick={openCreate}>
+        <button className="adm-btn adm-btn-primary" onClick={openCreate} type="button">
           <IconPlus /> Nuevo producto
         </button>
       </div>
-
-      {/* Tabla */}
       {loading ? (
         <div className="adm-empty"><p>Cargando productos...</p></div>
       ) : productos.length === 0 ? (
@@ -199,10 +194,7 @@ export default function AdminProductos() {
                     </td>
                     <td>
                       {margen ? (
-                        <span className={`adm-badge ${
-                          Number(margen) >= 40 ? "adm-badge-green" :
-                          Number(margen) >= 20 ? "adm-badge-yellow" : "adm-badge-red"
-                        }`}>
+                        <span className={`adm-badge ${getMargenBadgeClass(margen)}`}>
                           {margen}%
                         </span>
                       ) : "—"}
@@ -218,6 +210,7 @@ export default function AdminProductos() {
                           className="adm-btn adm-btn-ghost adm-btn-sm"
                           onClick={() => openEdit(p)}
                           title="Editar"
+                          type="button"
                         >
                           <IconEdit />
                         </button>
@@ -225,6 +218,7 @@ export default function AdminProductos() {
                           className="adm-btn adm-btn-danger adm-btn-sm"
                           onClick={() => setConfirmDel(p.id)}
                           title="Eliminar"
+                          type="button"
                         >
                           <IconTrash />
                         </button>
@@ -237,25 +231,22 @@ export default function AdminProductos() {
           </table>
         </div>
       )}
-
-      {/* ── Modal Crear / Editar ─────────────────────────── */}
       {modal && (
-        <div className="adm-modal-overlay" onClick={() => setModal(false)}>
+        <div className="adm-modal-overlay" onClick={() => setModal(false)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setModal(false))} aria-label="Cerrar modal">
           <div className="adm-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="adm-modal-header">
               <h3 className="adm-modal-title">
                 {editando ? "Editar producto" : "Nuevo producto"}
               </h3>
-              <button className="adm-modal-close" onClick={() => setModal(false)}>
+              <button className="adm-modal-close" onClick={() => setModal(false)} type="button" aria-label="Cerrar">
                 <IconX />
               </button>
             </div>
             <div className="adm-modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-
-              {/* Nombre */}
               <div className="adm-form-group">
-                <label>Nombre del producto *</label>
+                <label htmlFor="prod_nombre">Nombre del producto *</label>
                 <input
+                  id="prod_nombre"
                   className={`adm-input ${errors.nombre ? "adm-input-error" : ""}`}
                   placeholder="Ej: Playera Urban Drop"
                   value={form.nombre}
@@ -264,11 +255,10 @@ export default function AdminProductos() {
                 />
                 {errors.nombre && <p className="adm-error-text">{errors.nombre}</p>}
               </div>
-
-              {/* Descripción */}
               <div className="adm-form-group">
-                <label>Descripción</label>
+                <label htmlFor="prod_desc">Descripción</label>
                 <textarea
+                  id="prod_desc"
                   className="adm-textarea"
                   placeholder="Descripción del producto (opcional)"
                   value={form.descripcion}
@@ -276,12 +266,11 @@ export default function AdminProductos() {
                   rows={3}
                 />
               </div>
-
-              {/* Precio y Costo */}
               <div className="adm-form-row">
                 <div className="adm-form-group" style={{ margin: 0 }}>
-                  <label>Precio de venta (MXN) *</label>
+                  <label htmlFor="prod_precio">Precio de venta (MXN) *</label>
                   <input
+                    id="prod_precio"
                     className={`adm-input ${errors.precio_base ? "adm-input-error" : ""}`}
                     type="number" min="0" step="0.01" placeholder="0.00"
                     value={form.precio_base}
@@ -290,8 +279,9 @@ export default function AdminProductos() {
                   {errors.precio_base && <p className="adm-error-text">{errors.precio_base}</p>}
                 </div>
                 <div className="adm-form-group" style={{ margin: 0 }}>
-                  <label>Costo (MXN)</label>
+                  <label htmlFor="prod_costo">Costo (MXN)</label>
                   <input
+                    id="prod_costo"
                     className="adm-input"
                     type="number" min="0" step="0.01" placeholder="0.00"
                     value={form.costo}
@@ -299,11 +289,10 @@ export default function AdminProductos() {
                   />
                 </div>
               </div>
-
-              {/* Categoría */}
               <div className="adm-form-group" style={{ marginTop: "14px" }}>
-                <label>Categoría *</label>
+                <label htmlFor="prod_categoria">Categoría *</label>
                 <select
+                  id="prod_categoria"
                   className={`adm-select ${errors.categoria_id ? "adm-input-error" : ""}`}
                   value={form.categoria_id}
                   onChange={e => handleChange("categoria_id", e.target.value)}
@@ -318,24 +307,22 @@ export default function AdminProductos() {
                 </select>
                 {errors.categoria_id && <p className="adm-error-text">{errors.categoria_id}</p>}
               </div>
-
-              {/* Estado */}
               <div className="adm-form-group">
-                <label>Estado</label>
-                <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+                <label id="prod_estado_label">Estado</label>
+                <div role="group" aria-labelledby="prod_estado_label" style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
                   {[true, false].map(v => (
                     <button
-                      key={String(v)} type="button"
+                      key={String(v)} 
+                      type="button"
                       onClick={() => handleChange("activo", v)}
                       className={`adm-btn adm-btn-sm ${form.activo === v ? "adm-btn-primary" : "adm-btn-ghost"}`}
+                      aria-pressed={form.activo === v}
                     >
                       {v ? "Activo" : "Inactivo"}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Preview margen */}
               {form.precio_base && form.costo && (
                 <div style={{
                   background:   "rgba(59,130,246,.08)",
@@ -343,7 +330,7 @@ export default function AdminProductos() {
                   borderRadius: 8,
                   padding:      "10px 14px",
                   fontSize:     12,
-                  color:        "#8b949e",
+                  color:        "#9ca3af",
                 }}>
                   Margen estimado:{" "}
                   <strong style={{ color: "#3b82f6" }}>
@@ -353,24 +340,22 @@ export default function AdminProductos() {
               )}
             </div>
             <div className="adm-modal-footer">
-              <button className="adm-btn adm-btn-ghost" onClick={() => setModal(false)}>
+              <button className="adm-btn adm-btn-ghost" onClick={() => setModal(false)} type="button">
                 Cancelar
               </button>
-              <button className="adm-btn adm-btn-primary" onClick={handleGuardar}>
+              <button className="adm-btn adm-btn-primary" onClick={handleGuardar} type="button">
                 {editando ? "Guardar cambios" : "Crear producto"}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* ── Modal Confirmar eliminación ──────────────────── */}
       {confirmDel && (
-        <div className="adm-modal-overlay" onClick={() => setConfirmDel(null)}>
+        <div className="adm-modal-overlay" onClick={() => setConfirmDel(null)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setConfirmDel(null))} aria-label="Cerrar confirmación">
           <div className="adm-modal" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
             <div className="adm-modal-header">
               <h3 className="adm-modal-title">Confirmar eliminación</h3>
-              <button className="adm-modal-close" onClick={() => setConfirmDel(null)}>
+              <button className="adm-modal-close" onClick={() => setConfirmDel(null)} type="button" aria-label="Cerrar">
                 <IconX />
               </button>
             </div>
@@ -381,17 +366,16 @@ export default function AdminProductos() {
               </p>
             </div>
             <div className="adm-modal-footer">
-              <button className="adm-btn adm-btn-ghost" onClick={() => setConfirmDel(null)}>
+              <button className="adm-btn adm-btn-ghost" onClick={() => setConfirmDel(null)} type="button">
                 Cancelar
               </button>
-              <button className="adm-btn adm-btn-danger" onClick={() => handleEliminar(confirmDel)}>
+              <button className="adm-btn adm-btn-danger" onClick={() => handleEliminar(confirmDel)} type="button">
                 Sí, eliminar
               </button>
             </div>
           </div>
         </div>
       )}
-
     </AdminLayout>
   );
 }

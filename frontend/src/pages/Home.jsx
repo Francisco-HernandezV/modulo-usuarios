@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import PropTypes from "prop-types";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import api from "../services/api";
 import "./Home.css";
 import { useSearch } from "../context/SearchContext"; 
+
+const ProductStatusBadge = ({ esOferta }) => {
+    if (esOferta) return <span className="tag-new" style={{background: "#f59e0b", color: "black"}}>Oferta</span>;
+    return <span className="tag-new">Nuevo</span>;
+};
+
+ProductStatusBadge.propTypes = {
+    esOferta: PropTypes.bool.isRequired
+};
 
 function Home() {
   const navigate = useNavigate();
@@ -16,7 +26,6 @@ function Home() {
     const fetchProductos = async () => {
       try {
         const res = await api.get("/admin/productos");
-        // Filtramos solo productos activos y adaptamos los keys de la BD al frontend
         const prods = res.data.filter(p => p.activo).map(p => ({
           ...p,
           precio: p.precio_base,
@@ -25,7 +34,7 @@ function Home() {
         }));
         setProducts(prods);
       } catch (error) {
-        console.error("Error al cargar productos desde el API", error);
+        console.error("Error al cargar productos", error);
       } finally {
         setLoading(false);
       }
@@ -37,7 +46,7 @@ function Home() {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return p.nombre.toLowerCase().includes(term) || 
-           (p.descripcion && p.descripcion.toLowerCase().includes(term));
+           (p.descripcion?.toLowerCase().includes(term));
   });
 
   const displayProducts = searchTerm ? filteredProducts : products.slice(0, 8);
@@ -45,32 +54,34 @@ function Home() {
   return (
     <>
       <Navbar />
-
       {!searchTerm && (
         <section className="hero">
           <div className="hero-overlay"></div>
           <div className="hero-content">
             <h1>ESTILO SIN LÍMITES</h1>
             <p>Descubre la nueva colección de gorras y accesorios urbanos.</p>
-            <button onClick={() => navigate('/catalogo/todo')} className="cta-button">
+            <button onClick={() => navigate('/catalogo/todo')} className="cta-button" type="button">
               Ver Colección
             </button>
           </div>
         </section>
       )}
-
       <main className="main-content" id="catalogo">
         <div className="section-header">
           <h2 className="section-title">
             {searchTerm ? `Resultados para: "${searchTerm}"` : "Últimos Lanzamientos"}
           </h2>
           {!searchTerm && (
-            <span className="view-all" onClick={() => navigate('/catalogo/todo')} style={{cursor: "pointer"}}>
+            <button 
+              className="view-all" 
+              onClick={() => navigate('/catalogo/todo')} 
+              style={{cursor: "pointer", background: 'none', border: 'none', color: '#9ca3af', fontSize: '0.9rem'}}
+              type="button"
+            >
               Ver catálogo completo &rarr;
-            </span>
+            </button>
           )}
         </div>
-
         {loading ? (
           <div style={{color: "white", textAlign: "center", padding: "80px 20px"}}>
              <h3>Conectando con la base de datos...</h3>
@@ -78,11 +89,12 @@ function Home() {
         ) : displayProducts.length === 0 ? (
           <div style={{color: "white", textAlign: "center", padding: "80px 20px"}}>
              <h3>No encontramos coincidencias para "{searchTerm}" 😔</h3>
-             <p style={{color: "#8b949e"}}>Prueba con otra palabra clave o revisa nuestro catálogo completo.</p>
+             <p style={{color: "#9ca3af"}}>Prueba con otra palabra clave o revisa nuestro catálogo completo.</p>
              <button 
                 onClick={() => navigate('/catalogo/todo')} 
                 className="add-btn" 
                 style={{marginTop: "20px", background: "#3b82f6", border: "none", width: "auto", display: "inline-block"}}
+                type="button"
              >
                Ver todo el catálogo
              </button>
@@ -90,14 +102,14 @@ function Home() {
         ) : (
           <section className="product-grid">
             {displayProducts.map((p) => (
-              <div key={p.id} className="product-card" onClick={() => navigate(`/producto/${p.id}`)}>
+              <Link
+                key={p.id} 
+                to={`/producto/${p.id}`}
+                className="product-card"
+              >
                 <div className="image-wrapper">
                   <img src={p.imagen} alt={p.nombre} />
-                  {p.esOferta ? (
-                    <span className="tag-new" style={{background: "#f59e0b", color: "black"}}>Oferta</span>
-                  ) : (
-                    <span className="tag-new">Nuevo</span>
-                  )}
+                  <ProductStatusBadge esOferta={p.esOferta} />
                 </div>
                 <div className="card-info">
                   <h3>{p.nombre}</h3>
@@ -109,12 +121,12 @@ function Home() {
                     <button className="add-btn" onClick={(e) => {
                         e.stopPropagation();
                         alert("¡Producto añadido al carrito!");
-                    }}>
+                    }} type="button">
                       Añadir
                     </button>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </section>
         )}

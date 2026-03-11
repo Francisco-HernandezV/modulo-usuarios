@@ -6,7 +6,7 @@ console.log(`Port: ${process.env.SMTP_PORT}`);
 console.log(`User: ${process.env.SMTP_USER}`);
 console.log(`Pass length: ${process.env.SMTP_PASS ? process.env.SMTP_PASS.length : 'FALTA'}`);
 
-const port = parseInt(process.env.SMTP_PORT || "587", 10);
+const port = Number.parseInt(process.env.SMTP_PORT || "587", 10);
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,

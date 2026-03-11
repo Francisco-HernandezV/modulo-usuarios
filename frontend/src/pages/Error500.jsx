@@ -20,7 +20,7 @@ function Error500() {
           </p>
           <div className="error-actions">
             <a href="/" className="cta-button">Reintentar</a>
-            <a href="#" className="btn-secondary">Soporte</a>
+            <a href="/" className="btn-secondary">Soporte</a>
           </div>
         </div>
       </main>

@@ -3,11 +3,13 @@ import api from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/theme.css";
 
-// CAMBIOS:
-// - Eliminado el Paso 2 de "selección de método" (pregunta vs correo)
-// - Eliminado el Paso 3 de "responder pregunta secreta"
-// - El flujo ahora es directo: Email → Código por correo → Nueva contraseña
-// - Pasos: 1 (email) → 2 (código) → 3 (nueva contraseña)
+const EyeIconOpen = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+);
+
+const EyeIconClosed = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+);
 
 function RecoverPassword() {
   const navigate = useNavigate();
@@ -21,7 +23,6 @@ function RecoverPassword() {
   const [mensaje, setMensaje] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  // PASO 1: Enviar código al correo
   const handleSendEmail = async (e) => {
     e.preventDefault();
     setMensaje("");
@@ -29,15 +30,15 @@ function RecoverPassword() {
     try {
       await api.post("/users/recover/send-email", { email });
       setStep(2);
-      setMensaje("✅ Código enviado. Revisa tu correo (incluyendo spam).");
+      setMensaje("✅ Código enviado. Revisa tu correo.");
     } catch (error) {
-      setMensaje(error.response?.data?.message || "❌ Error al enviar el correo. Intenta más tarde.");
+      console.error("Error al enviar email de recuperación:", error);
+      setMensaje(error.response?.data?.message || "❌ Error al enviar el correo.");
     } finally {
       setEnviando(false);
     }
   };
 
-  // PASO 2: Validar código
   const handleValidateToken = async (e) => {
     e.preventDefault();
     setMensaje("");
@@ -46,11 +47,11 @@ function RecoverPassword() {
       setStep(3);
       setMensaje("");
     } catch (error) {
+      console.error("Error al validar token:", error);
       setMensaje("❌ Código inválido o expirado");
     }
   };
 
-  // PASO 3: Cambiar contraseña
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setMensaje("");
@@ -66,6 +67,7 @@ function RecoverPassword() {
       setMensaje("✅ Contraseña actualizada correctamente");
       setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
+      console.error("Error al resetear contraseña:", error);
       if (error.response?.data?.errors) {
         setMensaje(error.response.data.errors[0].msg);
       } else {
@@ -74,25 +76,17 @@ function RecoverPassword() {
     }
   };
 
-  const EyeIconOpen = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-  );
-  
-  const EyeIconClosed = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-  );
-
   return (
     <div className="form-container">
       <h2>Recuperar Contraseña</h2>
-
-      {/* ── PASO 1: INGRESAR CORREO ── */}
       {step === 1 && (
         <form onSubmit={handleSendEmail}>
           <p style={{ fontSize: "14px", color: "#888", marginBottom: "15px" }}>
             Ingresa tu correo y te enviaremos un código de 6 dígitos.
           </p>
+          <label htmlFor="recover_email" className="sr-only" style={{display: 'none'}}>Correo electrónico</label>
           <input
+            id="recover_email"
             type="email"
             placeholder="Correo electrónico"
             value={email}
@@ -105,14 +99,14 @@ function RecoverPassword() {
         </form>
       )}
 
-      {/* ── PASO 2: INGRESAR CÓDIGO ── */}
       {step === 2 && (
         <form onSubmit={handleValidateToken}>
           <p className="pregunta-texto" style={{ textAlign: "center" }}>
-            Hemos enviado un código a <b>{email}</b>.<br />
-            Cópialo y pégalo aquí:
+            Hemos enviado un código a <b>{email}</b>.
           </p>
+          <label htmlFor="recover_token" className="sr-only" style={{display: 'none'}}>Código de 6 dígitos</label>
           <input
+            id="recover_token"
             type="text"
             placeholder="Código de 6 dígitos"
             value={token}
@@ -131,14 +125,13 @@ function RecoverPassword() {
         </form>
       )}
 
-      {/* ── PASO 3: NUEVA CONTRASEÑA ── */}
       {step === 3 && (
         <form onSubmit={handleResetPassword}>
           <h3 style={{ marginBottom: "15px" }}>Crea tu nueva contraseña</h3>
-          
-          {/* Nueva Contraseña */}
           <div className="password-wrapper">
+            <label htmlFor="new_pass" className="sr-only" style={{display: 'none'}}>Nueva contraseña</label>
             <input
+              id="new_pass"
               type={showNewPass ? "text" : "password"}
               placeholder="Nueva contraseña"
               value={nuevaPass}
@@ -149,14 +142,15 @@ function RecoverPassword() {
               type="button"
               className="eye-btn"
               onClick={() => setShowNewPass(!showNewPass)}
+              aria-label={showNewPass ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
               {showNewPass ? <EyeIconOpen /> : <EyeIconClosed />}
             </button>
           </div>
-
-          {/* Confirmar Contraseña */}
           <div className="password-wrapper">
+            <label htmlFor="confirm_pass" className="sr-only" style={{display: 'none'}}>Confirmar contraseña</label>
             <input
+              id="confirm_pass"
               type={showConfirmPass ? "text" : "password"}
               placeholder="Confirmar contraseña" 
               value={confirmarPass}
@@ -167,6 +161,7 @@ function RecoverPassword() {
               type="button"
               className="eye-btn"
               onClick={() => setShowConfirmPass(!showConfirmPass)}
+              aria-label={showConfirmPass ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
               {showConfirmPass ? <EyeIconOpen /> : <EyeIconClosed />}
             </button>
@@ -175,8 +170,6 @@ function RecoverPassword() {
           <button type="submit">Actualizar Contraseña</button>
         </form>
       )}
-
-      {/* MENSAJES */}
       {mensaje && !mensaje.includes("✅") && (
         <p className="mensaje-error">{mensaje}</p>
       )}
@@ -190,5 +183,4 @@ function RecoverPassword() {
     </div>
   );
 }
-
 export default RecoverPassword;

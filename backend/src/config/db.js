@@ -8,10 +8,9 @@ const pool = new pg.Pool({
   ssl: { 
     rejectUnauthorized: false 
   },
-  // 👇 CONFIGURACIÓN ANTI-ECONNRESET PARA RENDER FREE 👇
-  max: 5, // Máximo 5 conexiones simultáneas (Render Free lo agradecerá)
-  connectionTimeoutMillis: 15000, // Esperar hasta 15 segundos si la BD está ocupada
-  idleTimeoutMillis: 30000 // Cerrar conexiones que llevan 30 segs sin usarse
+  max: 5, 
+  connectionTimeoutMillis: 15000,
+  idleTimeoutMillis: 30000 
 });
 
 pool.on('error', (err, client) => {

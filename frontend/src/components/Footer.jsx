@@ -11,23 +11,23 @@ function Footer() {
             </div>
             <div className="footer-column">
                 <h4>Navegación</h4>
-                <a href="#">Inicio</a>
-                <a href="#">Hombre</a>
-                <a href="#">Mujer</a>
-                <a href="#">Ofertas</a>
+                <a href="/">Inicio</a>
+                <a href="/">Hombre</a>
+                <a href="/">Mujer</a>
+                <a href="/">Ofertas</a>
             </div>
             <div className="footer-column">
                 <h4>Ayuda</h4>
-                <a href="#">Envíos y Devoluciones</a>
-                <a href="#">Guía de Tallas</a>
-                <a href="#">Contacto</a>
+                <a href="/">Envíos y Devoluciones</a>
+                <a href="/">Guía de Tallas</a>
+                <a href="/">Contacto</a>
             </div>
             <div className="footer-column">
                 <h4>Síguenos</h4>
                 <div className="social-icons">
-                     <a href="#">FB</a>
-                     <a href="#">IG</a>
-                     <a href="#">X</a>
+                     <a href="/">FB</a>
+                     <a href="/">IG</a>
+                     <a href="/">X</a>
                 </div>
             </div>
         </div>

@@ -1,14 +1,14 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
+import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { sendVerificationEmail, sendResetEmail } from "../services/mailService.js";
 import { generateToken, hashToken } from "../services/tokenService.js";
 
-const VERIF_EXP_HOURS = parseInt(process.env.VERIFICATION_TOKEN_EXP_HOURS || "24", 10);
-const RESET_EXP_HOURS = parseInt(process.env.RESET_TOKEN_EXP_HOURS || "1", 10);
-const LOGIN_MAX        = parseInt(process.env.LOGIN_MAX_ATTEMPTS || "5", 10);
-const LOGIN_LOCK_MIN   = parseInt(process.env.LOGIN_LOCK_MINUTES || "15", 10);
+const VERIF_EXP_HOURS = Number.parseInt(process.env.VERIFICATION_TOKEN_EXP_HOURS || "24", 10);
+const RESET_EXP_HOURS = Number.parseInt(process.env.RESET_TOKEN_EXP_HOURS || "1", 10);
+const LOGIN_MAX        = Number.parseInt(process.env.LOGIN_MAX_ATTEMPTS || "5", 10);
+const LOGIN_LOCK_MIN   = Number.parseInt(process.env.LOGIN_LOCK_MINUTES || "15", 10);
 const BCRYPT_ROUNDS    = 12;
 
 function nowPlusHours(hours) {
@@ -53,10 +53,9 @@ export const registrarUsuario = async (req, res) => {
     // 3. Enviar correo (no-fail: si falla el correo el usuario igual fue creado)
     try {
       await sendVerificationEmail(email, nombre, token);
-    } catch (mailErr) {
-      console.error("Error enviando email de verificación:", mailErr);
+    } catch (error_) {
+      console.error("Error enviando email:", error_);
     }
-
     return res.status(201).json({
       message: "Si la cuenta fue creada, recibirás un correo con instrucciones para activar.",
     });
@@ -203,28 +202,26 @@ export const logoutUsuario = async (req, res) => {
     return res.status(500).json({ message: "Error al cerrar sesión" });
   }
 };
-
-// ════════════════════════════════════════════════════════════
-//  OBTENER PREGUNTA SECRETA — FUNCIÓN DESACTIVADA
-//  La columna pregunta_secreta fue eliminada en la migración.
-//  Se mantiene el export para no romper las rutas,
-//  pero devuelve 410 Gone con mensaje claro.
-// ════════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════
+OBTENER PREGUNTA SECRETA — FUNCIÓN DESACTIVADA
+La columna pregunta_secreta fue eliminada en la migración.
+Se mantiene el export para no romper las rutas,
+pero devuelve 410 Gone con mensaje claro.
+════════════════════════════════════════════════════════════
 export const obtenerPregunta = async (_req, res) => {
   return res.status(410).json({
     message: "La recuperación por pregunta secreta fue eliminada. Usa la recuperación por correo electrónico.",
   });
 };
-
-// ════════════════════════════════════════════════════════════
-//  VALIDAR RESPUESTA SECRETA — FUNCIÓN DESACTIVADA
-//  Misma razón que obtenerPregunta
-// ════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════
+VALIDAR RESPUESTA SECRETA — FUNCIÓN DESACTIVADA
+ Misma razón que obtenerPregunta
+════════════════════════════════════════════════════════════
 export const validarRespuestaSecreta = async (_req, res) => {
   return res.status(410).json({
     message: "La recuperación por pregunta secreta fue eliminada. Usa la recuperación por correo electrónico.",
   });
-};
+}; */
 
 // ════════════════════════════════════════════════════════════
 //  REQUEST PASSWORD RESET (envío de código por correo)
@@ -265,8 +262,8 @@ export const requestPasswordReset = async (req, res) => {
 
     try {
       await sendResetEmail(email, user.nombre || "Usuario", token);
-    } catch (mailErr) {
-      console.error(mailErr);
+    }catch (error_) {
+      console.error("Error enviando email:", error_);
     }
 
     return res.json({ message: "Correo enviado con éxito. Revisa tu bandeja." });
@@ -326,7 +323,7 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Faltan datos" });
     }
 
-    if (nueva_password.length < parseInt(process.env.PASSWORD_MIN_LENGTH || "8", 10)) {
+    if (nueva_password.length < Number.parseInt(process.env.PASSWORD_MIN_LENGTH || "8", 10)) {
       return res.status(400).json({ message: "Contraseña no cumple requisitos" });
     }
 

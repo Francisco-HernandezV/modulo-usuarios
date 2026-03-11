@@ -1,20 +1,21 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useContext, useMemo } from "react";
+import PropTypes from "prop-types";
 
-// Creamos el contexto
 const SearchContext = createContext();
-
-// Proveedor del contexto (envuelve a la app)
 export function SearchProvider({ children }) {
     const [searchTerm, setSearchTerm] = useState("");
-
+    const contextValue = useMemo(() => ({ searchTerm, setSearchTerm }), [searchTerm]);
     return (
-        <SearchContext.Provider value={{ searchTerm, setSearchTerm }}>
+        <SearchContext.Provider value={contextValue}>
             {children}
         </SearchContext.Provider>
     );
 }
 
-// Hook personalizado para usar la búsqueda fácil
+SearchProvider.propTypes = {
+    children: PropTypes.node.isRequired,
+};
+
 export function useSearch() {
     return useContext(SearchContext);
 }

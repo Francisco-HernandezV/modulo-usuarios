@@ -1,5 +1,4 @@
 import { body, validationResult } from "express-validator";
-import validator from "validator";
 
 // Middleware auxiliar para manejar los resultados de la validación
 const handleValidationErrors = (req, res, next) => {
@@ -35,7 +34,7 @@ export const registerValidator = [
     .isLength({ min: 8, max: 16 }).withMessage("La contraseña debe tener entre 8 y 16 caracteres")
     .matches(/[A-Z]/).withMessage("La contraseña debe incluir al menos una letra mayúscula")
     .matches(/[a-z]/).withMessage("La contraseña debe incluir al menos una letra minúscula")
-    .matches(/[0-9]/).withMessage("La contraseña debe incluir al menos un número")
+    .matches(/\d/).withMessage("La contraseña debe incluir al menos un número")
     .matches(/[\W_]/).withMessage("La contraseña debe incluir al menos un carácter especial (!@#$%^&*)"),
 
   // NOTA: pregunta_secreta y respuesta_secreta eliminados.
@@ -73,7 +72,7 @@ export const resetPasswordValidator = [
     .isLength({ min: 8, max: 16 }).withMessage("La contraseña debe tener entre 8 y 16 caracteres")
     .matches(/[A-Z]/).withMessage("Debe incluir al menos una mayúscula")
     .matches(/[a-z]/).withMessage("Debe incluir al menos una minúscula")
-    .matches(/[0-9]/).withMessage("Debe incluir al menos un número")
+    .matches(/\d/).withMessage("La contraseña debe incluir al menos un número")
     .matches(/[\W_]/).withMessage("Debe incluir al menos un carácter especial"),
     
   handleValidationErrors

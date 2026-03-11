@@ -3,7 +3,7 @@ import pool from "../config/db.js";
 
 export const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const token = authHeader?.split(" ")[1];
   
   if (!token) return res.status(401).json({ message: "Acceso denegado. No hay token." });
   try {
@@ -21,6 +21,7 @@ export const verifyToken = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    console.error("Error validando token JWT:", error);
     return res.status(403).json({ message: "Token inválido o expirado." });
   }
 };

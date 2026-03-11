@@ -1,22 +1,34 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "../styles/theme.css"; // Importamos estilos globales
+import PropTypes from "prop-types"; // <-- Importamos PropTypes
+import "../styles/theme.css"; 
 
 function Breadcrumbs({ links = [], current }) {
   return (
     <div className="breadcrumbs">
-      {/* Mapeamos los enlaces anteriores (Ej: Inicio / Productos) */}
-      {links.map((link, index) => (
-        <span key={index} className="breadcrumb-item">
+      {/* Usamos link.url como key en lugar de index */}
+      {links.map((link) => (
+        <span key={link.url} className="breadcrumb-item">
           <Link to={link.url}>{link.name}</Link>
           <span className="separator">/</span>
         </span>
       ))}
       
-      {/* Página actual (Texto blanco, sin enlace) */}
+      {/* Página actual */}
       <span className="current">{current}</span>
     </div>
   );
 }
+
+// <-- Validación de PropTypes para links y current
+Breadcrumbs.propTypes = {
+  links: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      url: PropTypes.string.isRequired
+    })
+  ),
+  current: PropTypes.string.isRequired
+};
 
 export default Breadcrumbs;

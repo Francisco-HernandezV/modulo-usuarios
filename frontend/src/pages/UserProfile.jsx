@@ -12,7 +12,6 @@ function UserProfile() {
   const [mensaje, setMensaje] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Cargar datos
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -22,7 +21,7 @@ function UserProfile() {
           email: res.data.email || ""
         });
       } catch (error) {
-        console.error("Error cargando perfil", error);
+        console.error("Error cargando perfil:", error);
       } finally {
         setLoading(false);
       }
@@ -41,6 +40,7 @@ function UserProfile() {
       await api.put("/users/profile", user);
       setMensaje("✅ Perfil actualizado con éxito");
     } catch (error) {
+      console.error("Error al actualizar perfil:", error);
       setMensaje(error.response?.data?.message || "❌ Error al actualizar perfil");
     }
   };
@@ -58,10 +58,10 @@ function UserProfile() {
           </div>
 
           <form onSubmit={handleUpdate}>
-            {/* Nombre */}
             <div className="form-group">
-              <label>Nombre Completo</label>
+              <label htmlFor="user_nombre">Nombre Completo</label>
               <input 
+                id="user_nombre"
                 type="text" 
                 name="nombre" 
                 value={user.nombre} 
@@ -69,10 +69,10 @@ function UserProfile() {
               />
             </div>
 
-            {/* Email (Editable) */}
             <div className="form-group">
-              <label>Correo Electrónico</label>
+              <label htmlFor="user_email">Correo Electrónico</label>
               <input 
+                id="user_email"
                 type="email" 
                 name="email" 
                 value={user.email} 

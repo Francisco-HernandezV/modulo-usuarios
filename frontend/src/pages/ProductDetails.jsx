@@ -17,7 +17,7 @@ function ProductDetails() {
     const fetchProduct = async () => {
       try {
         const res = await api.get("/admin/productos");
-        const found = res.data.find(p => p.id === parseInt(id));
+        const found = res.data.find(p => p.id === Number.parseInt(form.producto_id, 10));
         if (found) {
           setProduct({
             ...found,

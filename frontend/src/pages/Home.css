@@ -1,5 +1,4 @@
 /* frontend/src/pages/Home.css */
-
 /* --- HERO SECTION --- */
 .hero {
   position: relative;
@@ -16,7 +15,7 @@
 
 .hero-overlay {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.7);
 }
 
 .hero-content {
@@ -30,21 +29,23 @@
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 3px;
-  color: white;
+  color: #ffffff;
   font-family: "Montserrat", sans-serif;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .hero-content p {
-  color: #e0e0e0;
+  color: #ffffff;
   margin-top: 10px;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   margin-bottom: 25px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 /* BOTÓN CTA HERO */
 .cta-button {
   background-color: #3b82f6;
-  color: white;
+  color: #ffffff;
   padding: 12px 30px;
   border-radius: 50px;
   font-weight: 600;
@@ -80,15 +81,16 @@
   border-left: 4px solid #3b82f6;
   padding-left: 15px;
   margin: 0;
-  color: white;
+  color: #ffffff;
 }
 
 .view-all {
-  color: #8b949e;
+  color: #9ca3af;
   font-size: 0.9rem;
   cursor: pointer;
   transition: color 0.3s;
 }
+
 .view-all:hover { color: #3b82f6; }
 
 /* GRID: 4 Columnas */
@@ -102,20 +104,17 @@
 
 /* --- TARJETA DE PRODUCTO (Vertical) --- */
 .product-card {
-  /* Fondo oscuro azulado */
   background-color: #1f2937 !important; 
   border: 1px solid #374151;
   border-radius: 12px;
   overflow: hidden;
-  
-  /* Flex Column para forzar verticalidad */
   display: flex !important;
   flex-direction: column !important;
-  
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   height: 100%;
   position: relative;
+  text-decoration: none;
 }
 
 .product-card:hover {
@@ -127,8 +126,8 @@
 /* IMAGEN: Fondo blanco y cuadrada */
 .image-wrapper {
   width: 100%;
-  aspect-ratio: 1 / 1; /* Cuadrado perfecto */
-  background-color: #ffffff; /* Fondo blanco */
+  aspect-ratio: 1 / 1;
+  background-color: #ffffff;
   position: relative;
   display: flex;
   justify-content: center;
@@ -139,7 +138,7 @@
 .image-wrapper img {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Ajuste sin cortes */
+  object-fit: contain;
   padding: 20px;
   transition: transform 0.5s;
 }
@@ -153,7 +152,7 @@
   position: absolute;
   top: 10px; left: 10px;
   background-color: #3b82f6;
-  color: white;
+  color: #000000;
   padding: 4px 10px;
   font-size: 10px; font-weight: bold;
   border-radius: 20px;
@@ -166,7 +165,7 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Ocupa el espacio disponible */
+  flex-grow: 1;
 }
 
 .card-info h3 {
@@ -180,7 +179,7 @@
 
 .short-desc {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: #d1d5db;
   margin: 0 0 20px 0;
   text-align: left;
 }
@@ -188,10 +187,10 @@
 /* --- FOOTER DE LA TARJETA --- */
 .card-footer {
   display: flex;
-  justify-content: space-between; /* Precio Izq - Botón Der */
+  justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-top: auto; /* Empuja al fondo */
+  margin-top: auto;
 }
 
 .price {
@@ -205,13 +204,10 @@
   background-color: transparent;
   border: 1px solid #4b5563;
   color: #ffffff;
-  
-  /* Tamaño pequeño */
   padding: 6px 14px; 
   font-size: 0.75rem; 
   border-radius: 6px;
   font-weight: 600;
-  
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
@@ -219,14 +215,12 @@
   width: auto;
 }
 
-/* Efecto al pasar mouse sobre la tarjeta */
 .product-card:hover .add-btn {
   background-color: #3b82f6;
   border-color: #3b82f6;
   color: white;
 }
 
-/* Efecto directo sobre el botón */
 .add-btn:hover {
   background-color: #2563eb !important;
 }

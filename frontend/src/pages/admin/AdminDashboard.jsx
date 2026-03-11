@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
+  useEffect(() => {
     const fetchStats = async () => {
       try {
         const [prods, clientes, cats, inv] = await Promise.all([
@@ -21,14 +21,15 @@ useEffect(() => {
           api.get("/admin/categorias"),
           api.get("/admin/inventario"),
         ]);
-        const stockBajo = (inv.data || []).filter(i => i.stock <= 5).length;
+        const stockBajoCount = (inv.data || []).filter(i => i.stock <= 5).length;
         setStats({
           totalProductos:  (prods.data    || []).length,
           totalClientes:   (clientes.data || []).length,
           totalCategorias: (cats.data     || []).length,
-          stockBajo,
+          stockBajo: stockBajoCount,
         });
       } catch (error) {
+        console.error("Error al obtener estadísticas del dashboard:", error);
         setStats({ totalProductos: 0, totalClientes: 0, totalCategorias: 0, stockBajo: 0 });
       } finally {
         setLoading(false);
@@ -38,10 +39,10 @@ useEffect(() => {
   }, []);
 
   const STATS = [
-    { label: "Productos",  value: stats.totalProductos,  icon: "👗", color: "blue",   to: "/admin/productos"  },
-    { label: "Clientes",   value: stats.totalClientes,   icon: "👥", color: "green",  to: "/admin/clientes"   },
+    { label: "Productos",  value: stats.totalProductos,  icon: "👗", color: "blue",    to: "/admin/productos"  },
+    { label: "Clientes",   value: stats.totalClientes,   icon: "👥", color: "green",   to: "/admin/clientes"   },
     { label: "Categorías", value: stats.totalCategorias, icon: "🏷️", color: "yellow", to: "/admin/categorias" },
-    { label: "Stock bajo", value: stats.stockBajo,       icon: "⚠️", color: "red",    to: "/admin/inventario" },
+    { label: "Stock bajo", value: stats.stockBajo,       icon: "⚠️", color: "red",     to: "/admin/inventario" },
   ];
 
   const MODULES = [
@@ -70,18 +71,17 @@ useEffect(() => {
   return (
     <AdminLayout pageTitle="Dashboard" breadcrumb={null}>
 
-      {/* ── Bienvenida ─────────────────────────── */}
       <div style={{
-        background:     "linear-gradient(135deg, rgba(59,130,246,.14) 0%, rgba(59,130,246,.04) 100%)",
-        border:         "1px solid rgba(59,130,246,.25)",
-        borderRadius:   "12px",
-        padding:        "22px 24px",
-        marginBottom:   "24px",
-        display:        "flex",
-        alignItems:     "center",
+        background:      "linear-gradient(135deg, rgba(59,130,246,.14) 0%, rgba(59,130,246,.04) 100%)",
+        border:          "1px solid rgba(59,130,246,.25)",
+        borderRadius:    "12px",
+        padding:         "22px 24px",
+        marginBottom:    "24px",
+        display:         "flex",
+        alignItems:      "center",
         justifyContent: "space-between",
-        gap:            "16px",
-        flexWrap:       "wrap",
+        gap:             "16px",
+        flexWrap:        "wrap",
       }}>
         <div>
           <h2 style={{ fontFamily: "var(--font-logo,'Montserrat',sans-serif)", fontSize: "20px", fontWeight: 800, marginBottom: "4px" }}>
@@ -105,7 +105,6 @@ useEffect(() => {
         </span>
       </div>
 
-      {/* ── Stats ──────────────────────────────── */}
       <div className="adm-stats-grid">
         {STATS.map(s => (
           <Link key={s.label} to={s.to} style={{ textDecoration: "none" }}>
@@ -120,15 +119,14 @@ useEffect(() => {
         ))}
       </div>
 
-      {/* ── Módulos activos ────────────────────── */}
       <div className="adm-section-header">
         <h3 className="adm-section-title">Módulos activos — Entregables Febrero</h3>
       </div>
 
       <div style={{
-        display:             "grid",
+        display:              "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-        gap:                 "14px",
+        gap:                  "14px",
       }}>
         {MODULES.map(m => (
           <Link key={m.title} to={m.to} style={{ textDecoration: "none" }}>

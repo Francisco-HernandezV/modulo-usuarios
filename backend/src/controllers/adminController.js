@@ -113,7 +113,7 @@ export const createProducto = async (req, res) => {
     if (!nombre?.trim()) {
       return res.status(400).json({ message: "El nombre es obligatorio" });
     }
-    if (!precio_base || isNaN(precio_base) || Number(precio_base) <= 0) {
+    if (!precio_base || Number.isNaN(Number(precio_base)) || Number(precio_base) <= 0) {
       return res.status(400).json({ message: "El precio base debe ser mayor a 0" });
     }
     if (!categoria_id) {
