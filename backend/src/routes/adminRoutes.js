@@ -16,8 +16,12 @@ import {
   createVariante,
   updateVariante,
 } from "../controllers/adminController.js";
-const router = express.Router();
+import {
+  generarRespaldo,
+  getHistorialRespaldos,
+} from "../controllers/respaldosController.js";
 
+const router = express.Router();
 router.get   ("/categorias",      getCategorias);
 router.post  ("/categorias",      createCategoria);
 router.put   ("/categorias/:id",  updateCategoria);
@@ -33,5 +37,6 @@ router.delete("/clientes/:id",    deleteCliente);
 router.get   ("/inventario",      getInventario);
 router.post  ("/inventario",      createVariante);
 router.put   ("/inventario/:id",  updateVariante);
-
+router.get("/respaldos", getHistorialRespaldos);
+router.get("/respaldos/generar", generarRespaldo);
 export default router;

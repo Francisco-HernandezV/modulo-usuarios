@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import PropTypes from "prop-types"; // <-- Importamos PropTypes
+import PropTypes from "prop-types";
 import "../styles/admin.css";
 
 const IconGrid    = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>;
@@ -11,6 +11,7 @@ const IconHome    = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="
 const IconChevron = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
 const IconLogout  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 const IconMenu    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+const IconDatabase = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>;
 
 const NAV_ITEMS = [
   { path: "/admin",            label: "Dashboard",          icon: <IconHome />,  section: "GENERAL"   },
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { path: "/admin/productos",  label: "Catálogo Productos", icon: <IconGrid />,  section: "CATÁLOGOS" },
   { path: "/admin/clientes",   label: "Gestión Clientes",   icon: <IconUsers />, section: "CATÁLOGOS" },
   { path: "/admin/inventario", label: "Inventario",         icon: <IconBox />,   section: "CATÁLOGOS" },
+  { path: "/admin/respaldos",   label: "Respaldos DB",       icon: <IconDatabase />, section: "SISTEMA"   }
 ];
 
 export default function AdminLayout({ children, pageTitle, breadcrumb }) {
@@ -28,8 +30,6 @@ export default function AdminLayout({ children, pageTitle, breadcrumb }) {
 
   return (
     <div className={`adm-layout ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
-
-      {/* ── SIDEBAR ─────────────────────────────── */}
       <aside className="adm-sidebar">
         <div className="adm-sidebar-logo">
           <span className="adm-logo-text">DANTELEMENT</span>
@@ -105,8 +105,6 @@ export default function AdminLayout({ children, pageTitle, breadcrumb }) {
     </div>
   );
 }
-
-// <-- Definición de PropTypes para cumplir con SonarQube
 AdminLayout.propTypes = {
   children: PropTypes.node.isRequired,
   pageTitle: PropTypes.string.isRequired,

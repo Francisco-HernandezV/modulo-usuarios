@@ -17,6 +17,7 @@ import AdminCategorias from "./pages/admin/AdminCategorias";
 import AdminProductos  from "./pages/admin/AdminProductos";
 import AdminClientes   from "./pages/admin/AdminClientes";
 import AdminInventario from "./pages/admin/AdminInventario";
+import AdminRespaldos from "./pages/admin/AdminRespaldos";
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
           <Route path="/admin/inventario"  element={<AdminInventario />} />
           <Route path="/error-400"         element={<Error400 />} />
           <Route path="/error-500"         element={<Error500 />} />
+          <Route path="/admin/respaldos"   element={<AdminRespaldos />} />
           <Route path="*"                  element={<Error404 />} />
         </Routes>
       </BrowserRouter>
