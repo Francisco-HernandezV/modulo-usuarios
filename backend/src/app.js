@@ -4,14 +4,14 @@ import cors    from "cors";
 import helmet  from "helmet";
 import rateLimit from "express-rate-limit";
 import userRoutes  from "./routes/userRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js";  // ← NUEVO
-
+import adminRoutes from "./routes/adminRoutes.js";
 const app = express();
 
 app.set("trust proxy", 1);
+const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(cors({
-  origin: true,
+  origin: isProduction ? process.env.BASE_URL : "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
@@ -27,9 +27,8 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// ── Rutas ──────────────────────────────────────────────────
 app.use("/api/users", userRoutes);
-app.use("/api/admin", adminRoutes);   // ← NUEVO  →  /api/admin/categorias, etc.
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () =>

@@ -1,13 +1,14 @@
 import axios from "axios";
+const isProduction = import.meta.env.MODE === 'production';
+
+const API_URL = isProduction 
+  ? "https://modulo-usuarios-fpig.onrender.com/api"
+  : "http://localhost:4000/api";
 
 const api = axios.create({
-  //baseURL: "https://modulo-usuarios-fpig.onrender.com/api", // Tu URL de Render
-
-  baseURL: "http://localhost:4000/api",
+  baseURL: API_URL,
   withCredentials: true
 });
-
-// 👇 ESTO ES LO NUEVO: Interceptor para inyectar el token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -18,5 +19,4 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-
 export default api;

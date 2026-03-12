@@ -202,31 +202,7 @@ export const logoutUsuario = async (req, res) => {
     return res.status(500).json({ message: "Error al cerrar sesión" });
   }
 };
-/* ════════════════════════════════════════════════════════════
-OBTENER PREGUNTA SECRETA — FUNCIÓN DESACTIVADA
-La columna pregunta_secreta fue eliminada en la migración.
-Se mantiene el export para no romper las rutas,
-pero devuelve 410 Gone con mensaje claro.
-════════════════════════════════════════════════════════════
-export const obtenerPregunta = async (_req, res) => {
-  return res.status(410).json({
-    message: "La recuperación por pregunta secreta fue eliminada. Usa la recuperación por correo electrónico.",
-  });
-};
-════════════════════════════════════════════════════════════
-VALIDAR RESPUESTA SECRETA — FUNCIÓN DESACTIVADA
- Misma razón que obtenerPregunta
-════════════════════════════════════════════════════════════
-export const validarRespuestaSecreta = async (_req, res) => {
-  return res.status(410).json({
-    message: "La recuperación por pregunta secreta fue eliminada. Usa la recuperación por correo electrónico.",
-  });
-}; */
 
-// ════════════════════════════════════════════════════════════
-//  REQUEST PASSWORD RESET (envío de código por correo)
-//  CAMBIOS: Token se guarda en tabla 'tokens', no en usuarios
-// ════════════════════════════════════════════════════════════
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;

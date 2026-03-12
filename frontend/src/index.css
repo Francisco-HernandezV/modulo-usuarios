@@ -1,17 +1,3 @@
-/*
- * index.css — Estilos base globales
- *
- * CORRECCIÓN CSS:
- * Se eliminaron las reglas que rompían el panel administrativo:
- *   - body: display:flex / place-items:center  → centraba todo el body, inutilizando el layout del admin
- *   - button: background-color:#1a1a1a          → sobreescribía los botones de admin.css
- *   - h1: font-size:3.2em                      → sobreescribía el tamaño de h1 en admin
- *
- * Estas propiedades las manejan ahora:
- *   - admin.css (para el panel)
- *   - theme.css (para la tienda)
- */
-
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

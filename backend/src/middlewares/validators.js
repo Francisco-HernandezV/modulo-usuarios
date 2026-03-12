@@ -1,6 +1,4 @@
 import { body, validationResult } from "express-validator";
-
-// Middleware auxiliar para manejar los resultados de la validación
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -13,21 +11,16 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 export const registerValidator = [
-  // --- NOMBRE ---
   body("nombre")
     .trim()
     .notEmpty().withMessage("El nombre es obligatorio")
     .matches(/^[A-ZÁÉÍÓÚÑ][a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/)
     .withMessage("El nombre debe iniciar con mayúscula y solo contener letras"),
-
-  // --- EMAIL ---
   body("email")
     .trim()
     .notEmpty().withMessage("El email es obligatorio")
     .isEmail().withMessage("Debe ser un email válido (ej: usuario@dominio.com)")
     .normalizeEmail(),
-
-  // --- CONTRASEÑA ---
   body("password")
     .trim()
     .notEmpty().withMessage("La contraseña es obligatoria")
@@ -36,10 +29,6 @@ export const registerValidator = [
     .matches(/[a-z]/).withMessage("La contraseña debe incluir al menos una letra minúscula")
     .matches(/\d/).withMessage("La contraseña debe incluir al menos un número")
     .matches(/[\W_]/).withMessage("La contraseña debe incluir al menos un carácter especial (!@#$%^&*)"),
-
-  // NOTA: pregunta_secreta y respuesta_secreta eliminados.
-  // Las columnas fueron removidas en la migración a PostgreSQL.
-
   handleValidationErrors
 ];
 
