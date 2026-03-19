@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   getCategorias,
   createCategoria,
@@ -15,11 +16,14 @@ import {
   getInventario,
   createVariante,
   updateVariante,
+  importarProductos,
 } from "../controllers/adminController.js";
 import {
   generarRespaldo,
   getHistorialRespaldos,
 } from "../controllers/respaldosController.js";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 router.get   ("/categorias",      getCategorias);
@@ -28,6 +32,9 @@ router.put   ("/categorias/:id",  updateCategoria);
 router.delete("/categorias/:id",  deleteCategoria);
 router.get   ("/productos",       getProductos);
 router.post  ("/productos",       createProducto);
+router.post  ("/productos/importar", upload.single('archivo'), importarProductos); 
+router.put   ("/productos/:id",   updateProducto);
+router.delete("/productos/:id",   deleteProducto);
 router.put   ("/productos/:id",   updateProducto);
 router.delete("/productos/:id",   deleteProducto);
 router.get   ("/clientes",        getClientes);

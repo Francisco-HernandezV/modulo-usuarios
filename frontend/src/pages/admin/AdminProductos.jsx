@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // <-- Agregaste useRef
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
 
@@ -31,6 +31,8 @@ export default function AdminProductos() {
   const [errors,     setErrors]     = useState({});
   const [alert,      setAlert]      = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
+  const fileInputRef = useRef(null);
+  const [importando, setImportando] = useState(false);
 
   const cargar = async () => {
     setLoading(true);
@@ -133,6 +135,29 @@ export default function AdminProductos() {
     }
   };
 
+  const handleImportar = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("archivo", file);
+
+    setImportando(true);
+    try {
+      // Hacemos el POST a la nueva ruta enviando el FormData
+      const res = await api.post("/admin/productos/importar", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setAlert({ type: "success", msg: res.data.message });
+      cargar(); // Recargamos la tabla de productos
+    } catch (err) {
+      setAlert({ type: "error", msg: err.response?.data?.message || "Error al importar el archivo." });
+    } finally {
+      setImportando(false);
+      e.target.value = null; // Reseteamos el input para permitir subir el mismo archivo otra vez
+    }
+  };
+
   return (
     <AdminLayout pageTitle="Catálogo de Productos" breadcrumb="Productos">
       {alert && (
@@ -142,9 +167,30 @@ export default function AdminProductos() {
       )}
       <div className="adm-section-header">
         <h3 className="adm-section-title">Productos ({productos.length})</h3>
-        <button className="adm-btn adm-btn-primary" onClick={openCreate} type="button">
-          <IconPlus /> Nuevo producto
-        </button>
+        
+        <div style={{ display: "flex", gap: "10px" }}>
+          {/* Input oculto */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            onChange={handleImportar}
+          />
+          {/* Botón para disparar el input oculto */}
+          <button 
+            className="adm-btn adm-btn-ghost" 
+            onClick={() => fileInputRef.current.click()} 
+            disabled={importando}
+            type="button"
+          >
+            {importando ? "⏳ Importando..." : "📄 Importar Excel/CSV"}
+          </button>
+
+          <button className="adm-btn adm-btn-primary" onClick={openCreate} type="button">
+            <IconPlus /> Nuevo producto
+          </button>
+        </div>
       </div>
       {loading ? (
         <div className="adm-empty"><p>Cargando productos...</p></div>

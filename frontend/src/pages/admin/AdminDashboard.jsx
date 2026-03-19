@@ -88,7 +88,7 @@ export default function AdminDashboard() {
             Bienvenido al Panel Administrativo
           </h2>
           <p style={{ color: "var(--text-muted,#8b949e)", fontSize: "13px" }}>
-            DanElement Boutique · Módulos de febrero listos para captura de datos reales
+            DanElement Boutique, Módulos de febrero listos para captura de datos reales
           </p>
         </div>
         <span style={{
@@ -101,7 +101,6 @@ export default function AdminDashboard() {
           border:       "1px solid rgba(59,130,246,.3)",
           whiteSpace:   "nowrap",
         }}>
-          🚀 v1.0 — Feb 2025
         </span>
       </div>
 

@@ -1,5 +1,6 @@
 import pool from "../config/db.js";
-
+import xlsx from "xlsx";
+import iconv from "iconv-lite"; // <-- Agrega esta línea
 // ════════════════════════════════════════════════════════════
 //  CATEGORÍAS
 // ════════════════════════════════════════════════════════════
@@ -179,6 +180,94 @@ export const deleteProducto = async (req, res) => {
     return res.status(500).json({ message: "Error al eliminar producto" });
   }
 };
+export const importarProductos = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No se proporcionó ningún archivo." });
+    }
+// 1. Leer el archivo Excel/CSV desde la memoria solucionando acentos
+    let workbook;
+    const nombreArchivo = req.file.originalname.toLowerCase();
+
+    if (nombreArchivo.endsWith('.csv')) {
+      const decodedString = iconv.decode(req.file.buffer, 'win1252');
+      workbook = xlsx.read(decodedString, { type: "string" });
+    } else {
+      workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+    }
+
+    const sheetName = workbook.SheetNames[0]; // Tomamos la primera hoja
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let agregados = 0;
+    let omitidos = 0;
+
+    // 2. Procesar fila por fila
+    for (const row of data) {
+      // Función auxiliar para buscar el valor de la columna sin importar si está en mayúsculas o minúsculas
+      const getVal = (claves) => {
+        const key = Object.keys(row).find(k => claves.includes(k.trim().toLowerCase()));
+        return key ? row[key] : null;
+      };
+
+      // Mapeamos las columnas según el formato esperado (puedes ajustar los nombres de las listas si difieren)
+      const nombre = getVal(['nombre', 'producto', 'name']);
+      const descripcion = getVal(['descripcion', 'descripción', 'desc']);
+      const precio = parseFloat(getVal(['precio base', 'precio', 'precio_base'])) || 0;
+      const costo = parseFloat(getVal(['costo'])) || null;
+      const categoriaNombre = getVal(['categoria', 'categoría', 'category']);
+
+      // Validación básica: Si no tiene nombre, precio válido o categoría, saltamos la fila
+      if (!nombre || precio <= 0 || !categoriaNombre) {
+        omitidos++;
+        continue; 
+      }
+
+      // 3. Regla de negocio: Manejo de Categoría
+      let categoria_id;
+      const catCheck = await pool.query(
+        "SELECT id FROM categorias WHERE LOWER(nombre) = LOWER($1)", 
+        [categoriaNombre.trim()]
+      );
+
+      if (catCheck.rows.length > 0) {
+        categoria_id = catCheck.rows[0].id; // La categoría ya existe
+      } else {
+        // La categoría no existe, la creamos al vuelo
+        const catInsert = await pool.query(
+          "INSERT INTO categorias (nombre, activo) VALUES ($1, true) RETURNING id",
+          [categoriaNombre.trim()]
+        );
+        categoria_id = catInsert.rows[0].id;
+      }
+
+      // 4. Regla de negocio: Manejo de Producto (Evitar duplicados)
+      const prodCheck = await pool.query(
+        "SELECT id FROM productos WHERE LOWER(nombre) = LOWER($1)", 
+        [nombre.trim()]
+      );
+
+      if (prodCheck.rows.length > 0) {
+        omitidos++; // Ya existe, lo omitimos y pasamos al siguiente
+      } else {
+        // No existe, lo insertamos
+        await pool.query(
+          "INSERT INTO productos (nombre, descripcion, precio_base, costo, categoria_id, activo) VALUES ($1, $2, $3, $4, $5, true)",
+          [nombre.trim(), descripcion || null, precio, costo, categoria_id]
+        );
+        agregados++;
+      }
+    }
+
+    return res.json({
+      message: `Importación exitosa. Agregados: ${agregados} | Omitidos (duplicados o inválidos): ${omitidos}.`
+    });
+
+  } catch (error) {
+    console.error("Error al importar productos:", error);
+    return res.status(500).json({ message: "Error interno al procesar el archivo Excel/CSV." });
+  }
+}; 
 
 // ════════════════════════════════════════════════════════════
 //  CLIENTES
