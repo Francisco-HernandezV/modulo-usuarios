@@ -180,19 +180,34 @@ export const deleteProducto = async (req, res) => {
     return res.status(500).json({ message: "Error al eliminar producto" });
   }
 };
+
 export const importarProductos = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No se proporcionó ningún archivo." });
     }
-// 1. Leer el archivo Excel/CSV desde la memoria solucionando acentos
+
     let workbook;
     const nombreArchivo = req.file.originalname.toLowerCase();
 
+    // 1. Manejo avanzado de codificación para CSV y lectura de XLSX
     if (nombreArchivo.endsWith('.csv')) {
-      const decodedString = iconv.decode(req.file.buffer, 'win1252');
+      const buffer = req.file.buffer;
+      // Detectamos si el archivo tiene la firma UTF-8 (los 3 primeros bytes del BOM)
+      const isUTF8 = buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf;
+      
+      let decodedString;
+      if (isUTF8) {
+        // Es nuestro CSV exportado o uno guardado explícitamente como UTF-8
+        decodedString = buffer.toString('utf8');
+      } else {
+        // Es un CSV guardado desde el Excel clásico en español (Windows-1252)
+        decodedString = iconv.decode(buffer, 'win1252');
+      }
+      
       workbook = xlsx.read(decodedString, { type: "string" });
     } else {
+      // Si es .xlsx puro, la librería lo lee sin problemas en formato binario
       workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     }
 
@@ -204,13 +219,17 @@ export const importarProductos = async (req, res) => {
 
     // 2. Procesar fila por fila
     for (const row of data) {
-      // Función auxiliar para buscar el valor de la columna sin importar si está en mayúsculas o minúsculas
+      // Función auxiliar para buscar el valor limpiando caracteres invisibles (BOM)
       const getVal = (claves) => {
-        const key = Object.keys(row).find(k => claves.includes(k.trim().toLowerCase()));
+        const key = Object.keys(row).find(k => {
+          // Removemos el \uFEFF invisible y espacios en blanco
+          const cleanKey = k.replace(/^\uFEFF/, '').trim().toLowerCase();
+          return claves.includes(cleanKey);
+        });
         return key ? row[key] : null;
       };
 
-      // Mapeamos las columnas según el formato esperado (puedes ajustar los nombres de las listas si difieren)
+      // Mapeamos las columnas según el formato esperado
       const nombre = getVal(['nombre', 'producto', 'name']);
       const descripcion = getVal(['descripcion', 'descripción', 'desc']);
       const precio = parseFloat(getVal(['precio base', 'precio', 'precio_base'])) || 0;
@@ -267,8 +286,7 @@ export const importarProductos = async (req, res) => {
     console.error("Error al importar productos:", error);
     return res.status(500).json({ message: "Error interno al procesar el archivo Excel/CSV." });
   }
-}; 
-
+};
 // ════════════════════════════════════════════════════════════
 //  CLIENTES
 // ════════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; // <-- Agregaste useRef
+import { useState, useEffect, useRef } from "react"; 
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
 
@@ -6,6 +6,8 @@ const IconX     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const IconEdit  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
 const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconPlus  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconImport = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
+const IconExport = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 
 const EMPTY_FORM = {
   nombre: "", descripcion: "", precio_base: "", costo: "", categoria_id: "", activo: true,
@@ -158,6 +160,50 @@ export default function AdminProductos() {
     }
   };
 
+  const handleExportar = () => {
+    // 1. Definir las cabeceras exactas de tu formato
+    const headers = ["Nombre", "Descripcion", "Precio_Base", "Costo", "Categoria"];
+
+    // 2. Transformar los datos de la tabla al formato CSV
+    const rows = productos.map(p => {
+      // Obtenemos el nombre de la categoría
+      const catNombre = p.categoria_nombre || categorias.find(c => c.id === p.categoria_id)?.nombre || "Sin Categoria";
+      
+      // Función para limpiar textos (evita que las comas en las descripciones rompan el CSV)
+      const escapeCSV = (val) => {
+        if (!val) return '""';
+        const str = String(val).replace(/"/g, '""'); // Escapar comillas dobles
+        return `"${str}"`; // Envolver en comillas
+      };
+
+      // Retornamos la fila unida por comas
+      return [
+        escapeCSV(p.nombre),
+        escapeCSV(p.descripcion),
+        p.precio_base,
+        p.costo || "",
+        escapeCSV(catNombre)
+      ].join(",");
+    });
+
+    // 3. Unir todo. El "\uFEFF" es la magia para que Excel lea los acentos perfectamente.
+    const csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
+
+    // 4. Crear el archivo y forzar la descarga en el navegador
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    
+    // Generar un nombre con la fecha actual
+    const fecha = new Date().toISOString().split('T')[0];
+    link.setAttribute("download", `Catalogo_DanElement_${fecha}.csv`);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <AdminLayout pageTitle="Catálogo de Productos" breadcrumb="Productos">
       {alert && (
@@ -168,8 +214,18 @@ export default function AdminProductos() {
       <div className="adm-section-header">
         <h3 className="adm-section-title">Productos ({productos.length})</h3>
         
-        <div style={{ display: "flex", gap: "10px" }}>
-          {/* Input oculto */}
+        {/* Contenedor Flexbox ajustado para alinear los botones a la misma altura */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          
+          <button 
+            className="adm-btn adm-btn-ghost" 
+            onClick={handleExportar} 
+            type="button"
+            title="Descargar catálogo en CSV"
+          >
+            <IconExport /> Exportar
+          </button>
+
           <input
             type="file"
             ref={fileInputRef}
@@ -177,19 +233,21 @@ export default function AdminProductos() {
             accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
             onChange={handleImportar}
           />
-          {/* Botón para disparar el input oculto */}
+          
           <button 
             className="adm-btn adm-btn-ghost" 
             onClick={() => fileInputRef.current.click()} 
             disabled={importando}
             type="button"
+            title="Cargar productos desde Excel/CSV"
           >
-            {importando ? "⏳ Importando..." : "📄 Importar Excel/CSV"}
+            {importando ? "⏳ Cargando..." : <><IconImport /> Importar</>}
           </button>
 
           <button className="adm-btn adm-btn-primary" onClick={openCreate} type="button">
             <IconPlus /> Nuevo producto
           </button>
+
         </div>
       </div>
       {loading ? (
@@ -279,7 +337,7 @@ export default function AdminProductos() {
       )}
       {modal && (
         <div className="adm-modal-overlay" onClick={() => setModal(false)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setModal(false))} aria-label="Cerrar modal">
-          <div className="adm-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+          <div className="adm-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
             <div className="adm-modal-header">
               <h3 className="adm-modal-title">
                 {editando ? "Editar producto" : "Nuevo producto"}
@@ -398,7 +456,7 @@ export default function AdminProductos() {
       )}
       {confirmDel && (
         <div className="adm-modal-overlay" onClick={() => setConfirmDel(null)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setConfirmDel(null))} aria-label="Cerrar confirmación">
-          <div className="adm-modal" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+          <div className="adm-modal" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
             <div className="adm-modal-header">
               <h3 className="adm-modal-title">Confirmar eliminación</h3>
               <button className="adm-modal-close" onClick={() => setConfirmDel(null)} type="button" aria-label="Cerrar">
