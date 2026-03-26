@@ -26,14 +26,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* ELIMINADO: display:flex; place-items:center;
-     Esas propiedades centraban TODA la app, rompiendo el layout del admin panel */
 }
-
-/* ELIMINADO: h1 { font-size: 3.2em } — conflicto con admin y tienda */
-
-/* ELIMINADO: button { background-color: #1a1a1a } — conflicto con admin.css */
-/* Los estilos de button se definen en theme.css (tienda) y admin.css (panel) */
 
 @media (prefers-color-scheme: light) {
   :root {

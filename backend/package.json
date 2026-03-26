@@ -4,7 +4,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node src/app.js",
+    "start": "node src/app.js", 
     "dev": "nodemon src/app.js"
   },
   "keywords": [],
@@ -22,6 +22,7 @@
     "iconv-lite": "^0.4.24",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
+    "newrelic": "^13.17.0",
     "nodemailer": "^7.0.10",
     "pg": "^8.17.2",
     "xlsx": "^0.18.5"

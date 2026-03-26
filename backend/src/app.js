@@ -5,6 +5,9 @@ import helmet  from "helmet";
 import rateLimit from "express-rate-limit";
 import userRoutes  from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+
+import { raspProtection } from "./middlewares/rasp.js";
+
 const app = express();
 
 app.set("trust proxy", 1);
@@ -17,6 +20,7 @@ app.use(cors({
 }));
 
 app.use(helmet());
+
 app.use(express.json());
 
 const globalLimiter = rateLimit({
@@ -26,6 +30,8 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use(globalLimiter);
+
+app.use(raspProtection);
 
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
