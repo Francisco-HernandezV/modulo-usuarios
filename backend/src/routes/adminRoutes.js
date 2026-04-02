@@ -20,8 +20,11 @@ import {
 } from "../controllers/adminController.js";
 import {
   generarRespaldo,
-  getHistorialRespaldos,
+  getHistorialRespaldos, 
 } from "../controllers/respaldosController.js";
+import { 
+  getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum 
+} from "../controllers/monitorController.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -46,4 +49,10 @@ router.post  ("/inventario",      createVariante);
 router.put   ("/inventario/:id",  updateVariante);
 router.get("/respaldos", getHistorialRespaldos);
 router.get("/respaldos/generar", generarRespaldo);
+router.get("/monitor/activity", getActivity);
+router.get("/monitor/locks", getLocks);
+router.post("/monitor/kill", killProcess);
+router.post("/monitor/explain", runExplain);
+router.get("/monitor/health", getHealth);
+router.get("/monitor/autovacuum", getAutovacuum);
 export default router;
