@@ -20,10 +20,6 @@ function nowPlusMinutes(mins) {
 
 // ════════════════════════════════════════════════════════════
 //  REGISTRO
-//  CAMBIOS:
-//  - Ya no usa pregunta_secreta / respuesta_secreta (columnas eliminadas)
-//  - Token de verificación se guarda en tabla 'tokens', no en usuarios
-//  - Columna 'password' renombrada a 'password_hash'
 // ════════════════════════════════════════════════════════════
 export const registrarUsuario = async (req, res) => {
   try {
@@ -40,7 +36,14 @@ export const registrarUsuario = async (req, res) => {
     );
     const userId = userResult.rows[0].id;
 
-    // 2. Generar token de verificación y guardarlo en tabla 'tokens'
+    // 2. Asignar automáticamente el rol de cliente al usuario recién creado
+    await pool.query(
+      `INSERT INTO usuario_roles (usuario_id, rol_id)
+       SELECT $1, id FROM roles WHERE nombre = 'rol_cliente'`,
+      [userId]
+    );
+
+    // 3. Generar token de verificación y guardarlo en tabla 'tokens'
     const token    = generateToken(32);
     const tokenExp = nowPlusHours(VERIF_EXP_HOURS);
 
@@ -50,14 +53,15 @@ export const registrarUsuario = async (req, res) => {
       [userId, token, tokenExp]
     );
 
-    // 3. Enviar correo (no-fail: si falla el correo el usuario igual fue creado)
+    // 4. Enviar correo
     try {
       await sendVerificationEmail(email, nombre, token);
     } catch (error_) {
       console.error("Error enviando email:", error_);
     }
+    
     return res.status(201).json({
-      message: "Si la cuenta fue creada, recibirás un correo con instrucciones para activar.",
+      message: "Registro exitoso. Recibirás un correo con instrucciones para activar tu cuenta.",
     });
   } catch (error) {
     if (error.code === "23505") {
@@ -70,8 +74,6 @@ export const registrarUsuario = async (req, res) => {
 
 // ════════════════════════════════════════════════════════════
 //  ACTIVAR CUENTA
-//  CAMBIOS: Busca el token en la tabla 'tokens' en lugar de
-//  la columna token_activacion de usuarios
 // ════════════════════════════════════════════════════════════
 export const activarCuenta = async (req, res) => {
   try {
@@ -117,8 +119,6 @@ export const activarCuenta = async (req, res) => {
 
 // ════════════════════════════════════════════════════════════
 //  LOGIN
-//  CAMBIOS: SELECT usa 'password_hash' (antes era 'password')
-//           bcrypt.compare usa user.password_hash
 // ════════════════════════════════════════════════════════════
 export const loginUsuario = async (req, res) => {
   try {
@@ -142,10 +142,9 @@ export const loginUsuario = async (req, res) => {
       });
     }
     if (!user.cuenta_activa) {
-      return res.status(403).json({ message: "Cuenta inactiva. Revisa tu correo." });
+      return res.status(403).json({ message: "Cuenta inactiva. Revisa tu correo para activarla." });
     }
 
-    // Comparar contra password_hash (columna renombrada)
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
       const attempts  = (user.login_attempts || 0) + 1;
@@ -186,7 +185,7 @@ export const loginUsuario = async (req, res) => {
 };
 
 // ════════════════════════════════════════════════════════════
-//  LOGOUT — sin cambios, pero actualiza updated_at
+//  LOGOUT
 // ════════════════════════════════════════════════════════════
 export const logoutUsuario = async (req, res) => {
   try {
@@ -203,6 +202,9 @@ export const logoutUsuario = async (req, res) => {
   }
 };
 
+// ════════════════════════════════════════════════════════════
+//  RECUPERACIÓN DE CONTRASEÑA
+// ════════════════════════════════════════════════════════════
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
@@ -212,13 +214,12 @@ export const requestPasswordReset = async (req, res) => {
       [email]
     );
 
-    // Siempre respondemos igual para no revelar si el correo existe
     if (result.rows.length === 0) {
       return res.json({ message: "Si el correo existe, se enviaron instrucciones." });
     }
     const user = result.rows[0];
 
-    // Invalidar tokens de recuperación anteriores de este usuario
+    // Invalidar tokens anteriores
     await pool.query(
       `UPDATE tokens SET usado = TRUE
        WHERE usuario_id = $1 AND tipo = 'recuperacion' AND usado = FALSE`,
@@ -238,7 +239,7 @@ export const requestPasswordReset = async (req, res) => {
 
     try {
       await sendResetEmail(email, user.nombre || "Usuario", token);
-    }catch (error_) {
+    } catch (error_) {
       console.error("Error enviando email:", error_);
     }
 
@@ -249,10 +250,6 @@ export const requestPasswordReset = async (req, res) => {
   }
 };
 
-// ════════════════════════════════════════════════════════════
-//  VALIDATE RESET TOKEN
-//  CAMBIOS: Busca en tabla 'tokens', no en columnas de usuarios
-// ════════════════════════════════════════════════════════════
 export const validateResetToken = async (req, res) => {
   try {
     const { token } = req.body;
@@ -285,13 +282,6 @@ export const validateResetToken = async (req, res) => {
   }
 };
 
-// ════════════════════════════════════════════════════════════
-//  RESET PASSWORD
-//  CAMBIOS:
-//  - Busca token en tabla 'tokens', no en columnas de usuarios
-//  - Actualiza 'password_hash' (antes era 'password')
-//  - Marca token como usado en tabla 'tokens'
-// ════════════════════════════════════════════════════════════
 export const resetPassword = async (req, res) => {
   try {
     const { token, nueva_password } = req.body;
@@ -305,7 +295,6 @@ export const resetPassword = async (req, res) => {
 
     const tokenHash = hashToken(token);
 
-    // Buscar token válido en tabla tokens
     const result = await pool.query(
       `SELECT id, usuario_id, expira_en
        FROM tokens
@@ -326,7 +315,6 @@ export const resetPassword = async (req, res) => {
 
     const hashed = await bcrypt.hash(nueva_password, BCRYPT_ROUNDS);
 
-    // Actualizar password_hash (columna renombrada)
     await pool.query(
       `UPDATE usuarios
        SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
@@ -334,7 +322,6 @@ export const resetPassword = async (req, res) => {
       [hashed, row.usuario_id]
     );
 
-    // Marcar token como usado
     await pool.query(`UPDATE tokens SET usado = TRUE WHERE id = $1`, [row.id]);
 
     return res.json({ message: "Contraseña actualizada correctamente" });
@@ -345,7 +332,7 @@ export const resetPassword = async (req, res) => {
 };
 
 // ════════════════════════════════════════════════════════════
-//  PERFIL — sin cambios estructurales
+//  PERFIL
 // ════════════════════════════════════════════════════════════
 export const getProfile = async (req, res) => {
   try {

@@ -12,6 +12,10 @@ const pool = new pg.Pool({
   idleTimeoutMillis: 30000 
 });
 
+pool.on('connect', (client) => {
+  client.query('SET search_path TO seguridad, inventario, catalogo, ventas, auditoria, reportes, public');
+});
+
 pool.on('error', (err, client) => {
   console.error('Error en el cliente de la base de datos:', err.message);
 });
