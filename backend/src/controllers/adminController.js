@@ -76,11 +76,91 @@ export const getColores = async (req, res) => {
     } catch (e) { return res.status(500).json({ message: "Error al obtener colores" }); }
 };
 
+// ── REEMPLAZA la función getTallas existente ──────────────────────────────
 export const getTallas = async (req, res) => {
-    try {
-        const { rows } = await pool.query("SELECT * FROM tallas ORDER BY id ASC");
-        return res.json(rows);
-    } catch (e) { return res.status(500).json({ message: "Error al obtener tallas" }); }
+  try {
+    const { rows } = await pool.query(`
+      SELECT t.id, t.valor, t.tipo_talla_id, tt.nombre AS tipo_nombre
+      FROM tallas t
+      JOIN tipos_talla tt ON tt.id = t.tipo_talla_id
+      ORDER BY tt.nombre ASC, t.valor ASC
+    `);
+    return res.json(rows);
+  } catch (e) {
+    return res.status(500).json({ message: "Error al obtener tallas" });
+  }
+};
+
+// ── FUNCIONES NUEVAS ─────────────────────────────────────────────────────
+export const getTiposTalla = async (req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT * FROM tipos_talla ORDER BY nombre ASC");
+    return res.json(rows);
+  } catch (e) {
+    return res.status(500).json({ message: "Error al obtener tipos de talla" });
+  }
+};
+
+export const createTalla = async (req, res) => {
+  try {
+    const { tipo_talla_id, nuevo_tipo, valores } = req.body;
+
+    if (!valores?.length)
+      return res.status(400).json({ message: "Debes enviar al menos un valor" });
+
+    let tipoId = tipo_talla_id;
+
+    // Si viene nuevo tipo, lo insertamos primero
+    if (!tipoId && nuevo_tipo?.trim()) {
+      const { rows } = await pool.query(
+        `INSERT INTO tipos_talla (nombre)
+         VALUES ($1)
+         ON CONFLICT (nombre) DO UPDATE SET nombre = EXCLUDED.nombre
+         RETURNING id`,
+        [nuevo_tipo.trim()]
+      );
+      tipoId = rows[0].id;
+    }
+
+    if (!tipoId)
+      return res.status(400).json({ message: "Se requiere un tipo de talla válido" });
+
+    const insertadas = [];
+    const duplicadas = [];
+
+    for (const valor of valores) {
+      try {
+        const { rows } = await pool.query(
+          "INSERT INTO tallas (tipo_talla_id, valor) VALUES ($1, $2) RETURNING *",
+          [tipoId, valor.trim()]
+        );
+        insertadas.push(rows[0]);
+      } catch (err) {
+        if (err.code === "23505") duplicadas.push(valor); // ya existe
+        else throw err;
+      }
+    }
+
+    return res.status(201).json({ insertadas, duplicadas });
+  } catch (error) {
+    console.error("createTalla:", error);
+    return res.status(500).json({ message: "Error al crear tallas" });
+  }
+};
+
+export const deleteTalla = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "DELETE FROM tallas WHERE id = $1 RETURNING id",
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: "Talla no encontrada" });
+    return res.json({ message: "Talla eliminada correctamente" });
+  } catch (error) {
+    if (error.code === "23503")
+      return res.status(409).json({ message: "Esta talla está en uso por variantes de productos" });
+    return res.status(500).json({ message: "Error al eliminar talla" });
+  }
 };
 
 
@@ -291,13 +371,29 @@ export const createCatalogoItem = async (req, res) => {
   if (!permitidas.includes(tabla)) return res.status(400).json({ message: "Catálogo no válido" });
 
   try {
-    const { nombre } = req.body;
+    // 🔥 Ahora también recibimos codigo_hex y activo desde el frontend
+    const { nombre, activo = true, codigo_hex } = req.body;
+    
     if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
 
-    const { rows } = await pool.query(
-      `INSERT INTO ${tabla} (nombre, activo) VALUES ($1, true) RETURNING *`,
-      [nombre.trim()]
-    );
+    let rows;
+    
+    // Si la tabla es colores, insertamos el código hexadecimal también
+    if (tabla === 'colores') {
+      const result = await pool.query(
+        `INSERT INTO colores (nombre, codigo_hex, activo) VALUES ($1, $2, $3) RETURNING *`,
+        [nombre.trim(), codigo_hex || '#000000', activo]
+      );
+      rows = result.rows;
+    } else {
+      // Para marcas y departamentos, insertamos normal
+      const result = await pool.query(
+        `INSERT INTO ${tabla} (nombre, activo) VALUES ($1, $2) RETURNING *`,
+        [nombre.trim(), activo]
+      );
+      rows = result.rows;
+    }
+
     return res.status(201).json(rows[0]);
   } catch (error) {
     if (error.code === '23505') return res.status(400).json({ message: "Este registro ya existe" });
