@@ -18,7 +18,7 @@ export default function AdminDashboard() {
         const [prods, clientes, cats, inv] = await Promise.all([
           api.get("/admin/productos"),
           api.get("/admin/clientes"),
-          api.get("/admin/categorias"),
+          api.get("/admin/catalogos"),
           api.get("/admin/inventario"),
         ]);
         const stockBajoCount = (inv.data || []).filter(i => i.stock <= 5).length;
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   const STATS = [
     { label: "Productos",  value: stats.totalProductos,  icon: "👗", color: "blue",    to: "/admin/productos"  },
     { label: "Clientes",   value: stats.totalClientes,   icon: "👥", color: "green",   to: "/admin/clientes"   },
-    { label: "Categorías", value: stats.totalCategorias, icon: "🏷️", color: "yellow", to: "/admin/categorias" },
+    { label: "Categorías", value: stats.totalCategorias, icon: "🏷️", color: "yellow", to: "/admin/catalogos" },
     { label: "Stock bajo", value: stats.stockBajo,       icon: "⚠️", color: "red",     to: "/admin/inventario" },
   ];
 
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     {
       title: "Categorías",
       desc:  "Define y organiza las categorías de prendas para estructurar el catálogo correctamente.",
-      to: "/admin/categorias", icon: "🏷️", color: "yellow",
+      to: "/admin/catalogos", icon: "🏷️", color: "yellow",
     },
     {
       title: "Inventario",

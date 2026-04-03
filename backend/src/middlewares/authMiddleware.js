@@ -1,15 +1,15 @@
 import jwt from "jsonwebtoken";
 import pool from "../config/db.js";
 
-// ... (Tu función verifyToken se queda exactamente igual) ...
 export const verifyToken = async (req, res, next) => {
-  // ... tu código actual de verifyToken ...
   const authHeader = req.headers["authorization"];
   const token = authHeader?.split(" ")[1];
   
   if (!token) return res.status(401).json({ message: "Acceso denegado. No hay token." });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "secreto_super_seguro");
+    
+    // Verificamos la versión del token contra la base de datos
     const result = await pool.query("SELECT token_version FROM usuarios WHERE id = $1", [decoded.id]);
     
     if (result.rows.length === 0) return res.status(401).json({ message: "Usuario no encontrado." });
@@ -26,9 +26,11 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 
+// 🛡️ Guardia de seguridad por roles (RBAC)
 export const checkRole = (rolesPermitidos) => {
   return async (req, res, next) => {
-    try {b
+    try {
+      // 1. Buscamos qué rol tiene asignado este usuario en la BD
       const query = `
         SELECT r.nombre 
         FROM usuario_roles ur
@@ -43,11 +45,14 @@ export const checkRole = (rolesPermitidos) => {
 
       const userRole = rows[0].nombre;
 
+      // 2. Verificamos si su rol está en la lista de permitidos para esta ruta
       if (!rolesPermitidos.includes(userRole)) {
         return res.status(403).json({ 
           message: `Acceso denegado. Requiere privilegios de: ${rolesPermitidos.join(" o ")}` 
         });
       }
+
+      // 3. Todo en orden, lo dejamos pasar
       req.user.rol = userRole;
       next();
 

@@ -13,7 +13,7 @@ import Error404 from "./pages/Error404";
 import Error500 from "./pages/Error500";
 import Error400 from "./pages/Error400";
 import AdminDashboard  from "./pages/admin/AdminDashboard";
-import AdminCategorias from "./pages/admin/AdminCategorias";
+import AdminCatalogos from "./pages/admin/AdminCatalogos";
 import AdminProductos  from "./pages/admin/AdminProductos";
 import AdminClientes   from "./pages/admin/AdminClientes";
 import AdminInventario from "./pages/admin/AdminInventario";
@@ -41,7 +41,7 @@ function App() {
             }
           />
           <Route path="/admin"             element={<AdminDashboard />} />
-          <Route path="/admin/categorias"  element={<AdminCategorias />} />
+          <Route path="/admin/catalogos" element={<AdminCatalogos />} />
           <Route path="/admin/productos"   element={<AdminProductos />} />
           <Route path="/admin/clientes"    element={<AdminClientes />} />
           <Route path="/admin/inventario"  element={<AdminInventario />} />

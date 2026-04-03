@@ -61,15 +61,19 @@ function Navbar() {
           </button>
         </div>
         <div className="actions">
-          <button 
+          {/* 🔥 CORRECCIÓN AQUÍ: Se cambió button a div */}
+          <div 
             className="user-menu-container" 
             ref={dropdownRef}
             onMouseEnter={() => setShowDropdown(true)}
             onMouseLeave={() => setShowDropdown(false)}
             onKeyDown={(e) => e.key === 'Enter' && setShowDropdown(!showDropdown)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            tabIndex={0}
+            role="button"
+            aria-haspopup="menu"
+            aria-expanded={showDropdown}
             aria-label="Menú de usuario"
-            type="button"
+            style={{ cursor: 'pointer' }}
           >
             <div className="icon-link">
               <UserIcon />
@@ -93,7 +97,7 @@ function Navbar() {
                 )}
               </div>
             )}
-          </button>
+          </div>
           <button 
             className="cart-container icon-link" 
             aria-label="Ver carrito"

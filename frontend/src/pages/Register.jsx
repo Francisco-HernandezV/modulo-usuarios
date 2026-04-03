@@ -3,16 +3,12 @@ import api from "../services/api";
 import { Link } from "react-router-dom";
 import "../styles/theme.css";
 
-// CAMBIOS:
-// - Eliminados campos pregunta_secreta y respuesta_secreta (columnas removidas en migración DB)
-// - El estado del form ya no incluye esos campos
-// - El reset del form ya no incluye esos campos
-
 function Register() {
   const [form, setForm] = useState({
     nombre: "",
     email: "",
     password: "",
+    telefono_contacto: "", 
   });
   
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +30,7 @@ function Register() {
     try {
       await api.post("/users/register", form);
       setMensaje("✅ Registro exitoso. Revisa tu correo para activar la cuenta.");
-      setForm({ nombre: "", email: "", password: "" });
+      setForm({ nombre: "", email: "", password: "", telefono_contacto: "" });
     } catch (error) {
       if (error.response?.data?.errors) {
         const erroresBackend = {};
@@ -81,6 +77,20 @@ function Register() {
           {errores.email && <small style={{ color: "red", display: "block", textAlign: "left" }}>{errores.email}</small>}
         </div>
 
+        {/* TELÉFONO */}
+        <div style={{ marginBottom: "15px" }}>
+          <input
+            type="tel"
+            name="telefono_contacto"
+            placeholder="Teléfono (10 dígitos)"
+            maxLength="10"
+            value={form.telefono_contacto}
+            onChange={handleChange}
+            style={errores.telefono_contacto ? { borderColor: "red", marginBottom: "5px" } : {}}
+          />
+          {errores.telefono_contacto && <small style={{ color: "red", display: "block", textAlign: "left" }}>{errores.telefono_contacto}</small>}
+        </div>
+
         {/* PASSWORD CON OJITO */}
         <div style={{ marginBottom: "15px", position: "relative" }}>
           <input
@@ -117,10 +127,6 @@ function Register() {
 
           {errores.password && <small style={{ color: "red", display: "block", textAlign: "left" }}>{errores.password}</small>}
         </div>
-
-        {/* ELIMINADO: Pregunta Secreta y Respuesta Secreta
-            Motivo: columnas removidas en migración a PostgreSQL.
-            La recuperación ahora es exclusivamente por correo electrónico. */}
 
         <button type="submit">Registrarse</button>
       </form>

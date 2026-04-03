@@ -16,12 +16,13 @@ const IconMonitor  = () => <svg width="17" height="17" viewBox="0 0 24 24" fill=
 
 const NAV_ITEMS = [
   { path: "/admin",             label: "Dashboard",          icon: <IconHome />,     section: "GENERAL"   },
-  { path: "/admin/categorias",  label: "Categorías",         icon: <IconTag />,      section: "CATÁLOGOS" },
+  // 🔥 CORRECCIÓN: Se actualizó la etiqueta y la ruta a catalogos
+  { path: "/admin/catalogos",   label: "Catálogos Base",     icon: <IconTag />,      section: "CATÁLOGOS" }, 
   { path: "/admin/productos",   label: "Catálogo Productos", icon: <IconGrid />,     section: "CATÁLOGOS" },
   { path: "/admin/clientes",    label: "Gestión Clientes",   icon: <IconUsers />,    section: "CATÁLOGOS" },
   { path: "/admin/inventario",  label: "Inventario",         icon: <IconBox />,      section: "CATÁLOGOS" },
   { path: "/admin/respaldos",   label: "Respaldos DB",       icon: <IconDatabase />, section: "SISTEMA"   },
-  { path: "/admin/monitor",     label: "Monitor DB",         icon: <IconMonitor />,  section: "SISTEMA"   } // <-- NUEVO ENLACE
+  { path: "/admin/monitor",     label: "Monitor DB",         icon: <IconMonitor />,  section: "SISTEMA"   } 
 ];
 
 export default function AdminLayout({ children, pageTitle, breadcrumb }) {
@@ -34,7 +35,7 @@ export default function AdminLayout({ children, pageTitle, breadcrumb }) {
     <div className={`adm-layout ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
       <aside className="adm-sidebar">
         <div className="adm-sidebar-logo">
-          <span className="adm-logo-text">DANTELEMENT</span>
+          <span className="adm-logo-text">DANELEMENT</span>
           <span className="adm-logo-sub">Panel Administrativo</span>
         </div>
 

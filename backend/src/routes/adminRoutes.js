@@ -17,6 +17,9 @@ import {
   createVariante,
   updateVariante,
   importarProductos,
+  getMarcas, getDepartamentos, getColores, getTallas,
+  createCatalogoItem,
+  deleteCatalogoItem
 } from "../controllers/adminController.js";
 
 import {
@@ -38,9 +41,18 @@ import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
+// 🟢 RUTAS DE ACCESO LIBRE (Antes del candado de seguridad)
 router.get("/categorias", getCategorias);
 router.get("/productos", getProductos);
+
+// 🔥 Movimos la ruta de respaldo aquí arriba para que Chrome la pueda descargar directo
+router.get("/respaldos/generar", generarRespaldo);
+
+// =======================================================================
+// 🔴 MIDDLEWARE DE AUTENTICACIÓN: Todo lo de abajo requiere Token JWT
+// =======================================================================
 router.use(verifyToken);
+
 router.post(
   "/categorias",
   checkRole(["rol_admin", "rol_gestor_inventario"]),
@@ -52,6 +64,7 @@ router.put(
   updateCategoria
 );
 router.delete("/categorias/:id", checkRole(["rol_admin"]), deleteCategoria);
+
 router.post(
   "/productos",
   checkRole(["rol_admin", "rol_gestor_inventario"]),
@@ -103,9 +116,30 @@ router.put(
   updateCliente
 );
 router.delete("/clientes/:id", checkRole(["rol_admin"]), deleteCliente);
-router.get("/respaldos", checkRole(["rol_admin"]), getHistorialRespaldos);
-router.get("/respaldos/generar", checkRole(["rol_admin"]), generarRespaldo);
 
+// RESPALDOS (Solo lectura del historial)
+router.get("/respaldos", checkRole(["rol_admin"]), getHistorialRespaldos);
+
+// RUTAS DE LECTURA DE CATÁLOGOS
+router.get("/marcas", getMarcas);
+router.get("/departamentos", getDepartamentos);
+router.get("/colores", getColores);
+router.get("/tallas", getTallas);
+
+// 🔥 CORRECCIÓN: Rutas dinámicas de escritura simplificadas
+router.post(
+  "/:tabla",
+  checkRole(["rol_admin", "rol_gestor_inventario"]),
+  createCatalogoItem
+);
+
+router.delete(
+  "/:tabla/:id",
+  checkRole(["rol_admin"]),
+  deleteCatalogoItem
+);
+
+// MONITOR DE BASE DE DATOS
 router.get("/monitor/activity", checkRole(["rol_admin"]), getActivity);
 router.get("/monitor/locks", checkRole(["rol_admin"]), getLocks);
 router.post("/monitor/kill", checkRole(["rol_admin"]), killProcess);

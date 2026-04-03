@@ -1,4 +1,5 @@
 import { body, validationResult } from "express-validator";
+
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -29,6 +30,13 @@ export const registerValidator = [
     .matches(/[a-z]/).withMessage("La contraseña debe incluir al menos una letra minúscula")
     .matches(/\d/).withMessage("La contraseña debe incluir al menos un número")
     .matches(/[\W_]/).withMessage("La contraseña debe incluir al menos un carácter especial (!@#$%^&*)"),
+  
+  // 📞 Validación opcional de teléfono de contacto
+  body("telefono_contacto")
+    .optional({ checkFalsy: true })
+    .matches(/^\d{10}$/)
+    .withMessage("El teléfono debe contener exactamente 10 dígitos numéricos"),
+    
   handleValidationErrors
 ];
 

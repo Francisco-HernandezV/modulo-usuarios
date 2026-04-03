@@ -23,27 +23,27 @@ function nowPlusMinutes(mins) {
 // ════════════════════════════════════════════════════════════
 export const registrarUsuario = async (req, res) => {
   try {
-    const { nombre, email, password } = req.body;
-
+    // 1. Extraer teléfono del body
+    const { nombre, email, password, telefono_contacto } = req.body;
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // 1. Insertar usuario con la nueva estructura
+    // 2. Insertar usuario con la nueva estructura (incluyendo teléfono)
     const userResult = await pool.query(
-      `INSERT INTO usuarios (nombre, email, password_hash, cuenta_activa, email_verificado)
-       VALUES ($1, $2, $3, FALSE, FALSE)
+      `INSERT INTO usuarios (nombre, email, password_hash, telefono_contacto, cuenta_activa, email_verificado)
+       VALUES ($1, $2, $3, $4, FALSE, FALSE)
        RETURNING id`,
-      [nombre, email, hashedPassword]
+      [nombre, email, hashedPassword, telefono_contacto || null]
     );
     const userId = userResult.rows[0].id;
 
-    // 2. Asignar automáticamente el rol de cliente al usuario recién creado
+    // 3. Asignar automáticamente el rol de cliente al usuario recién creado
     await pool.query(
       `INSERT INTO usuario_roles (usuario_id, rol_id)
        SELECT $1, id FROM roles WHERE nombre = 'rol_cliente'`,
       [userId]
     );
 
-    // 3. Generar token de verificación y guardarlo en tabla 'tokens'
+    // 4. Generar token de verificación y guardarlo en tabla 'tokens'
     const token    = generateToken(32);
     const tokenExp = nowPlusHours(VERIF_EXP_HOURS);
 
@@ -53,13 +53,13 @@ export const registrarUsuario = async (req, res) => {
       [userId, token, tokenExp]
     );
 
-    // 4. Enviar correo
+    // 5. Enviar correo
     try {
       await sendVerificationEmail(email, nombre, token);
     } catch (error_) {
       console.error("Error enviando email:", error_);
     }
-    
+
     return res.status(201).json({
       message: "Registro exitoso. Recibirás un correo con instrucciones para activar tu cuenta.",
     });
@@ -337,7 +337,7 @@ export const resetPassword = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, nombre, email FROM usuarios WHERE id = $1",
+      "SELECT id, nombre, email, telefono_contacto FROM usuarios WHERE id = $1",
       [req.user.id]
     );
     if (result.rows.length === 0) {
@@ -352,12 +352,12 @@ export const getProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { nombre, email } = req.body;
+    const { nombre, email, telefono_contacto } = req.body;
     await pool.query(
       `UPDATE usuarios
-       SET nombre = $1, email = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [nombre, email, req.user.id]
+       SET nombre = $1, email = $2, telefono_contacto = $3, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4`,
+      [nombre, email, telefono_contacto || null, req.user.id]
     );
     return res.json({ message: "Perfil actualizado correctamente" });
   } catch (error) {
