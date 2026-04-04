@@ -18,13 +18,14 @@ import AdminProductos  from "./pages/admin/AdminProductos";
 import AdminClientes   from "./pages/admin/AdminClientes";
 import AdminInventario from "./pages/admin/AdminInventario";
 import AdminRespaldos  from "./pages/admin/AdminRespaldos";
-import AdminMonitor    from "./components/AdminMonitor"; // <-- IMPORTACIÓN AGREGADA
+import AdminMonitor    from "./components/AdminMonitor"; 
 
 function App() {
   return (
     <SearchProvider>
       <BrowserRouter>
         <Routes>
+          {/* ── RUTAS PÚBLICAS ── */}
           <Route path="/"                  element={<Home />} />
           <Route path="/catalogo/:filtro"  element={<Catalog />} />
           <Route path="/producto/:id"      element={<ProductDetails />} />
@@ -32,23 +33,26 @@ function App() {
           <Route path="/register"          element={<Register />} />
           <Route path="/recover"           element={<RecoverPassword />} />
           <Route path="/activar/:token"    element={<AccountActivation />} />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <UserProfile />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/admin"             element={<AdminDashboard />} />
-          <Route path="/admin/catalogos" element={<AdminCatalogos />} />
-          <Route path="/admin/productos"   element={<AdminProductos />} />
-          <Route path="/admin/clientes"    element={<AdminClientes />} />
-          <Route path="/admin/inventario"  element={<AdminInventario />} />
           <Route path="/error-400"         element={<Error400 />} />
           <Route path="/error-500"         element={<Error500 />} />
-          <Route path="/admin/respaldos"   element={<AdminRespaldos />} />
-          <Route path="/admin/monitor"     element={<AdminMonitor />} /> {/* <-- RUTA AGREGADA */}
+
+          {/* ── RUTAS PRIVADAS BÁSICAS (Clientes y Admins) ── */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={<UserProfile />} />
+          </Route>
+
+          {/* ── 🛡️ RUTAS PROTEGIDAS STRICTAS (Solo Staff) ── */}
+          <Route element={<ProtectedRoute rolesPermitidos={["rol_admin", "rol_vendedor", "rol_gestor_inventario"]} />}>
+            <Route path="/admin"             element={<AdminDashboard />} />
+            <Route path="/admin/catalogos"   element={<AdminCatalogos />} />
+            <Route path="/admin/productos"   element={<AdminProductos />} />
+            <Route path="/admin/clientes"    element={<AdminClientes />} />
+            <Route path="/admin/inventario"  element={<AdminInventario />} />
+            <Route path="/admin/respaldos"   element={<AdminRespaldos />} />
+            <Route path="/admin/monitor"     element={<AdminMonitor />} /> 
+          </Route>
+
+          {/* Fallback */}
           <Route path="*"                  element={<Error404 />} />
         </Routes>
       </BrowserRouter>

@@ -18,8 +18,22 @@ function Login() {
     
     try {
       const response = await api.post("/users/login", { email, password });
+      
+      // Guardamos el token y el rol
       localStorage.setItem("token", response.data.token);
-      navigate("/Home"); 
+      
+      // Si el backend no manda rol, asumimos que es cliente por defecto
+      const userRol = response.data.usuario?.rol || "rol_cliente";
+      localStorage.setItem("rol", userRol);
+
+      // Redirección inteligente
+      const rolesAdmin = ["rol_admin", "rol_vendedor", "rol_gestor_inventario"];
+      if (rolesAdmin.includes(userRol)) {
+        navigate("/admin"); // Es staff: al panel
+      } else {
+        navigate("/"); // Es cliente: a la tienda
+      }
+      
     } catch (error) {
       if (error.response?.data?.errors) {
         const erroresBackend = {};

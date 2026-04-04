@@ -74,3 +74,27 @@ export const resetPasswordValidator = [
     
   handleValidationErrors
 ];
+
+export const productoCompletoValidator = [
+  body("nombre")
+    .trim()
+    .notEmpty().withMessage("El nombre del producto es obligatorio"),
+  body("precio_base")
+    .notEmpty().withMessage("El precio base es obligatorio")
+    .isFloat({ min: 0.01 }).withMessage("El precio base no puede ser negativo ni cero")
+    // Regex: Empieza con dígitos, opcionalmente un punto y 1 o 2 dígitos. Rechaza la 'e'.
+    .matches(/^\d+(\.\d{1,2})?$/).withMessage("El precio base solo acepta números con un máximo de 2 decimales"),
+  handleValidationErrors
+];
+
+// 🔥 NUEVO: Validador estricto para editar stock y precio en Inventario
+export const varianteValidator = [
+  body("precio")
+    .notEmpty().withMessage("El precio es obligatorio")
+    .isFloat({ min: 0 }).withMessage("El precio no puede ser negativo")
+    .matches(/^\d+(\.\d{1,2})?$/).withMessage("El precio solo acepta números con un máximo de 2 decimales"),
+  body("stock")
+    .notEmpty().withMessage("El stock es obligatorio")
+    .isInt({ min: 0 }).withMessage("El stock debe ser un número entero (sin decimales) y no negativo"),
+  handleValidationErrors
+];

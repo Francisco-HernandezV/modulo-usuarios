@@ -11,7 +11,10 @@ const UserIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" heigh
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null); // 🔥 Estado para saber qué rol es
+  
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const { searchTerm, setSearchTerm } = useSearch();
@@ -24,7 +27,9 @@ function Navbar() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const rol = localStorage.getItem("rol"); // Leemos el rol
     setIsLoggedIn(!!token);
+    setUserRole(rol);
   }, []);
 
   const handleLogout = async () => {
@@ -34,12 +39,17 @@ function Navbar() {
       console.error("Error logout", error);
     } finally {
       localStorage.removeItem("token");
+      localStorage.removeItem("rol"); // Limpiamos el rol
       setIsLoggedIn(false);
+      setUserRole(null);
       setShowDropdown(false);
       navigate("/");
       globalThis.location.reload(); 
     }
   };
+
+  // Verificamos si es staff
+  const isStaff = ["rol_admin", "rol_vendedor", "rol_gestor_inventario"].includes(userRole);
 
   return (
     <>
@@ -61,7 +71,6 @@ function Navbar() {
           </button>
         </div>
         <div className="actions">
-          {/* 🔥 CORRECCIÓN AQUÍ: Se cambió button a div */}
           <div 
             className="user-menu-container" 
             ref={dropdownRef}
@@ -82,6 +91,17 @@ function Navbar() {
               <div className="dropdown-menu">
                 {isLoggedIn ? (
                   <>
+                    {/* 🔥 EL BOTÓN MÁGICO CONDICIONAL */}
+                    {isStaff && (
+                      <Link 
+                        to="/admin" 
+                        className="dropdown-item" 
+                        style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: "10px", marginBottom: "5px", fontWeight: "700", color: "#3b82f6" }}
+                      >
+                        ⚙️ Panel Admin
+                      </Link>
+                    )}
+
                     <Link to="/profile" className="dropdown-item">👤 Mi Perfil</Link>
                     <button 
                         onClick={handleLogout} 

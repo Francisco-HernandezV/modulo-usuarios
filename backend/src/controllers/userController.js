@@ -124,9 +124,13 @@ export const loginUsuario = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // 🔥 CORRECCIÓN: Agregamos un JOIN para traer el rol del usuario
     const result = await pool.query(
-      `SELECT id, password_hash, cuenta_activa, login_attempts, lock_until, token_version
-       FROM usuarios WHERE email = $1`,
+      `SELECT u.id, u.password_hash, u.cuenta_activa, u.login_attempts, u.lock_until, u.token_version, r.nombre AS rol
+       FROM usuarios u
+       LEFT JOIN usuario_roles ur ON u.id = ur.usuario_id
+       LEFT JOIN roles r ON ur.rol_id = r.id
+       WHERE u.email = $1`,
       [email]
     );
 
@@ -138,7 +142,7 @@ export const loginUsuario = async (req, res) => {
 
     if (user.lock_until && new Date(user.lock_until) > new Date()) {
       return res.status(423).json({
-        message: "Cuenta bloqueada temporalmente por intentos fallidos. Intenta en 15 minutos.",
+        message: `Cuenta bloqueada temporalmente por intentos fallidos. Intenta en ${LOGIN_LOCK_MIN} minutos.`,
       });
     }
     if (!user.cuenta_activa) {
@@ -176,7 +180,8 @@ export const loginUsuario = async (req, res) => {
     return res.json({
       message: "Login exitoso",
       token,
-      usuario: { id: user.id, email },
+      // 🔥 CORRECCIÓN: Ahora devolvemos el rol al frontend
+      usuario: { id: user.id, email, rol: user.rol || 'rol_cliente' },
     });
   } catch (e) {
     console.error(e);

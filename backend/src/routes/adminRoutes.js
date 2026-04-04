@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import {
   getCategorias, createCategoria, updateCategoria, deleteCategoria,
-  getProductos, createProducto, updateProducto, deleteProducto, createProductoCompleto, // 🔥 Importamos la nueva función
+  getProductos, createProducto, updateProducto, deleteProducto, createProductoCompleto, 
   getClientes, createCliente, updateCliente, deleteCliente,
   getInventario, createVariante, updateVariante, deleteVariante,
   importarProductos,
@@ -14,6 +14,9 @@ import {
 import { generarRespaldo, getHistorialRespaldos } from "../controllers/respaldosController.js";
 import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum } from "../controllers/monitorController.js";
 import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
+
+// 🔥 IMPORTAMOS LOS NUEVOS VALIDADORES
+import { productoCompletoValidator, varianteValidator } from "../middlewares/validators.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
@@ -32,8 +35,13 @@ router.put("/categorias/:id", checkRole(["rol_admin","rol_gestor_inventario"]), 
 router.delete("/categorias/:id", checkRole(["rol_admin"]), deleteCategoria);
 
 // Productos
-// 🔥 NUEVA RUTA: Recibe todo el paquete del Wizard
-router.post("/productos/completo", checkRole(["rol_admin","rol_gestor_inventario"]), createProductoCompleto);
+// 🔥 NUEVA RUTA: Recibe todo el paquete del Wizard con validación estricta
+router.post(
+  "/productos/completo", 
+  checkRole(["rol_admin","rol_gestor_inventario"]), 
+  productoCompletoValidator, 
+  createProductoCompleto
+);
 
 router.post("/productos",     checkRole(["rol_admin","rol_gestor_inventario"]), createProducto);
 router.put("/productos/:id",  checkRole(["rol_admin","rol_gestor_inventario"]), updateProducto);
@@ -42,8 +50,16 @@ router.post("/productos/importar", checkRole(["rol_admin"]), upload.single("arch
 
 // Inventario
 router.get("/inventario",     checkRole(["rol_admin","rol_gestor_inventario","rol_vendedor"]), getInventario);
-router.put("/inventario/:id", checkRole(["rol_admin","rol_gestor_inventario"]), updateVariante);
-router.delete("/inventario/:id", checkRole(["rol_admin"]), deleteVariante); // 🔥 Nueva ruta para eliminar
+
+// 🔥 Aplicamos el validador estricto a la edición de stock y precio
+router.put(
+  "/inventario/:id", 
+  checkRole(["rol_admin","rol_gestor_inventario"]), 
+  varianteValidator, 
+  updateVariante
+);
+
+router.delete("/inventario/:id", checkRole(["rol_admin"]), deleteVariante); 
 
 
 // Clientes
