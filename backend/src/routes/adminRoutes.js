@@ -2,9 +2,9 @@ import express from "express";
 import multer from "multer";
 import {
   getCategorias, createCategoria, updateCategoria, deleteCategoria,
-  getProductos, createProducto, updateProducto, deleteProducto,
+  getProductos, createProducto, updateProducto, deleteProducto, createProductoCompleto, // 🔥 Importamos la nueva función
   getClientes, createCliente, updateCliente, deleteCliente,
-  getInventario, createVariante, updateVariante,
+  getInventario, createVariante, updateVariante, deleteVariante,
   importarProductos,
   getMarcas, getDepartamentos, getColores,
   getTallas, getTiposTalla, createTalla, deleteTalla,
@@ -32,6 +32,9 @@ router.put("/categorias/:id", checkRole(["rol_admin","rol_gestor_inventario"]), 
 router.delete("/categorias/:id", checkRole(["rol_admin"]), deleteCategoria);
 
 // Productos
+// 🔥 NUEVA RUTA: Recibe todo el paquete del Wizard
+router.post("/productos/completo", checkRole(["rol_admin","rol_gestor_inventario"]), createProductoCompleto);
+
 router.post("/productos",     checkRole(["rol_admin","rol_gestor_inventario"]), createProducto);
 router.put("/productos/:id",  checkRole(["rol_admin","rol_gestor_inventario"]), updateProducto);
 router.delete("/productos/:id", checkRole(["rol_admin"]), deleteProducto);
@@ -39,8 +42,9 @@ router.post("/productos/importar", checkRole(["rol_admin"]), upload.single("arch
 
 // Inventario
 router.get("/inventario",     checkRole(["rol_admin","rol_gestor_inventario","rol_vendedor"]), getInventario);
-router.post("/inventario",    checkRole(["rol_admin","rol_gestor_inventario"]), createVariante);
 router.put("/inventario/:id", checkRole(["rol_admin","rol_gestor_inventario"]), updateVariante);
+router.delete("/inventario/:id", checkRole(["rol_admin"]), deleteVariante); // 🔥 Nueva ruta para eliminar
+
 
 // Clientes
 router.get("/clientes",      checkRole(["rol_admin","rol_vendedor"]), getClientes);

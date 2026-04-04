@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
+import "../../styles/theme.css";
 
 const IconX       = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 const IconEdit    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const IconPlus    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 const IconWarning = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+const IconTrash   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 
 const TALLAS     = ["XS","S","M","L","XL","XXL","UN","28","30","32","34","36"];
 const EMPTY_FORM = { producto_id: "", talla: "", color: "", sku: "", precio: "", stock: "0", stock_apartado: "0" };
@@ -30,6 +31,7 @@ export default function AdminInventario() {
   const [alert,       setAlert]       = useState(null);
   const [ajusteModal, setAjusteModal] = useState(null);
   const [ajusteVal,   setAjusteVal]   = useState("");
+  const [confirmDel,  setConfirmDel]  = useState(null); // Nuevo estado para eliminar
 
   const cargar = async () => {
     setLoading(true);
@@ -57,31 +59,12 @@ export default function AdminInventario() {
     return () => clearTimeout(t);
   }, [alert]);
 
-  useEffect(() => {
-    if (!editando && form.producto_id && form.talla && form.color) {
-      const prod      = productos.find(p => p.id === Number.parseInt(form.producto_id, 10));
-      const initials  = prod
-        ? prod.nombre.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
-        : "XX";
-      const colorCode = form.color.toUpperCase().slice(0, 2);
-      const sku       = `DTE-${initials}-${String(form.producto_id).padStart(3,"0")}-${form.talla}-${colorCode}`;
-      setForm(f => ({ ...f, sku }));
-    }
-  }, [form.producto_id, form.talla, form.color, editando, productos]);
-
   const validate = () => {
     const e = {};
-    if (!form.producto_id)                              e.producto_id = "Selecciona un producto";
-    if (!form.talla.trim())                             e.talla       = "La talla es obligatoria";
-    if (!form.color.trim())                             e.color       = "El color es obligatorio";
     if (!form.precio || Number(form.precio) <= 0)       e.precio      = "Precio válido requerido";
     if (form.stock === "" || Number(form.stock) < 0)    e.stock       = "Stock no puede ser negativo";
     setErrors(e);
     return Object.keys(e).length === 0;
-  };
-
-  const openCreate = () => {
-    setEditando(null); setForm(EMPTY_FORM); setErrors({}); setModal(true);
   };
 
   const openEdit = (v) => {
@@ -112,9 +95,6 @@ export default function AdminInventario() {
       if (editando) {
         await api.put(`/admin/inventario/${editando.id}`, payload);
         setAlert({ type: "success", msg: "Variante actualizada." });
-      } else {
-        await api.post("/admin/inventario", payload);
-        setAlert({ type: "success", msg: "Variante añadida al inventario." });
       }
       setModal(false);
       cargar();
@@ -133,6 +113,19 @@ export default function AdminInventario() {
       cargar();
     } catch {
       setAlert({ type: "error", msg: "Error al actualizar stock." });
+    }
+  };
+
+  const handleEliminarConfirmado = async () => {
+    if (!confirmDel) return;
+    try {
+      await api.delete(`/admin/inventario/${confirmDel}`);
+      setAlert({ type: "success", msg: "Variante eliminada correctamente." });
+      setConfirmDel(null);
+      cargar();
+    } catch (error) {
+      setAlert({ type: "error", msg: error.response?.data?.message || "Error al eliminar variante." });
+      setConfirmDel(null);
     }
   };
 
@@ -189,16 +182,14 @@ export default function AdminInventario() {
       </div>
       <div className="adm-section-header">
         <h3 className="adm-section-title">Variantes de inventario</h3>
-        <button className="adm-btn adm-btn-primary" onClick={openCreate} type="button">
-          <IconPlus /> Nueva variante
-        </button>
+        <p style={{ color: "#9ca3af", fontSize: "0.9rem", margin: 0 }}>Gestiona existencias y precios. Los nuevos productos se añaden desde el Creador de Productos.</p>
       </div>
       {loading ? (
         <div className="adm-empty"><p>Cargando inventario...</p></div>
       ) : variantes.length === 0 ? (
         <div className="adm-empty">
           <div className="adm-empty-icon">📦</div>
-          <p>No hay variantes. Añade tallas y colores para controlar tu stock.</p>
+          <p>No hay variantes en el inventario. Ve a la sección de Productos para crear uno.</p>
         </div>
       ) : (
         <div className="adm-table-wrap">
@@ -270,12 +261,12 @@ export default function AdminInventario() {
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: "8px" }}>
+                      <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
                         <button
                           className="adm-btn adm-btn-ghost adm-btn-sm"
                           onClick={() => { setAjusteModal(v); setAjusteVal(String(v.stock)); }}
                           title="Ajuste rápido de stock"
-                          style={{ fontSize: 11 }}
+                          style={{ fontSize: 11, padding: "6px 10px" }}
                           type="button"
                         >
                           Stock
@@ -283,10 +274,20 @@ export default function AdminInventario() {
                         <button
                           className="adm-btn adm-btn-ghost adm-btn-sm"
                           onClick={() => openEdit(v)}
-                          title="Editar variante"
+                          title="Editar precio/SKU"
                           type="button"
+                          style={{ padding: "6px 10px" }}
                         >
                           <IconEdit />
+                        </button>
+                        <button
+                          className="adm-btn adm-btn-danger adm-btn-sm"
+                          onClick={() => setConfirmDel(v.id)}
+                          title="Eliminar variante"
+                          type="button"
+                          style={{ padding: "6px 10px" }}
+                        >
+                          <IconTrash />
                         </button>
                       </div>
                     </td>
@@ -297,67 +298,20 @@ export default function AdminInventario() {
           </table>
         </div>
       )}
+
+      {/* Modal de Edición */}
       {modal && (
         <div className="adm-modal-overlay" onClick={() => setModal(false)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setModal(false))} aria-label="Cerrar modal">
           <div className="adm-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="adm-modal-header">
-              <h3 className="adm-modal-title">
-                {editando ? "Editar variante" : "Nueva variante de inventario"}
-              </h3>
+              <h3 className="adm-modal-title">Editar Detalles de Variante</h3>
               <button className="adm-modal-close" onClick={() => setModal(false)} type="button" aria-label="Cerrar">
                 <IconX />
               </button>
             </div>
             <div className="adm-modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-              <div className="adm-form-group">
-                <label htmlFor="inv_producto">Producto *</label>
-                <select
-                  id="inv_producto"
-                  className={`adm-select ${errors.producto_id ? "adm-input-error" : ""}`}
-                  value={form.producto_id}
-                  onChange={e => handleChange("producto_id", e.target.value)}
-                  disabled={!!editando}
-                >
-                  <option value="">— Selecciona un producto —</option>
-                  {productos.map(p => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </select>
-                {errors.producto_id && <p className="adm-error-text">{errors.producto_id}</p>}
-              </div>
-              <div className="adm-form-row">
-                <div className="adm-form-group" style={{ margin: 0 }}>
-                  <label htmlFor="inv_talla">Talla *</label>
-                  <select
-                    id="inv_talla"
-                    className={`adm-select ${errors.talla ? "adm-input-error" : ""}`}
-                    value={form.talla}
-                    onChange={e => handleChange("talla", e.target.value)}
-                  >
-                    <option value="">— Talla —</option>
-                    {TALLAS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  {errors.talla && <p className="adm-error-text">{errors.talla}</p>}
-                </div>
-                <div className="adm-form-group" style={{ margin: 0 }}>
-                  <label htmlFor="inv_color">Color *</label>
-                  <input
-                    id="inv_color"
-                    className={`adm-input ${errors.color ? "adm-input-error" : ""}`}
-                    placeholder="Ej: Negro, Blanco, Azul..."
-                    value={form.color}
-                    onChange={e => handleChange("color", e.target.value)}
-                  />
-                  {errors.color && <p className="adm-error-text">{errors.color}</p>}
-                </div>
-              </div>
               <div className="adm-form-group" style={{ marginTop: "14px" }}>
-                <label htmlFor="inv_sku">
-                  SKU{" "}
-                  <span style={{ fontWeight: 400, textTransform: "none" }}>
-                    (se genera automáticamente)
-                  </span>
-                </label>
+                <label htmlFor="inv_sku">SKU</label>
                 <input
                   id="inv_sku"
                   className="adm-input"
@@ -378,30 +332,17 @@ export default function AdminInventario() {
                   />
                   {errors.precio && <p className="adm-error-text">{errors.precio}</p>}
                 </div>
-                <div className="adm-form-group" style={{ margin: 0 }}>
-                  <label htmlFor="inv_stock">Stock inicial *</label>
-                  <input
-                    id="inv_stock"
-                    className={`adm-input ${errors.stock ? "adm-input-error" : ""}`}
-                    type="number" min="0" step="1" placeholder="0"
-                    value={form.stock}
-                    onChange={e => handleChange("stock", e.target.value)}
-                  />
-                  {errors.stock && <p className="adm-error-text">{errors.stock}</p>}
-                </div>
               </div>
             </div>
             <div className="adm-modal-footer">
-              <button className="adm-btn adm-btn-ghost" onClick={() => setModal(false)} type="button">
-                Cancelar
-              </button>
-              <button className="adm-btn adm-btn-primary" onClick={handleGuardar} type="button">
-                {editando ? "Guardar cambios" : "Añadir al inventario"}
-              </button>
+              <button className="adm-btn adm-btn-ghost" onClick={() => setModal(false)} type="button">Cancelar</button>
+              <button className="adm-btn adm-btn-primary" onClick={handleGuardar} type="button">Guardar cambios</button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Modal de Ajuste de Stock */}
       {ajusteModal && (
         <div className="adm-modal-overlay" onClick={() => setAjusteModal(null)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setAjusteModal(null))} aria-label="Cerrar ajuste">
           <div className="adm-modal" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
@@ -430,12 +371,31 @@ export default function AdminInventario() {
               </div>
             </div>
             <div className="adm-modal-footer">
-              <button className="adm-btn adm-btn-ghost" onClick={() => setAjusteModal(null)} type="button">
-                Cancelar
+              <button className="adm-btn adm-btn-ghost" onClick={() => setAjusteModal(null)} type="button">Cancelar</button>
+              <button className="adm-btn adm-btn-primary" onClick={handleAjuste} type="button">Actualizar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Eliminación */}
+      {confirmDel && (
+        <div className="adm-modal-overlay" onClick={() => setConfirmDel(null)}>
+          <div className="adm-modal" style={{ maxWidth: "380px" }} onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-header">
+              <h3 className="adm-modal-title">Confirmar eliminación</h3>
+              <button className="adm-modal-close" onClick={() => setConfirmDel(null)} type="button">
+                <IconX />
               </button>
-              <button className="adm-btn adm-btn-primary" onClick={handleAjuste} type="button">
-                Actualizar
-              </button>
+            </div>
+            <div className="adm-modal-body">
+              <p style={{ fontSize: "14px", color: "#9ca3af", lineHeight: 1.6, marginBottom: "20px" }}>
+                ¿Estás seguro de eliminar esta variante del inventario? Esta acción no se puede deshacer.
+              </p>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button className="adm-btn adm-btn-ghost" onClick={() => setConfirmDel(null)}>Cancelar</button>
+                <button className="adm-btn adm-btn-danger" onClick={handleEliminarConfirmado}>Sí, eliminar</button>
+              </div>
             </div>
           </div>
         </div>

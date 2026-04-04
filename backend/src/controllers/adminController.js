@@ -76,7 +76,6 @@ export const getColores = async (req, res) => {
     } catch (e) { return res.status(500).json({ message: "Error al obtener colores" }); }
 };
 
-// ── REEMPLAZA la función getTallas existente ──────────────────────────────
 export const getTallas = async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -110,7 +109,6 @@ export const createTalla = async (req, res) => {
 
     let tipoId = tipo_talla_id;
 
-    // Si viene nuevo tipo, lo insertamos primero
     if (!tipoId && nuevo_tipo?.trim()) {
       const { rows } = await pool.query(
         `INSERT INTO tipos_talla (nombre)
@@ -188,6 +186,72 @@ export const getProductos = async (req, res) => {
   }
 };
 
+// 🔥 MAGIA TRANSACCIONAL: Crea el producto padre y las variantes en un solo movimiento
+export const createProductoCompleto = async (req, res) => {
+  const { nombre, descripcion, precio_base, categoria_id, marca_id, departamento_id, activo, matriz } = req.body;
+
+  if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
+  if (!precio_base || Number(precio_base) <= 0) return res.status(400).json({ message: "Precio base inválido" });
+  
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Crear Producto Padre
+    const productQuery = `
+      INSERT INTO productos (nombre, descripcion, precio_base, categoria_id, marca_id, departamento_id, activo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, nombre;
+    `;
+    const productRes = await client.query(productQuery, [
+      nombre.trim(), descripcion || null, precio_base, categoria_id || null, marca_id || null, departamento_id || null, activo
+    ]);
+    
+    const productoId = productRes.rows[0].id;
+    const productoNombre = productRes.rows[0].nombre;
+
+    // 2. Filtrar matriz para crear las Variantes de Inventario
+    const combinacionesActivadas = Object.entries(matriz).filter(([key, value]) => value === true);
+
+    if (combinacionesActivadas.length === 0) {
+        throw new Error("Debes seleccionar al menos una combinación de talla y color activa en la matriz.");
+    }
+
+    const varianteQuery = `
+      INSERT INTO variantes_producto (producto_id, talla_id, color_id, precio, stock, sku, activo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7);
+    `;
+
+    for (const [key, _] of combinacionesActivadas) {
+      const [colorId, tallaId] = key.split('-').map(Number);
+      
+      const precioHijo = precio_base; 
+      const stockInicial = 0; 
+      const activoHijo = true;
+      const skuAutogenerado = `P${productoId}-C${colorId}-T${tallaId}`;
+
+      await client.query(varianteQuery, [
+          productoId, tallaId, colorId, precioHijo, stockInicial, skuAutogenerado, activoHijo
+      ]);
+    }
+
+    await client.query('COMMIT');
+    return res.status(201).json({ message: "Producto y variantes de inventario creados correctamente." });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("❌ Error en createProductoCompleto:", error);
+    
+    if (error.code === '23505') {
+        return res.status(409).json({ message: "Error de duplicidad al crear variantes. Revisa la matriz." });
+    }
+    return res.status(500).json({ message: error.message || "Error interno al crear el producto completo." });
+  } finally {
+    client.release();
+  }
+};
+
 export const createProducto = async (req, res) => {
   try {
     const { nombre, descripcion, precio_base, categoria_id, marca_id, departamento_id, activo = true } = req.body;
@@ -244,7 +308,6 @@ export const deleteProducto = async (req, res) => {
 
 export const getInventario = async (req, res) => {
   try {
-    // 🔥 CORRECCIÓN V2: Hacemos JOIN con tallas y colores para obtener los nombres reales
     const result = await pool.query(`
       SELECT vp.*, 
              p.nombre AS producto_nombre, 
@@ -303,6 +366,21 @@ export const updateVariante = async (req, res) => {
   }
 };
 
+export const deleteVariante = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query("DELETE FROM variantes_producto WHERE id = $1 RETURNING id", [id]);
+    
+    if (result.rows.length === 0) return res.status(404).json({ message: "Variante no encontrada" });
+    return res.json({ message: "Variante eliminada correctamente" });
+  } catch (error) {
+    if (error.code === '23503') {
+      return res.status(409).json({ message: "No se puede eliminar la variante porque ya tiene historial en ventas, carritos o apartados." });
+    }
+    console.error("deleteVariante:", error);
+    return res.status(500).json({ message: "Error al eliminar variante" });
+  }
+};
 // ════════════════════════════════════════════════════════════
 //  CLIENTES
 // ════════════════════════════════════════════════════════════
@@ -360,6 +438,7 @@ export const deleteCliente = async (req, res) => {
     return res.status(500).json({ message: "Error al eliminar cliente" });
   }
 };
+
 // ════════════════════════════════════════════════════════════
 //  CRUD DINÁMICO PARA CATÁLOGOS BASE (Marcas, Departamentos, Colores)
 // ════════════════════════════════════════════════════════════
@@ -371,14 +450,12 @@ export const createCatalogoItem = async (req, res) => {
   if (!permitidas.includes(tabla)) return res.status(400).json({ message: "Catálogo no válido" });
 
   try {
-    // 🔥 Ahora también recibimos codigo_hex y activo desde el frontend
     const { nombre, activo = true, codigo_hex } = req.body;
     
     if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
 
     let rows;
     
-    // Si la tabla es colores, insertamos el código hexadecimal también
     if (tabla === 'colores') {
       const result = await pool.query(
         `INSERT INTO colores (nombre, codigo_hex, activo) VALUES ($1, $2, $3) RETURNING *`,
@@ -386,7 +463,6 @@ export const createCatalogoItem = async (req, res) => {
       );
       rows = result.rows;
     } else {
-      // Para marcas y departamentos, insertamos normal
       const result = await pool.query(
         `INSERT INTO ${tabla} (nombre, activo) VALUES ($1, $2) RETURNING *`,
         [nombre.trim(), activo]
@@ -418,7 +494,6 @@ export const deleteCatalogoItem = async (req, res) => {
     return res.status(500).json({ message: "Error al eliminar" });
   }
 };
-
 
 // Desactivamos temporalmente la importación hasta que el front esté listo para V2
 export const importarProductos = async (req, res) => {

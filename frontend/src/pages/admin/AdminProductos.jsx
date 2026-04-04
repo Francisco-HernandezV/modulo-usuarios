@@ -1,483 +1,379 @@
-import { useState, useEffect, useRef } from "react"; 
+import { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
+import "../../styles/theme.css";
 
-const IconX     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-const IconEdit  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+// ── ÍCONOS ──
+const IconPlus = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconArrowRight = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
+const IconArrowLeft = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
+const IconCheck = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IconX = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IconEdit = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
 const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
-const IconPlus  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
-const IconImport = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
-const IconExport = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
-
-const EMPTY_FORM = {
-  nombre: "", descripcion: "", precio_base: "", costo: "", categoria_id: "", activo: true,
-};
-
-const getMargenBadgeClass = (margen) => {
-  const m = Number(margen);
-  if (m >= 40) return "adm-badge-green";
-  if (m >= 20) return "adm-badge-yellow";
-  return "adm-badge-red";
-};
-
-const getAlertClass = (type) => type === "success" ? "adm-alert-success" : "adm-alert-error";
-const getAlertIcon = (type) => type === "success" ? "✓" : "✕";
 
 export default function AdminProductos() {
-  const [productos,  setProductos]  = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [modal,      setModal]      = useState(false);
-  const [editando,   setEditando]   = useState(null);
-  const [form,       setForm]       = useState(EMPTY_FORM);
-  const [errors,     setErrors]     = useState({});
-  const [alert,      setAlert]      = useState(null);
-  const [confirmDel, setConfirmDel] = useState(null);
-  const fileInputRef = useRef(null);
-  const [importando, setImportando] = useState(false);
+  const [vistaActiva, setVistaActiva] = useState("lista"); // 'lista' o 'wizard'
+  
+  // ── ESTADOS DE DATOS ──
+  const [productos, setProductos] = useState([]);
+  const [catalogos, setCatalogos] = useState({
+    marcas: [], departamentos: [], categorias: [], colores: [], tallas: [], tiposTalla: []
+  });
 
-  const cargar = async () => {
-    setLoading(true);
-    try {
-      const [pRes, cRes] = await Promise.all([
-        api.get("/admin/productos"),
-        api.get("/admin/categorias"),
-      ]);
-      setProductos(pRes.data  || []);
-      setCategorias(cRes.data || []);
-    } catch {
-      setProductos([]);
-      setCategorias([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [confirmDel, setConfirmDel] = useState(null); // ID del producto a eliminar
 
-  useEffect(() => { cargar(); }, []);
+  // ── ESTADOS DEL WIZARD ──
+  const [paso, setPaso] = useState(1);
+  const [form, setForm] = useState({
+    nombre: "", descripcion: "", precio_base: "", marca_id: "", departamento_id: "", categoria_id: "", activo: true
+  });
+  const [tipoTallaSeleccionado, setTipoTallaSeleccionado] = useState(""); // 🔥 Filtro para el Paso 2
+  const [tallasSeleccionadas, setTallasSeleccionadas] = useState([]); 
+  const [coloresSeleccionados, setColoresSeleccionados] = useState([]); 
+  const [matriz, setMatriz] = useState({}); 
 
   useEffect(() => {
-    if (!alert) return;
-    const t = setTimeout(() => setAlert(null), 3500);
-    return () => clearTimeout(t);
-  }, [alert]);
+    cargarProductos();
+    cargarCatalogos();
+  }, []);
 
-  const validate = () => {
-    const e = {};
-    if (!form.nombre.trim())                           e.nombre       = "Nombre obligatorio";
-    if (!form.precio_base || Number(form.precio_base) <= 0) e.precio_base  = "Precio válido requerido";
-    if (!form.categoria_id)                            e.categoria_id = "Selecciona una categoría";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const openCreate = () => {
-    setEditando(null); setForm(EMPTY_FORM); setErrors({}); setModal(true);
-  };
-
-  const openEdit = (p) => {
-    setEditando(p);
-    setForm({
-      nombre:       p.nombre,
-      descripcion:  p.descripcion  || "",
-      precio_base:  p.precio_base,
-      costo:        p.costo        || "",
-      categoria_id: p.categoria_id,
-      activo:       p.activo,
-    });
-    setErrors({});
-    setModal(true);
-  };
-
-  const handleGuardar = async () => {
-    if (!validate()) return;
-    const payload = {
-      ...form,
-      precio_base:  Number.parseFloat(form.precio_base),
-      costo:        form.costo ? Number.parseFloat(form.costo) : null,
-      categoria_id: Number.parseInt(form.categoria_id, 10),
-    };
+  const cargarProductos = async () => {
     try {
-      if (editando) {
-        await api.put(`/admin/productos/${editando.id}`, payload);
-        setAlert({ type: "success", msg: "Producto actualizado correctamente." });
-      } else {
-        await api.post("/admin/productos", payload);
-        setAlert({ type: "success", msg: "Producto creado correctamente." });
-      }
-      setModal(false);
-      cargar();
-    } catch (err) {
-      setAlert({ type: "error", msg: err.response?.data?.message || "Error al guardar." });
-    }
+      const res = await api.get("/admin/productos");
+      setProductos(res.data);
+    } catch (error) { console.error("Error cargando productos", error); }
   };
 
-  const handleEliminar = async (id) => {
+  const cargarCatalogos = async () => {
     try {
-      await api.delete(`/admin/productos/${id}`);
-      setAlert({ type: "success", msg: "Producto eliminado." });
-      setConfirmDel(null);
-      cargar();
-    } catch (err) {
-      setAlert({ type: "error", msg: err.response?.data?.message || "No se pudo eliminar." });
-      setConfirmDel(null);
-    }
-  };
-
-  const handleChange = (field, val) => {
-    setForm(f => ({ ...f, [field]: val }));
-    if (errors[field]) setErrors(e => ({ ...e, [field]: null }));
-  };
-
-  const fmt = (n) =>
-    new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-
-  const handleOverlayKey = (e, callback) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      callback();
-    }
-  };
-
-  const handleImportar = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("archivo", file);
-
-    setImportando(true);
-    try {
-      // Hacemos el POST a la nueva ruta enviando el FormData
-      const res = await api.post("/admin/productos/importar", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+      const [resMarcas, resDeptos, resCats, resColores, resTallas, resTiposTalla] = await Promise.all([
+        api.get("/admin/marcas"), 
+        api.get("/admin/departamentos"), 
+        api.get("/admin/categorias"), 
+        api.get("/admin/colores"), 
+        api.get("/admin/tallas"),
+        api.get("/admin/tipos-talla") // 🔥 Cargamos los tipos de talla
+      ]);
+      setCatalogos({
+        marcas: resMarcas.data.filter(m => m.activo), 
+        departamentos: resDeptos.data.filter(d => d.activo),
+        categorias: resCats.data.filter(c => c.activo), 
+        colores: resColores.data.filter(c => c.activo), 
+        tallas: resTallas.data,
+        tiposTalla: resTiposTalla.data
       });
-      setAlert({ type: "success", msg: res.data.message });
-      cargar(); // Recargamos la tabla de productos
-    } catch (err) {
-      setAlert({ type: "error", msg: err.response?.data?.message || "Error al importar el archivo." });
-    } finally {
-      setImportando(false);
-      e.target.value = null; // Reseteamos el input para permitir subir el mismo archivo otra vez
+    } catch (error) { console.error("Error cargando catálogos", error); }
+  };
+
+  // ── ACCIONES DE TABLA ──
+  const handleEliminarConfirmado = async () => {
+    if (!confirmDel) return;
+    try {
+      await api.delete(`/admin/productos/${confirmDel}`);
+      setConfirmDel(null);
+      cargarProductos();
+    } catch (error) {
+      alert(error.response?.data?.message || "Error al eliminar producto.");
+      setConfirmDel(null);
     }
   };
 
-  const handleExportar = () => {
-    // 1. Definir las cabeceras exactas de tu formato
-    const headers = ["Nombre", "Descripcion", "Precio_Base", "Costo", "Categoria"];
+  // ── LÓGICA DEL WIZARD ──
+  const handleNext = () => setPaso(p => Math.min(p + 1, 4));
+  const handlePrev = () => setPaso(p => Math.max(p - 1, 1));
 
-    // 2. Transformar los datos de la tabla al formato CSV
-    const rows = productos.map(p => {
-      // Obtenemos el nombre de la categoría
-      const catNombre = p.categoria_nombre || categorias.find(c => c.id === p.categoria_id)?.nombre || "Sin Categoria";
-      
-      // Función para limpiar textos (evita que las comas en las descripciones rompan el CSV)
-      const escapeCSV = (val) => {
-        if (!val) return '""';
-        const str = String(val).replace(/"/g, '""'); // Escapar comillas dobles
-        return `"${str}"`; // Envolver en comillas
-      };
-
-      // Retornamos la fila unida por comas
-      return [
-        escapeCSV(p.nombre),
-        escapeCSV(p.descripcion),
-        p.precio_base,
-        p.costo || "",
-        escapeCSV(catNombre)
-      ].join(",");
-    });
-
-    // 3. Unir todo. El "\uFEFF" es la magia para que Excel lea los acentos perfectamente.
-    const csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
-
-    // 4. Crear el archivo y forzar la descarga en el navegador
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    
-    // Generar un nombre con la fecha actual
-    const fecha = new Date().toISOString().split('T')[0];
-    link.setAttribute("download", `Catalogo_DanElement_${fecha}.csv`);
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleCambioTipoTalla = (e) => {
+    setTipoTallaSeleccionado(e.target.value);
+    setTallasSeleccionadas([]); // Limpiamos selecciones si cambian el tipo
+    setMatriz({}); 
   };
+
+  const toggleTalla = (id) => {
+    setTallasSeleccionadas(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+  };
+
+  const toggleColor = (id) => {
+    setColoresSeleccionados(prev => {
+      const nuevos = prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id];
+      const nuevaMatriz = { ...matriz };
+      if (!prev.includes(id)) {
+        tallasSeleccionadas.forEach(tallaId => { nuevaMatriz[`${id}-${tallaId}`] = true; });
+      }
+      setMatriz(nuevaMatriz);
+      return nuevos;
+    });
+  };
+
+  const toggleMatriz = (colorId, tallaId) => {
+    const key = `${colorId}-${tallaId}`;
+    setMatriz(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const iniciarNuevoProducto = () => {
+    setForm({ nombre: "", descripcion: "", precio_base: "", marca_id: "", departamento_id: "", categoria_id: "", activo: true });
+    setTipoTallaSeleccionado("");
+    setTallasSeleccionadas([]); setColoresSeleccionados([]); setMatriz({}); setPaso(1);
+    setVistaActiva("wizard");
+  };
+
+  const handleCrearProducto = async () => {
+    try {
+      const payload = { ...form, matriz };
+      await api.post("/admin/productos/completo", payload);
+      setVistaActiva("lista");
+      cargarProductos();
+    } catch (error) {
+      alert(error.response?.data?.message || "Ocurrió un error al crear el producto.");
+      console.error(error);
+    }
+  };
+
+  const inputStyle = { width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #374151", background: "#111827", color: "white", outline: "none" };
 
   return (
     <AdminLayout pageTitle="Catálogo de Productos" breadcrumb="Productos">
-      {alert && (
-        <div className={`adm-alert ${getAlertClass(alert.type)}`}>
-          {getAlertIcon(alert.type)} {alert.msg}
-        </div>
-      )}
-      <div className="adm-section-header">
-        <h3 className="adm-section-title">Productos ({productos.length})</h3>
-        
-        {/* Contenedor Flexbox ajustado para alinear los botones a la misma altura */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          
-          <button 
-            className="adm-btn adm-btn-ghost" 
-            onClick={handleExportar} 
-            type="button"
-            title="Descargar catálogo en CSV"
-          >
-            <IconExport /> Exportar
-          </button>
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: "none" }}
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-            onChange={handleImportar}
-          />
-          
-          <button 
-            className="adm-btn adm-btn-ghost" 
-            onClick={() => fileInputRef.current.click()} 
-            disabled={importando}
-            type="button"
-            title="Cargar productos desde Excel/CSV"
-          >
-            {importando ? "⏳ Cargando..." : <><IconImport /> Importar</>}
-          </button>
-
-          <button className="adm-btn adm-btn-primary" onClick={openCreate} type="button">
-            <IconPlus /> Nuevo producto
-          </button>
-
-        </div>
-      </div>
-      {loading ? (
-        <div className="adm-empty"><p>Cargando productos...</p></div>
-      ) : productos.length === 0 ? (
-        <div className="adm-empty">
-          <div className="adm-empty-icon">👗</div>
-          <p>No hay productos. ¡Añade el primero!</p>
-        </div>
-      ) : (
-        <div className="adm-table-wrap">
-          <table className="adm-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Costo</th>
-                <th>Margen</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productos.map((p, idx) => {
-                const margen = p.costo
-                  ? (((p.precio_base - p.costo) / p.precio_base) * 100).toFixed(0)
-                  : null;
-                return (
-                  <tr key={p.id}>
-                    <td style={{ color: "var(--text-muted,#8b949e)", width: 40 }}>
-                      {idx + 1}
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{p.nombre}</td>
-                    <td>
-                      <span className="adm-badge adm-badge-blue">
-                        {p.categoria_nombre ||
-                          categorias.find(c => c.id === p.categoria_id)?.nombre ||
-                          "—"}
-                      </span>
-                    </td>
-                    <td style={{ fontFamily: "monospace", fontWeight: 600 }}>
-                      {fmt(p.precio_base)}
-                    </td>
-                    <td style={{ color: "var(--text-muted,#8b949e)", fontFamily: "monospace" }}>
-                      {p.costo ? fmt(p.costo) : "—"}
-                    </td>
-                    <td>
-                      {margen ? (
-                        <span className={`adm-badge ${getMargenBadgeClass(margen)}`}>
-                          {margen}%
-                        </span>
-                      ) : "—"}
-                    </td>
-                    <td>
-                      <span className={`adm-badge ${p.activo ? "adm-badge-green" : "adm-badge-gray"}`}>
-                        {p.activo ? "Activo" : "Inactivo"}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button
-                          className="adm-btn adm-btn-ghost adm-btn-sm"
-                          onClick={() => openEdit(p)}
-                          title="Editar"
-                          type="button"
-                        >
-                          <IconEdit />
-                        </button>
-                        <button
-                          className="adm-btn adm-btn-danger adm-btn-sm"
-                          onClick={() => setConfirmDel(p.id)}
-                          title="Eliminar"
-                          type="button"
-                        >
-                          <IconTrash />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {modal && (
-        <div className="adm-modal-overlay" onClick={() => setModal(false)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setModal(false))} aria-label="Cerrar modal">
-          <div className="adm-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-            <div className="adm-modal-header">
-              <h3 className="adm-modal-title">
-                {editando ? "Editar producto" : "Nuevo producto"}
-              </h3>
-              <button className="adm-modal-close" onClick={() => setModal(false)} type="button" aria-label="Cerrar">
-                <IconX />
-              </button>
-            </div>
-            <div className="adm-modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-              <div className="adm-form-group">
-                <label htmlFor="prod_nombre">Nombre del producto *</label>
-                <input
-                  id="prod_nombre"
-                  className={`adm-input ${errors.nombre ? "adm-input-error" : ""}`}
-                  placeholder="Ej: Playera Urban Drop"
-                  value={form.nombre}
-                  onChange={e => handleChange("nombre", e.target.value)}
-                  autoFocus
-                />
-                {errors.nombre && <p className="adm-error-text">{errors.nombre}</p>}
-              </div>
-              <div className="adm-form-group">
-                <label htmlFor="prod_desc">Descripción</label>
-                <textarea
-                  id="prod_desc"
-                  className="adm-textarea"
-                  placeholder="Descripción del producto (opcional)"
-                  value={form.descripcion}
-                  onChange={e => handleChange("descripcion", e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="adm-form-row">
-                <div className="adm-form-group" style={{ margin: 0 }}>
-                  <label htmlFor="prod_precio">Precio de venta (MXN) *</label>
-                  <input
-                    id="prod_precio"
-                    className={`adm-input ${errors.precio_base ? "adm-input-error" : ""}`}
-                    type="number" min="0" step="0.01" placeholder="0.00"
-                    value={form.precio_base}
-                    onChange={e => handleChange("precio_base", e.target.value)}
-                  />
-                  {errors.precio_base && <p className="adm-error-text">{errors.precio_base}</p>}
-                </div>
-                <div className="adm-form-group" style={{ margin: 0 }}>
-                  <label htmlFor="prod_costo">Costo (MXN)</label>
-                  <input
-                    id="prod_costo"
-                    className="adm-input"
-                    type="number" min="0" step="0.01" placeholder="0.00"
-                    value={form.costo}
-                    onChange={e => handleChange("costo", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="adm-form-group" style={{ marginTop: "14px" }}>
-                <label htmlFor="prod_categoria">Categoría *</label>
-                <select
-                  id="prod_categoria"
-                  className={`adm-select ${errors.categoria_id ? "adm-input-error" : ""}`}
-                  value={form.categoria_id}
-                  onChange={e => handleChange("categoria_id", e.target.value)}
-                >
-                  <option value="">— Selecciona una categoría —</option>
-                  {categorias
-                    .filter(c => c.activo !== false)
-                    .map(c => (
-                      <option key={c.id} value={c.id}>{c.nombre}</option>
-                    ))
-                  }
-                </select>
-                {errors.categoria_id && <p className="adm-error-text">{errors.categoria_id}</p>}
-              </div>
-              <div className="adm-form-group">
-                <label id="prod_estado_label">Estado</label>
-                <div role="group" aria-labelledby="prod_estado_label" style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-                  {[true, false].map(v => (
-                    <button
-                      key={String(v)} 
-                      type="button"
-                      onClick={() => handleChange("activo", v)}
-                      className={`adm-btn adm-btn-sm ${form.activo === v ? "adm-btn-primary" : "adm-btn-ghost"}`}
-                      aria-pressed={form.activo === v}
-                    >
-                      {v ? "Activo" : "Inactivo"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {form.precio_base && form.costo && (
-                <div style={{
-                  background:   "rgba(59,130,246,.08)",
-                  border:       "1px solid rgba(59,130,246,.2)",
-                  borderRadius: 8,
-                  padding:      "10px 14px",
-                  fontSize:     12,
-                  color:        "#9ca3af",
-                }}>
-                  Margen estimado:{" "}
-                  <strong style={{ color: "#3b82f6" }}>
-                    {(((form.precio_base - form.costo) / form.precio_base) * 100).toFixed(1)}%
-                  </strong>
-                </div>
-              )}
-            </div>
-            <div className="adm-modal-footer">
-              <button className="adm-btn adm-btn-ghost" onClick={() => setModal(false)} type="button">
-                Cancelar
-              </button>
-              <button className="adm-btn adm-btn-primary" onClick={handleGuardar} type="button">
-                {editando ? "Guardar cambios" : "Crear producto"}
-              </button>
-            </div>
+      
+      {/* ── VISTA PRINCIPAL (TABLA) ── */}
+      {vistaActiva === "lista" && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
+            <h3 style={{ color: "white", margin: 0 }}>Productos ({productos.length})</h3>
+            <button className="adm-btn adm-btn-primary" onClick={iniciarNuevoProducto}>
+              <IconPlus /> Nuevo producto
+            </button>
           </div>
-        </div>
+
+          {productos.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "80px 20px" }}>
+              <div style={{ fontSize: "48px", marginBottom: "15px", opacity: 0.5 }}>👗</div>
+              <p style={{ color: "#9ca3af", fontSize: "16px" }}>No hay productos. ¡Añade el primero!</p>
+            </div>
+          ) : (
+            <div className="adm-table-wrap">
+              <table className="adm-table">
+                <thead>
+                  <tr style={{ background: "#1f2937", borderBottom: "1px solid #374151" }}>
+                    <th style={{ padding: "15px", color: "#d1d5db" }}>#</th>
+                    <th style={{ padding: "15px", color: "#d1d5db" }}>NOMBRE</th>
+                    <th style={{ padding: "15px", color: "#d1d5db" }}>CATEGORÍA</th>
+                    <th style={{ padding: "15px", color: "#d1d5db" }}>PRECIO</th>
+                    <th style={{ padding: "15px", color: "#d1d5db", textAlign: "center" }}>ESTADO</th>
+                    <th style={{ padding: "15px", color: "#d1d5db", textAlign: "right" }}>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productos.map((p, idx) => (
+                    <tr key={p.id} style={{ borderBottom: "1px solid #374151" }}>
+                      <td style={{ padding: "15px", color: "#8b949e" }}>{idx + 1}</td>
+                      <td style={{ padding: "15px", fontWeight: "bold", color: "white" }}>{p.nombre}</td>
+                      <td style={{ padding: "15px" }}>
+                        <span className="adm-badge adm-badge-blue" style={{ textTransform: "capitalize" }}>
+                          {p.categoria_nombre || "—"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "15px", fontFamily: "monospace", fontWeight: "bold", fontSize: "14px", color: "white" }}>
+                        ${Number(p.precio_base).toFixed(2)}
+                      </td>
+                      <td style={{ padding: "15px", textAlign: "center" }}>
+                        <span className={`adm-badge ${p.activo ? "adm-badge-green" : "adm-badge-gray"}`}>
+                          {p.activo ? "Activo" : "Inactivo"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "15px", textAlign: "right" }}>
+                        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                          <button className="adm-btn adm-btn-ghost adm-btn-sm" title="Editar producto" onClick={() => alert("Próximamente edición.")} type="button">
+                            <IconEdit />
+                          </button>
+                          <button className="adm-btn adm-btn-danger adm-btn-sm" title="Eliminar producto" onClick={() => setConfirmDel(p.id)} type="button">
+                            <IconTrash />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
+
+      {/* ── MODAL FLOTANTE DE CONFIRMACIÓN ── */}
       {confirmDel && (
-        <div className="adm-modal-overlay" onClick={() => setConfirmDel(null)} role="button" tabIndex={0} onKeyDown={(e) => handleOverlayKey(e, () => setConfirmDel(null))} aria-label="Cerrar confirmación">
-          <div className="adm-modal" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+        <div className="adm-modal-overlay" onClick={() => setConfirmDel(null)}>
+          <div className="adm-modal" style={{ maxWidth: "380px" }} onClick={e => e.stopPropagation()}>
             <div className="adm-modal-header">
               <h3 className="adm-modal-title">Confirmar eliminación</h3>
-              <button className="adm-modal-close" onClick={() => setConfirmDel(null)} type="button" aria-label="Cerrar">
-                <IconX />
-              </button>
+              <button className="adm-modal-close" onClick={() => setConfirmDel(null)} type="button"><IconX /></button>
             </div>
             <div className="adm-modal-body">
-              <p style={{ fontSize: "13px", color: "var(--text-muted,#8b949e)", lineHeight: 1.6 }}>
-                ¿Seguro que deseas eliminar este producto? Esta acción también
-                eliminará sus variantes de inventario.
+              <p style={{ fontSize: "14px", color: "#9ca3af", lineHeight: 1.6, marginBottom: "20px" }}>
+                ¿Seguro que deseas eliminar este producto? Esta acción también eliminará sus variantes de inventario.
               </p>
-            </div>
-            <div className="adm-modal-footer">
-              <button className="adm-btn adm-btn-ghost" onClick={() => setConfirmDel(null)} type="button">
-                Cancelar
-              </button>
-              <button className="adm-btn adm-btn-danger" onClick={() => handleEliminar(confirmDel)} type="button">
-                Sí, eliminar
-              </button>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button className="adm-btn adm-btn-ghost" onClick={() => setConfirmDel(null)}>Cancelar</button>
+                <button className="adm-btn adm-btn-danger" onClick={handleEliminarConfirmado}>Sí, eliminar</button>
+              </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── VISTA DEL WIZARD ── */}
+      {vistaActiva === "wizard" && (
+        <div style={{ maxWidth: "800px", margin: "0 auto", background: "#111827", borderRadius: "12px", border: "1px solid #374151", padding: "30px" }}>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", borderBottom: "1px solid #374151", paddingBottom: "20px" }}>
+            <h2 style={{ color: "white", margin: 0, fontSize: "20px" }}>Nuevo Producto</h2>
+            <button className="adm-btn adm-btn-ghost" onClick={() => setVistaActiva("lista")}><IconX /> Cancelar</button>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", marginBottom: "40px" }}>
+            {["Información", "Tallas", "Colores", "Resumen"].map((label, idx) => (
+              <div key={label} style={{ flex: 1, borderBottom: `4px solid ${paso >= idx + 1 ? "#3b82f6" : "#374151"}`, paddingBottom: "10px", color: paso >= idx + 1 ? "white" : "#9ca3af", fontWeight: "bold", fontSize: "14px", transition: "all 0.3s" }}>
+                {idx + 1}. {label}
+              </div>
+            ))}
+          </div>
+
+          {/* PASO 1 */}
+          {paso === 1 && (
+            <div className="wizard-step">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px" }}>
+                <div><label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Nombre del Producto *</label><input type="text" placeholder="Ej. Playera Urban Drop" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})} style={inputStyle} /></div>
+                <div><label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Descripción</label><textarea placeholder="Ej. Playera 100% algodón..." value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})} style={{...inputStyle, minHeight: "80px"}} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div><label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Precio de Venta ($) *</label><input type="number" placeholder="0.00" value={form.precio_base} onChange={e => setForm({...form, precio_base: e.target.value})} style={inputStyle} /></div>
+                  <div><label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Marca *</label><select value={form.marca_id} onChange={e => setForm({...form, marca_id: e.target.value})} style={inputStyle}><option value="">Seleccionar marca</option>{catalogos.marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}</select></div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div><label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Departamento *</label><select value={form.departamento_id} onChange={e => setForm({...form, departamento_id: e.target.value})} style={inputStyle}><option value="">Seleccionar departamento</option>{catalogos.departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}</select></div>
+                  <div><label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Categoría *</label><select value={form.categoria_id} onChange={e => setForm({...form, categoria_id: e.target.value})} style={inputStyle}><option value="">Seleccionar categoría</option>{catalogos.categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>
+                </div>
+              </div>
+              <div style={{ marginTop: "30px", display: "flex", justifyContent: "flex-end" }}>
+                <button className="adm-btn adm-btn-primary" onClick={handleNext} disabled={!form.nombre || !form.precio_base}>Siguiente: Tallas <IconArrowRight /></button>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 2 */}
+          {paso === 2 && (
+            <div className="wizard-step">
+              <p style={{ color: "#9ca3af", marginBottom: "20px" }}>Primero selecciona la clasificación y luego marca las tallas disponibles.</p>
+              
+              {/* 🔥 FILTRO POR TIPO DE TALLA */}
+              <div style={{ marginBottom: "30px" }}>
+                <label style={{ display: "block", marginBottom: "8px", color: "#d1d5db", fontWeight: "bold" }}>Clasificación de Talla *</label>
+                <select value={tipoTallaSeleccionado} onChange={handleCambioTipoTalla} style={inputStyle}>
+                  <option value="">— Selecciona un tipo (Ej. Letras, Pantalón) —</option>
+                  {catalogos.tiposTalla.map(tt => <option key={tt.id} value={tt.id}>{tt.nombre}</option>)}
+                </select>
+              </div>
+
+              {/* BOTONES DE TALLAS FILTRADAS */}
+              {tipoTallaSeleccionado && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", padding: "20px", background: "#1f2937", borderRadius: "8px" }}>
+                  {catalogos.tallas.filter(t => t.tipo_talla_id === Number(tipoTallaSeleccionado)).length === 0 ? (
+                    <p style={{ color: "#9ca3af", margin: 0 }}>No hay tallas registradas para esta clasificación.</p>
+                  ) : (
+                    catalogos.tallas
+                      .filter(t => t.tipo_talla_id === Number(tipoTallaSeleccionado))
+                      .map(t => {
+                        const isSelected = tallasSeleccionadas.includes(t.id);
+                        return (
+                          <button key={t.id} onClick={() => toggleTalla(t.id)} style={{ padding: "10px 20px", borderRadius: "8px", border: `1px solid ${isSelected ? "#3b82f6" : "#4b5563"}`, background: isSelected ? "#3b82f6" : "transparent", color: "white", cursor: "pointer", fontWeight: "bold" }}>
+                            {t.valor}
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+              )}
+
+              <div style={{ marginTop: "40px", display: "flex", justifyContent: "space-between" }}>
+                <button className="adm-btn adm-btn-ghost" onClick={handlePrev}><IconArrowLeft /> Regresar</button>
+                <button className="adm-btn adm-btn-primary" onClick={handleNext} disabled={tallasSeleccionadas.length === 0}>Siguiente: Colores <IconArrowRight /></button>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 3 */}
+          {paso === 3 && (
+            <div className="wizard-step">
+              <p style={{ color: "#9ca3af", marginBottom: "20px" }}>Selecciona los colores y marca en la matriz qué combinaciones llegaron.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "30px", padding: "20px", background: "#1f2937", borderRadius: "8px" }}>
+                {catalogos.colores.map(c => {
+                  const isSelected = coloresSeleccionados.includes(c.id);
+                  return (
+                    <button key={c.id} onClick={() => toggleColor(c.id)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", borderRadius: "20px", border: `1px solid ${isSelected ? "#3b82f6" : "#4b5563"}`, background: isSelected ? "rgba(59,130,246,0.1)" : "transparent", color: "white", cursor: "pointer" }}>
+                      <div style={{ width: "14px", height: "14px", borderRadius: "50%", background: c.codigo_hex }}></div>{c.nombre}
+                    </button>
+                  );
+                })}
+              </div>
+              {coloresSeleccionados.length > 0 && (
+                <div style={{ overflowX: "auto", border: "1px solid #374151", borderRadius: "8px" }}>
+                  <table className="adm-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: "#1f2937" }}>
+                        <th style={{ padding: "15px", textAlign: "left", color: "#d1d5db" }}>Color</th>
+                        {catalogos.tallas.filter(t => tallasSeleccionadas.includes(t.id)).map(t => <th key={t.id} style={{ padding: "15px", textAlign: "center", color: "#d1d5db" }}>{t.valor}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {coloresSeleccionados.map(colorId => {
+                        const color = catalogos.colores.find(c => c.id === colorId);
+                        return (
+                          <tr key={colorId} style={{ borderBottom: "1px solid #374151" }}>
+                            <td style={{ padding: "15px", display: "flex", alignItems: "center", gap: "10px", color: "white" }}>
+                              <div style={{ width: "16px", height: "16px", borderRadius: "50%", background: color.codigo_hex }}></div>{color.nombre}
+                            </td>
+                            {catalogos.tallas.filter(t => tallasSeleccionadas.includes(t.id)).map(talla => {
+                              const checked = matriz[`${colorId}-${talla.id}`];
+                              return (
+                                <td key={talla.id} style={{ padding: "15px", textAlign: "center" }}>
+                                  <button onClick={() => toggleMatriz(colorId, talla.id)} style={{ width: "24px", height: "24px", borderRadius: "4px", cursor: "pointer", border: `1px solid ${checked ? "#3b82f6" : "#4b5563"}`, background: checked ? "#3b82f6" : "transparent", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    {checked && <IconCheck />}
+                                  </button>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div style={{ marginTop: "40px", display: "flex", justifyContent: "space-between" }}>
+                <button className="adm-btn adm-btn-ghost" onClick={handlePrev}><IconArrowLeft /> Regresar</button>
+                <button className="adm-btn adm-btn-primary" onClick={handleNext} disabled={coloresSeleccionados.length === 0}>Siguiente: Resumen <IconArrowRight /></button>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 4 */}
+          {paso === 4 && (
+            <div className="wizard-step">
+              <div style={{ background: "#1f2937", padding: "30px", borderRadius: "12px", textAlign: "center" }}>
+                <h2 style={{ color: "white", marginBottom: "10px" }}>Resumen de Creación</h2>
+                <p style={{ color: "#9ca3af", marginBottom: "30px" }}>Estás a punto de crear el producto <strong>{form.nombre}</strong>.</p>
+                <div style={{ display: "flex", justifyContent: "space-around", borderTop: "1px solid #374151", paddingTop: "20px" }}>
+                  <div><p style={{ fontSize: "24px", fontWeight: "bold", color: "#3b82f6", margin: "0" }}>1</p><p style={{ color: "#9ca3af", fontSize: "14px", margin: "0" }}>Producto Padre</p></div>
+                  <div><p style={{ fontSize: "24px", fontWeight: "bold", color: "white", margin: "0" }}>{tallasSeleccionadas.length}</p><p style={{ color: "#9ca3af", fontSize: "14px", margin: "0" }}>Tallas</p></div>
+                  <div><p style={{ fontSize: "24px", fontWeight: "bold", color: "white", margin: "0" }}>{coloresSeleccionados.length}</p><p style={{ color: "#9ca3af", fontSize: "14px", margin: "0" }}>Colores</p></div>
+                  <div><p style={{ fontSize: "24px", fontWeight: "bold", color: "#10b981", margin: "0" }}>{Object.values(matriz).filter(v => v).length}</p><p style={{ color: "#9ca3af", fontSize: "14px", margin: "0" }}>Variantes de Inventario</p></div>
+                </div>
+              </div>
+              <div style={{ marginTop: "40px", display: "flex", justifyContent: "space-between" }}>
+                <button className="adm-btn adm-btn-ghost" onClick={handlePrev}><IconArrowLeft /> Regresar</button>
+                <button className="adm-btn adm-btn-primary" style={{ background: "#10b981", borderColor: "#10b981" }} onClick={handleCrearProducto}><IconCheck /> Crear Producto Definitivo</button>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </AdminLayout>
