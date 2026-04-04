@@ -18,7 +18,7 @@ export default function AdminDashboard() {
         const [prods, clientes, cats, inv] = await Promise.all([
           api.get("/admin/productos"),
           api.get("/admin/clientes"),
-          api.get("/admin/catalogos"),
+          api.get("/admin/categorias"), // 🔥 CORRECCIÓN: Antes decía "/admin/catalogos"
           api.get("/admin/inventario"),
         ]);
         const stockBajoCount = (inv.data || []).filter(i => i.stock <= 5).length;
