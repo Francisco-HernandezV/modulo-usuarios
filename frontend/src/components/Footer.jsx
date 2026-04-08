@@ -6,7 +6,7 @@ function Footer() {
     <footer className="site-footer">
         <div className="footer-content">
             <div className="footer-column">
-                <div className="logo logo-footer">DANTELEMENT</div>
+                <div className="logo logo-footer">DANELEMENT</div>
                 <p>Redefiniendo el estilo urbano con calidad y exclusividad. Envíos dentro de Huejutla, San Feli y Jaltocán.</p>
             </div>
             <div className="footer-column">
