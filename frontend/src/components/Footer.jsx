@@ -32,7 +32,7 @@ function Footer() {
             </div>
         </div>
         <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} DantElement. Todos los derechos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} DanElement. Todos los derechos reservados.</p>
         </div>
     </footer>
   );
