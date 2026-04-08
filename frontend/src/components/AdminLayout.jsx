@@ -35,7 +35,7 @@ export default function AdminLayout({ children, pageTitle, breadcrumb }) {
     <div className={`adm-layout ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
       <aside className="adm-sidebar">
         <div className="adm-sidebar-logo">
-          <span className="adm-logo-text">DANELEMENT</span>
+          <span className="adm-logo-text">DAN ELEMENT</span>
           <span className="adm-logo-sub">Panel Administrativo</span>
         </div>
 

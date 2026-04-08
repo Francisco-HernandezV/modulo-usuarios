@@ -6,7 +6,7 @@ function Footer() {
     <footer className="site-footer">
         <div className="footer-content">
             <div className="footer-column">
-                <div className="logo logo-footer">DANELEMENT</div>
+                <div className="logo logo-footer">DAN ELEMENT</div>
                 <p>Redefiniendo el estilo urbano con calidad y exclusividad. Envíos dentro de Huejutla, San Feli y Jaltocán.</p>
             </div>
             <div className="footer-column">
@@ -32,7 +32,7 @@ function Footer() {
             </div>
         </div>
         <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} DanElement. Todos los derechos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} Dan Element. Todos los derechos reservados.</p>
         </div>
     </footer>
   );

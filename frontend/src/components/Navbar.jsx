@@ -54,7 +54,7 @@ function Navbar() {
   return (
     <>
       <header className="header">
-        <Link to="/" className="logo">DANELEMENT</Link>
+        <Link to="/" className="logo">DAN ELEMENT</Link>
         <div className="search-wrapper">
           <label htmlFor="navbar-search" className="sr-only" style={{display: 'none'}}>Buscar</label>
           <input 
