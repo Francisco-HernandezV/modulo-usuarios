@@ -5,7 +5,7 @@ import helmet  from "helmet";
 import rateLimit from "express-rate-limit";
 import userRoutes  from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-
+import ventasRoutes from "./routes/ventasRoutes.js";
 import { raspProtection } from "./middlewares/rasp.js";
 
 const app = express();
@@ -35,6 +35,7 @@ app.use(raspProtection);
 
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ventas", ventasRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () =>

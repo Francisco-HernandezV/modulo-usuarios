@@ -13,16 +13,21 @@ const IconLogout   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill=
 const IconMenu     = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
 const IconDatabase = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>;
 const IconMonitor  = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>; // <-- NUEVO ÍCONO
+const IconBadge = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M9 12h.01M15 12h.01M12 12h.01"/></svg>;
+const IconPOS = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h.01M12 15h.01M17 15h.01M7 11h.01M12 11h.01M17 11h.01"/></svg>;
 
 const NAV_ITEMS = [
   { path: "/admin",             label: "Dashboard",          icon: <IconHome />,     section: "GENERAL"   },
+  { path: "/pos",               label: "Caja / POS",      icon: <IconPOS />,   section: "GENERAL" }, // 🔥 NUEVO
+  // ... resto de items
   // 🔥 CORRECCIÓN: Se actualizó la etiqueta y la ruta a catalogos
   { path: "/admin/catalogos",   label: "Catálogos Base",     icon: <IconTag />,      section: "CATÁLOGOS" }, 
   { path: "/admin/productos",   label: "Catálogo Productos", icon: <IconGrid />,     section: "CATÁLOGOS" },
   { path: "/admin/clientes",    label: "Gestión Clientes",   icon: <IconUsers />,    section: "CATÁLOGOS" },
   { path: "/admin/inventario",  label: "Inventario",         icon: <IconBox />,      section: "CATÁLOGOS" },
   { path: "/admin/respaldos",   label: "Respaldos DB",       icon: <IconDatabase />, section: "SISTEMA"   },
-  { path: "/admin/monitor",     label: "Monitor DB",         icon: <IconMonitor />,  section: "SISTEMA"   } 
+  { path: "/admin/monitor",     label: "Monitor DB",         icon: <IconMonitor />,  section: "SISTEMA"   },
+  { path: "/admin/empleados", label: "Gestión Empleados", icon: <IconBadge />, section: "SISTEMA" } 
 ];
 
 export default function AdminLayout({ children, pageTitle, breadcrumb }) {

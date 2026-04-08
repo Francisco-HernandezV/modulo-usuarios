@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
+import VendedorLayout from "../../components/VendedorLayout"; // Importación añadida
 import api from "../../services/api";
 
 const IconX     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
@@ -17,6 +18,10 @@ const getAlertClass = (type) => type === "success" ? "adm-alert-success" : "adm-
 const getAlertIcon = (type) => type === "success" ? "✓" : "✕";
 
 export default function AdminClientes() {
+  // Lógica de Layout Dinámico
+  const rol = localStorage.getItem("rol");
+  const Layout = (rol === "rol_admin" || rol === "rol_gestor_inventario") ? AdminLayout : VendedorLayout;
+
   const [clientes,   setClientes]   = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [modal,      setModal]      = useState(false);
@@ -119,7 +124,7 @@ export default function AdminClientes() {
   };
 
   return (
-    <AdminLayout pageTitle="Gestión de Clientes" breadcrumb="Clientes">
+    <Layout pageTitle="Gestión de Clientes" breadcrumb="Clientes">
       {alert && (
         <div className={`adm-alert ${getAlertClass(alert.type)}`}>
           {getAlertIcon(alert.type)} {alert.msg}
@@ -260,6 +265,6 @@ export default function AdminClientes() {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </Layout>
   );
 }

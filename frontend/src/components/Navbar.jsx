@@ -13,7 +13,7 @@ function Navbar() {
   const location = useLocation();
   
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState(null); // 🔥 Estado para saber qué rol es
+  const [userRole, setUserRole] = useState(null); 
   
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -27,7 +27,7 @@ function Navbar() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const rol = localStorage.getItem("rol"); // Leemos el rol
+    const rol = localStorage.getItem("rol"); 
     setIsLoggedIn(!!token);
     setUserRole(rol);
   }, []);
@@ -38,8 +38,7 @@ function Navbar() {
     } catch (error) {
       console.error("Error logout", error);
     } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("rol"); // Limpiamos el rol
+      localStorage.clear(); // Limpiamos todo de una vez
       setIsLoggedIn(false);
       setUserRole(null);
       setShowDropdown(false);
@@ -47,9 +46,6 @@ function Navbar() {
       globalThis.location.reload(); 
     }
   };
-
-  // Verificamos si es staff
-  const isStaff = ["rol_admin", "rol_vendedor", "rol_gestor_inventario"].includes(userRole);
 
   return (
     <>
@@ -91,18 +87,33 @@ function Navbar() {
               <div className="dropdown-menu">
                 {isLoggedIn ? (
                   <>
-                    {/* 🔥 EL BOTÓN MÁGICO CONDICIONAL */}
-                    {isStaff && (
-                      <Link 
-                        to="/admin" 
-                        className="dropdown-item" 
-                        style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: "10px", marginBottom: "5px", fontWeight: "700", color: "#3b82f6" }}
-                      >
+                    {/* ── SECCIÓN DINÁMICA SEGÚN ROL ── */}
+                    
+                    {/* Si es ADMIN */}
+                    {userRole === "rol_admin" && (
+                      <Link to="/admin" className="dropdown-item staff-link">
                         ⚙️ Panel Admin
                       </Link>
                     )}
 
+                    {/* Si es VENDEDOR */}
+                    {userRole === "rol_vendedor" && (
+                      <Link to="/vendedor" className="dropdown-item staff-link">
+                        🛒 Punto de Venta
+                      </Link>
+                    )}
+
+                    {/* Si es GESTOR DE INVENTARIO */}
+                    {userRole === "rol_gestor_inventario" && (
+                      <Link to="/admin/inventario" className="dropdown-item staff-link">
+                        📦 Gestión Inventario
+                      </Link>
+                    )}
+
+                    <div style={{ borderTop: "1px solid #30363d", margin: "5px 0" }}></div>
+
                     <Link to="/profile" className="dropdown-item">👤 Mi Perfil</Link>
+                    
                     <button 
                         onClick={handleLogout} 
                         className="dropdown-item" 

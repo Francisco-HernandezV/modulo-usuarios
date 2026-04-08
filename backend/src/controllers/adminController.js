@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import bcrypt from "bcryptjs";
 
 // ════════════════════════════════════════════════════════════
 //  CATÁLOGOS BASE (NUEVO EN V2)
@@ -395,16 +396,79 @@ export const getClientes = async (req, res) => {
   }
 };
 
+// ════════════════════════════════════════════════════════════
+//  CLIENTES (VALIDACIÓN PRIVADA Y BÚSQUEDA INVERSA)
+// ════════════════════════════════════════════════════════════
+
 export const createCliente = async (req, res) => {
   try {
     const { nombre, telefono, email, rfc, notas } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
 
+    // 1. 🛡️ VALIDACIÓN PREVIA (Con privacidad estricta)
+    let queryVal = "";
+    let paramsVal = [];
+    
+    if (telefono && email) {
+        queryVal = "SELECT id FROM ventas.clientes WHERE telefono = $1 OR email = $2 LIMIT 1";
+        paramsVal = [telefono.trim(), email.trim()];
+    } else if (telefono) {
+        queryVal = "SELECT id FROM ventas.clientes WHERE telefono = $1 LIMIT 1";
+        paramsVal = [telefono.trim()];
+    } else if (email) {
+        queryVal = "SELECT id FROM ventas.clientes WHERE email = $1 LIMIT 1";
+        paramsVal = [email.trim()];
+    }
+
+    if (queryVal) {
+        const existeCliente = await pool.query(queryVal, paramsVal);
+        if (existeCliente.rows.length > 0) {
+            // ⚠️ CUMPLIENDO LA REGLA: Mensaje genérico, sin revelar datos del cliente
+            return res.status(400).json({ 
+                message: "No se puede registrar. Este cliente ya existe en el sistema." 
+            });
+        }
+    }
+
+    // 2. 🌟 MAGIA OMNICANAL INVERSA (De Tienda a Web)
+    let usuarioId = null;
+
+    if (telefono) {
+      const userRes = await pool.query(
+        "SELECT id FROM seguridad.usuarios WHERE telefono_contacto = $1 LIMIT 1",
+        [telefono.trim()]
+      );
+      if (userRes.rows.length > 0) {
+        usuarioId = userRes.rows[0].id; // Se encontró su cuenta web por teléfono
+      }
+    }
+
+    if (!usuarioId && email?.trim()) {
+      const userRes = await pool.query(
+        "SELECT id FROM seguridad.usuarios WHERE email = $1 LIMIT 1",
+        [email.trim()]
+      );
+      if (userRes.rows.length > 0) {
+        usuarioId = userRes.rows[0].id; // Se encontró su cuenta web por correo
+      }
+    }
+
+    // 3. INSERCIÓN FINAL
+    // Si usuarioId es null, es un cliente exclusivo de tienda.
+    // Si usuarioId tiene un valor, se relacionan los registros de tienda y web.
     const result = await pool.query(
-      `INSERT INTO clientes (nombre, telefono, email, rfc, notas)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [nombre.trim(), telefono || null, email || null, rfc || null, notas || null]
+      `INSERT INTO ventas.clientes (nombre, telefono, email, rfc, notas, usuario_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        nombre.trim(), 
+        telefono || null, 
+        email?.trim() || null, 
+        rfc || null, 
+        notas || null, 
+        usuarioId
+      ]
     );
+    
     return res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error("createCliente:", error);
@@ -492,6 +556,103 @@ export const deleteCatalogoItem = async (req, res) => {
   } catch (error) {
     if (error.code === '23503') return res.status(409).json({ message: "No se puede eliminar porque hay productos usándolo" });
     return res.status(500).json({ message: "Error al eliminar" });
+  }
+};
+
+
+// ════════════════════════════════════════════════════════════
+//  GESTIÓN DE EMPLEADOS (NUEVO)
+// ════════════════════════════════════════════════════════════
+
+export const getRolesActivos = async (req, res) => {
+  try {
+    // Apuntamos al esquema seguridad
+    const { rows } = await pool.query(
+      "SELECT id, nombre FROM seguridad.roles WHERE nombre != 'rol_cliente' ORDER BY nombre ASC"
+    );
+    return res.json(rows);
+  } catch (error) {
+    console.error("getRolesActivos:", error);
+    return res.status(500).json({ message: "Error al obtener roles" });
+  }
+};
+
+export const createEmpleado = async (req, res) => {
+  const { nombre, email, telefono, departamentos, rol_id, password_temporal, activo = true } = req.body;
+
+  if (!nombre?.trim() || !email?.trim() || !rol_id || !password_temporal) {
+    return res.status(400).json({ message: "Nombre, email, rol y contraseña temporal son obligatorios" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Encriptar contraseña temporal
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password_temporal, salt);
+
+    // 2. Insertar en la tabla usuarios (Esquema seguridad)
+    const userQuery = `
+      INSERT INTO seguridad.usuarios (nombre, email, password_hash, telefono_contacto, cuenta_activa, email_verificado, requiere_cambio_password)
+      VALUES ($1, $2, $3, $4, $5, TRUE, TRUE)
+      RETURNING id;
+    `;
+    const userRes = await client.query(userQuery, [
+      nombre.trim(),
+      email.trim(),
+      hashedPassword,
+      telefono || null,
+      activo
+    ]);
+    
+    const nuevoUsuarioId = userRes.rows[0].id;
+
+    // 3. Asignar el rol al empleado (Esquema seguridad)
+    const rolQuery = `INSERT INTO seguridad.usuario_roles (usuario_id, rol_id) VALUES ($1, $2)`;
+    await client.query(rolQuery, [nuevoUsuarioId, rol_id]);
+
+    // 4. Asignar departamentos (Tabla pivote en Esquema seguridad)
+    if (Array.isArray(departamentos) && departamentos.length > 0) {
+      const deptoQuery = `INSERT INTO seguridad.usuario_departamentos (usuario_id, departamento_id) VALUES ($1, $2)`;
+      for (const depto_id of departamentos) {
+        await client.query(deptoQuery, [nuevoUsuarioId, depto_id]);
+      }
+    }
+
+    await client.query('COMMIT');
+    return res.status(201).json({ message: "Empleado registrado exitosamente" });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("❌ Error en createEmpleado:", error);
+    
+    if (error.code === '23505') {
+      return res.status(409).json({ message: "El correo electrónico ya está registrado en el sistema." });
+    }
+    return res.status(500).json({ message: "Error interno al registrar el empleado." });
+  } finally {
+    client.release();
+  }
+};
+
+export const getEmpleados = async (req, res) => {
+  try {
+    // 🔥 CORRECCIÓN: Quitamos u.creado_en y ordenamos por u.id DESC
+    const query = `
+      SELECT u.id, u.nombre, u.email, u.telefono_contacto, u.cuenta_activa, r.nombre AS rol
+      FROM seguridad.usuarios u
+      JOIN seguridad.usuario_roles ur ON u.id = ur.usuario_id
+      JOIN seguridad.roles r ON ur.rol_id = r.id
+      WHERE r.nombre != 'rol_cliente'
+      ORDER BY u.id DESC
+    `;
+    const { rows } = await pool.query(query);
+    return res.json(rows);
+  } catch (error) {
+    console.error("Error getEmpleados:", error);
+    return res.status(500).json({ message: "Error al obtener la lista de empleados" });
   }
 };
 
