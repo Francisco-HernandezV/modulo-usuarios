@@ -22,7 +22,6 @@
     "iconv-lite": "^0.4.24",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
-    "newrelic": "^13.17.0",
     "nodemailer": "^7.0.10",
     "pdfkit": "^0.18.0",
     "pg": "^8.17.2",
