@@ -78,7 +78,7 @@ export default function FormularioTallas({ onSubmit, onCancel }) {
   });
 
   return (
-    <div className="adm-modal-overlay" onClick={onCancel}>
+    <div className="adm-modal-overlay">
       <div className="adm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: "490px" }}>
 
         <div className="adm-modal-header">

@@ -44,6 +44,13 @@ export default function AdminEmpleados() {
 
   useEffect(() => { cargarDatos(); }, []);
 
+  // Limpiar alerta a los 3.5 segundos (para que no se quede pegada)
+  useEffect(() => {
+    if (!alert) return;
+    const t = setTimeout(() => setAlert(null), 3500);
+    return () => clearTimeout(t);
+  }, [alert]);
+
   const handleChange = (field, val) => setForm(f => ({ ...f, [field]: val }));
 
   const toggleDepartamento = (id) => {
@@ -64,6 +71,7 @@ export default function AdminEmpleados() {
 
   const abrirModalNuevo = () => {
     setForm(EMPTY_FORM);
+    setAlert(null); // Limpiar alertas previas al abrir
     setModal(true);
   };
 
@@ -78,6 +86,7 @@ export default function AdminEmpleados() {
       activo: empleado.cuenta_activa,
       password_temporal: "" 
     });
+    setAlert(null); // Limpiar alertas previas al abrir
     setModal(true);
   };
 
@@ -133,7 +142,13 @@ export default function AdminEmpleados() {
 
   return (
     <AdminLayout pageTitle="Gestión de Empleados" breadcrumb="Empleados">
-      {alert && <div className={`adm-alert ${alert.type === "success" ? "adm-alert-success" : "adm-alert-error"}`}>{alert.msg}</div>}
+      
+      {/* 🔥 Si el modal NO está abierto, la alerta se muestra aquí en el fondo */}
+      {!modal && alert && (
+        <div className={`adm-alert ${alert.type === "success" ? "adm-alert-success" : "adm-alert-error"}`}>
+          {alert.msg}
+        </div>
+      )}
       
       <div className="adm-section-header">
         <h3 className="adm-section-title">Plantilla de Empleados ({empleados.length})</h3>
@@ -211,14 +226,22 @@ export default function AdminEmpleados() {
       )}
 
       {modal && (
-        <div className="adm-modal-overlay" onClick={() => setModal(false)}>
+        <div className="adm-modal-overlay">
           <div className="adm-modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
             <div className="adm-modal-header">
               <h3 className="adm-modal-title">{form.id ? "Editar Empleado" : "Registrar Empleado"}</h3>
               <button className="adm-modal-close" onClick={() => setModal(false)} type="button"><IconX /></button>
             </div>
+            
             <div className="adm-modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
               
+              {/* 🔥 Si el modal SÍ está abierto, la alerta se muestra AQUÍ ADENTRO */}
+              {alert && (
+                <div className={`adm-alert ${alert.type === "success" ? "adm-alert-success" : "adm-alert-error"}`} style={{ marginBottom: "20px" }}>
+                  {alert.msg}
+                </div>
+              )}
+
               <div className="adm-form-row">
                 <div className="adm-form-group">
                   <label>Nombre Completo *</label>
@@ -265,7 +288,6 @@ export default function AdminEmpleados() {
                 </div>
               )}
 
-              {/* 🔥 AQUÍ ESTÁ LA MEJORA DE LA CONTRASEÑA (Diseño blindado con CSS Grid) */}
               {!form.id && (
                 <div className="adm-form-group">
                   <label>Contraseña Temporal *</label>

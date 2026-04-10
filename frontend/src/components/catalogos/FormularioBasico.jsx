@@ -20,7 +20,7 @@ export default function FormularioBasico({ tabActiva, onSubmit, onCancel }) {
   const titulo = tabActiva === "categorias" ? "Categoría" : tabActiva.slice(0, -1);
 
   return (
-    <div className="adm-modal-overlay" onClick={onCancel}>
+    <div className="adm-modal-overlay">
       <div className="adm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px" }}>
         
         <div className="adm-modal-header">

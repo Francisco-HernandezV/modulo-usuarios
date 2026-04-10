@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
-import VendedorLayout from "../../components/VendedorLayout"; // Importación añadida
+import VendedorLayout from "../../components/VendedorLayout"; 
 import api from "../../services/api";
 
 const IconX     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
@@ -18,7 +18,6 @@ const getAlertClass = (type) => type === "success" ? "adm-alert-success" : "adm-
 const getAlertIcon = (type) => type === "success" ? "✓" : "✕";
 
 export default function AdminClientes() {
-  // Lógica de Layout Dinámico
   const rol = localStorage.getItem("rol");
   const Layout = (rol === "rol_admin" || rol === "rol_gestor_inventario") ? AdminLayout : VendedorLayout;
 
@@ -30,6 +29,7 @@ export default function AdminClientes() {
   const [errors,     setErrors]     = useState({});
   const [alert,      setAlert]      = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Añadimos protección aquí también
 
   const cargar = async () => {
     setLoading(true);
@@ -65,7 +65,7 @@ export default function AdminClientes() {
   };
 
   const openCreate = () => {
-    setEditando(null); setForm(EMPTY_FORM); setErrors({}); setModal(true);
+    setEditando(null); setForm(EMPTY_FORM); setErrors({}); setAlert(null); setModal(true);
   };
 
   const openEdit = (c) => {
@@ -78,11 +78,18 @@ export default function AdminClientes() {
       notas:    c.notas    || "",
     });
     setErrors({});
+    setAlert(null);
     setModal(true);
   };
 
   const handleGuardar = async () => {
-    if (!validate()) return;
+    if (isSubmitting) return;
+    if (!validate()) {
+      setAlert({ type: "error", msg: "Revisa los campos en rojo." });
+      return;
+    }
+    
+    setIsSubmitting(true);
     try {
       if (editando) {
         await api.put(`/admin/clientes/${editando.id}`, form);
@@ -96,6 +103,8 @@ export default function AdminClientes() {
     } catch (err) {
       console.error("Error al guardar cliente:", err);
       setAlert({ type: "error", msg: err.response?.data?.message || "Error al guardar." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -125,11 +134,14 @@ export default function AdminClientes() {
 
   return (
     <Layout pageTitle="Gestión de Clientes" breadcrumb="Clientes">
-      {alert && (
+      
+      {/* 🔥 Alerta en el layout (cuando el modal está cerrado) */}
+      {!modal && alert && (
         <div className={`adm-alert ${getAlertClass(alert.type)}`}>
           {getAlertIcon(alert.type)} {alert.msg}
         </div>
       )}
+
       <div className="adm-section-header">
         <h3 className="adm-section-title">Clientes registrados ({clientes.length})</h3>
         <button className="adm-btn adm-btn-primary" onClick={openCreate} type="button">
@@ -195,21 +207,24 @@ export default function AdminClientes() {
           </table>
         </div>
       )}
+
       {modal && (
-        <div 
-          className="adm-modal-overlay" 
-          onClick={() => setModal(false)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => handleKeyPress(e, () => setModal(false))}
-          aria-label="Cerrar modal"
-        >
+        <div className="adm-modal-overlay">
           <div className="adm-modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
             <div className="adm-modal-header">
               <h3 className="adm-modal-title">{editando ? "Editar cliente" : "Nuevo cliente"}</h3>
               <button className="adm-modal-close" onClick={() => setModal(false)} type="button" aria-label="Cerrar"><IconX /></button>
             </div>
+            
             <div className="adm-modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+              
+              {/* 🔥 Alerta DENTRO del modal */}
+              {alert && (
+                <div className={`adm-alert ${getAlertClass(alert.type)}`} style={{ marginBottom: "20px" }}>
+                  {getAlertIcon(alert.type)} {alert.msg}
+                </div>
+              )}
+
               <div className="adm-form-group">
                 <label htmlFor="cli_nombre">Nombre completo *</label>
                 <input id="cli_nombre" className="adm-input" value={form.nombre} onChange={e => handleChange("nombre", e.target.value)} autoFocus />
@@ -234,13 +249,28 @@ export default function AdminClientes() {
                 <textarea id="cli_notas" className="adm-textarea" value={form.notas} onChange={e => handleChange("notas", e.target.value)} rows={3} />
               </div>
             </div>
+            
             <div className="adm-modal-footer">
               <button className="adm-btn adm-btn-ghost" onClick={() => setModal(false)} type="button">Cancelar</button>
-              <button className="adm-btn adm-btn-primary" onClick={handleGuardar} type="button">{editando ? "Guardar" : "Registrar"}</button>
+              
+              <button 
+                className="adm-btn adm-btn-primary" 
+                onClick={handleGuardar} 
+                type="button"
+                disabled={isSubmitting}
+                style={{
+                  background: isSubmitting ? "#6b7280" : "",
+                  borderColor: isSubmitting ? "#6b7280" : "",
+                  cursor: isSubmitting ? "not-allowed" : "pointer"
+                }}
+              >
+                {isSubmitting ? "Procesando..." : (editando ? "Guardar" : "Registrar")}
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {confirmDel && (
         <div 
           className="adm-modal-overlay" 
