@@ -3,16 +3,29 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "../styles/theme.css";
 
+// 1. SOLUCIÓN: El componente del "Ojito" debe ir AFUERA de la función principal
+const InputToggleObj = ({ show, setShow }) => (
+  <button type="button" onClick={() => setShow(!show)} style={{ position: "absolute", right: "10px", top: "22px", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, width: "auto", color: "#888" }}>
+    {show ? (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    ) : (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+    )}
+  </button>
+);
+
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  
   const [requireChange, setRequireChange] = useState(false);
   const [tempToken, setTempToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
+  
   const [mensaje, setMensaje] = useState(""); 
   const [errores, setErrores] = useState({});
 
@@ -77,16 +90,6 @@ export default function Login() {
     if (errores[fieldName]) setErrores({ ...errores, [fieldName]: null });
   };
 
-  const InputToggleObj = ({ show, setShow }) => (
-    <button type="button" onClick={() => setShow(!show)} style={{ position: "absolute", right: "10px", top: "22px", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, width: "auto", color: "#888" }}>
-      {show ? (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-      ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-      )}
-    </button>
-  );
-
   return (
     <div className="form-container">
       <h2>{requireChange ? "Configura tu Contraseña" : "Iniciar Sesión"}</h2>
@@ -117,7 +120,8 @@ export default function Login() {
             <InputToggleObj show={showNewPassword} setShow={setShowNewPassword} />
           </div>
           <div style={{ marginBottom: "15px", position: "relative" }}>
-            <input type={showNewPassword ? "text" : "password"} placeholder="Confirmar contraseña" value={confirmNewPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ paddingRight: "40px" }} required minLength={8}/>
+            {/* 2. SOLUCIÓN: Faltaba setConfirmNewPassword aquí */}
+            <input type={showNewPassword ? "text" : "password"} placeholder="Confirmar contraseña" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} style={{ paddingRight: "40px" }} required minLength={8}/>
           </div>
           <button type="submit">Actualizar y Entrar</button>
         </form>
