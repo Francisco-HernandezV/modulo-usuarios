@@ -299,7 +299,7 @@ export default function AdminEmpleados() {
                       onChange={e => handleChange("password_temporal", e.target.value.trim())}
                       placeholder="Escribe o genera..." 
                       style={{ 
-                        fontFamily: "'Courier New', Courier, monospace",
+                        fontFamily: "'Consolas', 'Monaco', 'Lucida Console', 'Fira Code', monospace",
                         fontSize: "16px", 
                         letterSpacing: "2px",
                         fontWeight: "bold",
