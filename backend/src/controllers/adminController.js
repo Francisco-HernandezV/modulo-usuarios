@@ -561,7 +561,7 @@ export const deleteCatalogoItem = async (req, res) => {
 
 
 // ════════════════════════════════════════════════════════════
-//  GESTIÓN DE EMPLEADOS (NUEVO)
+//  GESTIÓN DE EMPLEADOS
 // ════════════════════════════════════════════════════════════
 
 export const getRolesActivos = async (req, res) => {
@@ -639,9 +639,16 @@ export const createEmpleado = async (req, res) => {
 
 export const getEmpleados = async (req, res) => {
   try {
-    // 🔥 CORRECCIÓN: Quitamos u.creado_en y ordenamos por u.id DESC
+    // 🔥 MEJORA: Ahora traemos el rol_id y un arreglo JSON con los departamentos asignados
+    // Esto es vital para poder rellenar el formulario al momento de Editar.
     const query = `
-      SELECT u.id, u.nombre, u.email, u.telefono_contacto, u.cuenta_activa, r.nombre AS rol
+      SELECT u.id, u.nombre, u.email, u.telefono_contacto, u.cuenta_activa, 
+             r.id AS rol_id, r.nombre AS rol,
+             COALESCE(
+               (SELECT json_agg(ud.departamento_id) 
+                FROM seguridad.usuario_departamentos ud 
+                WHERE ud.usuario_id = u.id), '[]'::json
+             ) AS departamentos
       FROM seguridad.usuarios u
       JOIN seguridad.usuario_roles ur ON u.id = ur.usuario_id
       JOIN seguridad.roles r ON ur.rol_id = r.id
@@ -656,7 +663,84 @@ export const getEmpleados = async (req, res) => {
   }
 };
 
-// Desactivamos temporalmente la importación hasta que el front esté listo para V2
+export const updateEmpleado = async (req, res) => {
+  const { id } = req.params;
+  const { nombre, email, telefono, departamentos, rol_id, activo } = req.body;
+
+  if (!nombre?.trim() || !email?.trim() || !rol_id) {
+    return res.status(400).json({ message: "Nombre, email y rol son obligatorios" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Actualizar datos básicos
+    await client.query(
+      `UPDATE seguridad.usuarios 
+       SET nombre = $1, email = $2, telefono_contacto = $3, cuenta_activa = $4, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $5`,
+      [nombre.trim(), email.trim(), telefono || null, activo, id]
+    );
+
+    // 2. Actualizar el rol
+    await client.query(`UPDATE seguridad.usuario_roles SET rol_id = $1 WHERE usuario_id = $2`, [rol_id, id]);
+
+    // 3. Recrear departamentos (Borramos los viejos y metemos los nuevos)
+    await client.query(`DELETE FROM seguridad.usuario_departamentos WHERE usuario_id = $1`, [id]);
+    
+    if (Array.isArray(departamentos) && departamentos.length > 0) {
+      const deptoQuery = `INSERT INTO seguridad.usuario_departamentos (usuario_id, departamento_id) VALUES ($1, $2)`;
+      for (const depto_id of departamentos) {
+        await client.query(deptoQuery, [id, depto_id]);
+      }
+    }
+
+    await client.query('COMMIT');
+    return res.json({ message: "Empleado actualizado exitosamente" });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("❌ Error en updateEmpleado:", error);
+    if (error.code === '23505') return res.status(409).json({ message: "El correo ya está en uso." });
+    return res.status(500).json({ message: "Error al actualizar empleado." });
+  } finally {
+    client.release();
+  }
+};
+
+export const deleteEmpleado = async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Eliminamos registros pivote por seguridad antes de borrar al usuario
+    await client.query(`DELETE FROM seguridad.usuario_departamentos WHERE usuario_id = $1`, [id]);
+    await client.query(`DELETE FROM seguridad.usuario_roles WHERE usuario_id = $1`, [id]);
+    await client.query(`DELETE FROM seguridad.tokens WHERE usuario_id = $1`, [id]);
+    
+    const { rows } = await client.query(`DELETE FROM seguridad.usuarios WHERE id = $1 RETURNING id`, [id]);
+    
+    if (rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: "Empleado no encontrado" });
+    }
+
+    await client.query('COMMIT');
+    return res.json({ message: "Empleado eliminado correctamente" });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("❌ Error en deleteEmpleado:", error);
+    // Si da error 23503, significa que el empleado ya procesó ventas y no se puede borrar
+    if (error.code === '23503') return res.status(409).json({ message: "No se puede eliminar porque este empleado ya tiene historial en ventas o movimientos." });
+    return res.status(500).json({ message: "Error al eliminar empleado." });
+  } finally {
+    client.release();
+  }
+};
+
 export const importarProductos = async (req, res) => {
     return res.status(400).json({message: "La importación masiva está desactivada temporalmente por actualización de esquemas."});
 }

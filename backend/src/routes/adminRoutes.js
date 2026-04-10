@@ -9,7 +9,7 @@ import {
   getMarcas, getDepartamentos, getColores,
   getTallas, getTiposTalla, createTalla, deleteTalla,
   createCatalogoItem, deleteCatalogoItem,
-  getRolesActivos, createEmpleado, getEmpleados
+  getRolesActivos, createEmpleado, getEmpleados, updateEmpleado, deleteEmpleado
 } from "../controllers/adminController.js";
 
 import { generarRespaldo, getHistorialRespaldos } from "../controllers/respaldosController.js";
@@ -34,6 +34,8 @@ router.use(verifyToken);
 router.get("/roles", checkRole(["rol_admin"]), getRolesActivos);
 router.post("/empleados", checkRole(["rol_admin"]), createEmpleado);
 router.get("/empleados", checkRole(["rol_admin"]), getEmpleados);
+router.put("/empleados/:id", checkRole(["rol_admin"]), updateEmpleado); // NUEVA
+router.delete("/empleados/:id", checkRole(["rol_admin"]), deleteEmpleado); // NUEVA
 
 // ── Categorías ────────────────────────────────────────────────────────────
 router.post("/categorias",    checkRole(["rol_admin","rol_gestor_inventario"]), createCategoria);

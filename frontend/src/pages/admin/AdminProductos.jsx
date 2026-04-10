@@ -16,9 +16,9 @@ export default function AdminProductos() {
   const [productos, setProductos] = useState([]);
   const [catalogos, setCatalogos] = useState({ marcas: [], departamentos: [], categorias: [], colores: [], tallas: [], tiposTalla: [] });
   const [confirmDel, setConfirmDel] = useState(null);
-
   const [paso, setPaso] = useState(1);
   const [form, setForm] = useState({ nombre: "", descripcion: "", precio_base: "", marca_id: "", departamento_id: "", categoria_id: "", activo: true });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [tipoTallaSeleccionado, setTipoTallaSeleccionado] = useState("");
   const [tallasSeleccionadas, setTallasSeleccionadas] = useState([]); 
   const [coloresSeleccionados, setColoresSeleccionados] = useState([]); 
@@ -92,17 +92,21 @@ export default function AdminProductos() {
     setForm({ nombre: "", descripcion: "", precio_base: "", marca_id: "", departamento_id: "", categoria_id: "", activo: true });
     setTipoTallaSeleccionado(""); setTallasSeleccionadas([]); setColoresSeleccionados([]); setMatriz({}); setPaso(1); setVistaActiva("wizard");
   };
-
   const handleCrearProducto = async () => {
-    try {
-      const payload = { ...form, precio_base: parseFloat(form.precio_base), matriz };
-      await api.post("/admin/productos/completo", payload);
-      setVistaActiva("lista"); cargarProductos();
-    } catch (error) {
-      alert(error.response?.data?.message || "Ocurrió un error al crear el producto.");
-    }
+      if (isSubmitting) return; // 🔥 Evita que pase un segundo clic si ya está cargando
+      setIsSubmitting(true);    // 🔥 Bloqueamos el botón
+      
+      try {
+        const payload = { ...form, precio_base: parseFloat(form.precio_base), matriz };
+        await api.post("/admin/productos/completo", payload);
+        setVistaActiva("lista"); 
+        cargarProductos();
+      } catch (error) {
+        alert(error.response?.data?.message || "Ocurrió un error al crear el producto.");
+      } finally {
+        setIsSubmitting(false); // 🔥 Liberamos el botón sin importar si hubo éxito o error
+      }
   };
-
   const inputStyle = { width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #374151", background: "#111827", color: "white", outline: "none" };
 
   return (
@@ -310,7 +314,14 @@ export default function AdminProductos() {
               </div>
               <div style={{ marginTop: "40px", display: "flex", justifyContent: "space-between" }}>
                 <button className="adm-btn adm-btn-ghost" onClick={handlePrev}><IconArrowLeft /> Regresar</button>
-                <button className="adm-btn adm-btn-primary" style={{ background: "#10b981", borderColor: "#10b981" }} onClick={handleCrearProducto}><IconCheck /> Crear Producto Definitivo</button>
+                <button
+                className="adm-btn adm-btn-primary" 
+                  style={{ background: isSubmitting ? "#6b7280" : "#10b981", borderColor: isSubmitting ? "#6b7280" : "#10b981", cursor: isSubmitting ? "not-allowed" : "pointer" }} 
+                  onClick={handleCrearProducto}
+                  disabled={isSubmitting} // 🔥 Desactiva el botón en HTML
+                >
+                  <IconCheck /> {isSubmitting ? "Procesando..." : "Crear Producto Definitivo"}
+                </button>
               </div>
             </div>
           )}
