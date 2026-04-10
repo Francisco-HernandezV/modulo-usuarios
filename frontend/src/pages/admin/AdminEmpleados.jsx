@@ -21,6 +21,7 @@ export default function AdminEmpleados() {
   
   const [form, setForm] = useState(EMPTY_FORM);
   const [alert, setAlert] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -75,20 +76,24 @@ export default function AdminEmpleados() {
       rol_id: empleado.rol_id || "",
       departamentos: empleado.departamentos || [],
       activo: empleado.cuenta_activa,
-      password_temporal: "" // En edición no se manda contraseña a menos que la reseteen
+      password_temporal: "" 
     });
     setModal(true);
   };
 
   const handleGuardar = async () => {
+    if (isSubmitting) return;
+
     if (!form.nombre || !form.email || !form.rol_id) {
       setAlert({ type: "error", msg: "Llena los campos obligatorios." });
       return;
     }
-    if (!form.id && !form.password_temporal) {
-      setAlert({ type: "error", msg: "La contraseña temporal es obligatoria para nuevos registros." });
+    if (!form.id && (!form.password_temporal || form.password_temporal.length < 8)) {
+      setAlert({ type: "error", msg: "La contraseña temporal debe tener al menos 8 caracteres." });
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       if (form.id) {
@@ -96,12 +101,14 @@ export default function AdminEmpleados() {
         setAlert({ type: "success", msg: "Empleado actualizado correctamente." });
       } else {
         await api.post("/admin/empleados", form);
-        setAlert({ type: "success", msg: "Empleado registrado. Pásale su contraseña temporal." });
+        setAlert({ type: "success", msg: "Empleado registrado exitosamente." });
       }
       setModal(false);
       cargarDatos();
     } catch (error) {
       setAlert({ type: "error", msg: error.response?.data?.message || "Error al procesar la solicitud." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -116,6 +123,12 @@ export default function AdminEmpleados() {
       setConfirmDel(null);
       setAlert({ type: "error", msg: error.response?.data?.message || "Error al eliminar." });
     }
+  };
+
+  const copiarPassword = () => {
+    if (form.password_temporal.length < 8) return;
+    navigator.clipboard.writeText(form.password_temporal);
+    setAlert({ type: "success", msg: "¡Contraseña copiada al portapapeles!" });
   };
 
   return (
@@ -179,7 +192,6 @@ export default function AdminEmpleados() {
         </div>
       )}
 
-      {/* MODAL ELIMINAR */}
       {confirmDel && (
         <div className="adm-modal-overlay" onClick={() => setConfirmDel(null)}>
           <div className="adm-modal" style={{ maxWidth: "380px" }} onClick={e => e.stopPropagation()}>
@@ -198,7 +210,6 @@ export default function AdminEmpleados() {
         </div>
       )}
 
-      {/* MODAL FORMULARIO */}
       {modal && (
         <div className="adm-modal-overlay" onClick={() => setModal(false)}>
           <div className="adm-modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
@@ -245,7 +256,6 @@ export default function AdminEmpleados() {
                 </div>
               </div>
 
-              {/* Si estamos editando, podemos cambiar su estatus activo/inactivo */}
               {form.id && (
                 <div className="adm-form-group">
                   <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "white", cursor: "pointer", fontSize: "14px" }}>
@@ -255,23 +265,77 @@ export default function AdminEmpleados() {
                 </div>
               )}
 
-              {/* Contraseña temporal solo obligatoria al crear */}
+              {/* 🔥 AQUÍ ESTÁ LA MEJORA DE LA CONTRASEÑA (Diseño blindado con CSS Grid) */}
               {!form.id && (
                 <div className="adm-form-group">
                   <label>Contraseña Temporal *</label>
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <input className="adm-input" type="text" value={form.password_temporal} onChange={e => handleChange("password_temporal", e.target.value)} placeholder="Escribe o autogenera..." style={{ fontFamily: "monospace", fontSize: "14px" }} />
-                    <button className="adm-btn adm-btn-ghost" onClick={generarPassword} type="button"><IconKey /> Generar</button>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "8px", alignItems: "center" }}>
+                    <input 
+                      className="adm-input" 
+                      type="text" 
+                      value={form.password_temporal} 
+                      onChange={e => handleChange("password_temporal", e.target.value.trim())}
+                      placeholder="Escribe o genera..." 
+                      style={{ 
+                        fontFamily: "'Courier New', Courier, monospace",
+                        fontSize: "16px", 
+                        letterSpacing: "2px",
+                        fontWeight: "bold",
+                        width: "100%",
+                        boxSizing: "border-box"
+                      }} 
+                    />
+                    
+                    <button 
+                      className="adm-btn adm-btn-ghost" 
+                      onClick={generarPassword} 
+                      type="button" 
+                      title="Generar contraseña"
+                      style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%" }}
+                    >
+                      <IconKey /> Generar
+                    </button>
+
+                    <button 
+                      className="adm-btn adm-btn-ghost" 
+                      onClick={copiarPassword} 
+                      type="button" 
+                      title="Copiar al portapapeles"
+                      disabled={form.password_temporal.length < 8}
+                      style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px",
+                        width: "100%",
+                        opacity: form.password_temporal.length < 8 ? 0.4 : 1,
+                        cursor: form.password_temporal.length < 8 ? "not-allowed" : "pointer"
+                      }}
+                    >
+                      📋 Copiar
+                    </button>
                   </div>
-                  <small style={{ color: "#8b949e", fontSize: "11px", marginTop: "5px", display: "block" }}>El sistema obligará al empleado a cambiar esta contraseña en su primer inicio de sesión.</small>
+                  <small style={{ color: "#8b949e", fontSize: "11px", marginTop: "5px", display: "block" }}>
+                    Mínimo 8 caracteres. Copia esta contraseña y entrégala al empleado.
+                  </small>
                 </div>
               )}
 
             </div>
             <div className="adm-modal-footer">
               <button className="adm-btn adm-btn-ghost" onClick={() => setModal(false)} type="button">Cancelar</button>
-              <button className="adm-btn adm-btn-primary" onClick={handleGuardar} type="button">
-                {form.id ? "Guardar Cambios" : "Registrar Empleado"}
+              
+              <button 
+                className="adm-btn adm-btn-primary" 
+                onClick={handleGuardar} 
+                type="button"
+                disabled={isSubmitting}
+                style={{
+                  background: isSubmitting ? "#6b7280" : "",
+                  borderColor: isSubmitting ? "#6b7280" : "",
+                  cursor: isSubmitting ? "not-allowed" : "pointer"
+                }}
+              >
+                {isSubmitting ? "Guardando..." : (form.id ? "Guardar Cambios" : "Registrar Empleado")}
               </button>
             </div>
           </div>
