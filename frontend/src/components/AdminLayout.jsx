@@ -18,9 +18,7 @@ const IconPOS = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none
 
 const NAV_ITEMS = [
   { path: "/admin",             label: "Dashboard",          icon: <IconHome />,     section: "GENERAL"   },
-  { path: "/pos",               label: "Caja / POS",      icon: <IconPOS />,   section: "GENERAL" }, // 🔥 NUEVO
-  // ... resto de items
-  // 🔥 CORRECCIÓN: Se actualizó la etiqueta y la ruta a catalogos
+  { path: "/pos",               label: "Caja / POS",      icon: <IconPOS />,   section: "GENERAL" },
   { path: "/admin/catalogos",   label: "Catálogos Base",     icon: <IconTag />,      section: "CATÁLOGOS" }, 
   { path: "/admin/productos",   label: "Catálogo Productos", icon: <IconGrid />,     section: "CATÁLOGOS" },
   { path: "/admin/clientes",    label: "Gestión Clientes",   icon: <IconUsers />,    section: "CATÁLOGOS" },

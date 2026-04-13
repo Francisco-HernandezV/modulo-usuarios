@@ -20,8 +20,27 @@ export default function HistorialVentas() {
 
   useEffect(() => { cargarVentas(); }, []);
 
-  const descargarPDF = (id) => {
-    window.open(`${import.meta.env.VITE_API_URL}/ventas/ticket/${id}/pdf`, '_blank');
+  // 🔥 CORRECCIÓN: Descargar el PDF como Blob a través de Axios para enviar el Token
+  const descargarPDF = async (id) => {
+    try {
+      // 1. Hacemos la petición pidiendo un archivo binario (blob)
+      const res = await api.get(`/ventas/ticket/${id}/pdf`, {
+        responseType: 'blob'
+      });
+
+      // 2. Creamos una URL temporal en el navegador
+      const fileURL = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+
+      // 3. La abrimos en una nueva pestaña
+      window.open(fileURL, '_blank');
+
+      // 4. Limpiamos la memoria
+      setTimeout(() => window.URL.revokeObjectURL(fileURL), 5000);
+
+    } catch (error) {
+      console.error("Error al descargar el PDF:", error);
+      alert("Hubo un error al descargar el ticket de la venta.");
+    }
   };
 
   const enviarWhatsApp = (v) => {
@@ -48,7 +67,6 @@ export default function HistorialVentas() {
             {ventas.map(v => (
               <tr key={v.id}>
                 <td style={{ fontWeight: "bold" }}>#{v.id}</td>
-                {/* CORRECCIÓN: v.creado_en en lugar de v.fecha_venta */}
                 <td style={{ fontSize: "12px" }}>{v.creado_en ? new Date(v.creado_en).toLocaleString() : '—'}</td>
                 <td>{v.cliente_nombre || "Público General"}</td>
                 <td>{v.vendedor_nombre}</td>
