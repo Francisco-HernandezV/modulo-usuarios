@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
-
+import * as xlsx from "xlsx";
 // ════════════════════════════════════════════════════════════
 //  CATÁLOGOS BASE (NUEVO EN V2)
 // ════════════════════════════════════════════════════════════
@@ -741,6 +741,157 @@ export const deleteEmpleado = async (req, res) => {
   }
 };
 
-export const importarProductos = async (req, res) => {
-    return res.status(400).json({message: "La importación masiva está desactivada temporalmente por actualización de esquemas."});
-}
+// ════════════════════════════════════════════════════════════
+//  IMPORTACIÓN MULTI-HOJA (CATÁLOGOS BASE)
+// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+//  IMPORTACIÓN MULTI-HOJA (CATÁLOGOS BASE) - VERSIÓN SEGURA
+// ════════════════════════════════════════════════════════════
+export const importarCatalogos = async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No se detectó ningún archivo Excel." });
+  
+  const client = await pool.connect();
+  let resumen = { categorias: 0, marcas: 0, departamentos: 0, colores: 0, tallas: 0 };
+
+  try {
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+    await client.query('BEGIN');
+
+    // 1. Categorías
+    if (workbook.Sheets["Categorias"]) {
+      const data = xlsx.utils.sheet_to_json(workbook.Sheets["Categorias"]);
+      for (const row of data) {
+        if (row.nombre) {
+          const check = await client.query("SELECT id FROM categorias WHERE nombre = $1", [row.nombre.trim()]);
+          if (check.rows.length === 0) {
+            await client.query("INSERT INTO categorias (nombre) VALUES ($1)", [row.nombre.trim()]);
+            resumen.categorias++;
+          }
+        }
+      }
+    }
+
+    // 2. Marcas
+    if (workbook.Sheets["Marcas"]) {
+      const data = xlsx.utils.sheet_to_json(workbook.Sheets["Marcas"]);
+      for (const row of data) {
+        if (row.nombre) {
+          const check = await client.query("SELECT id FROM marcas WHERE nombre = $1", [row.nombre.trim()]);
+          if (check.rows.length === 0) {
+            await client.query("INSERT INTO marcas (nombre) VALUES ($1)", [row.nombre.trim()]);
+            resumen.marcas++;
+          }
+        }
+      }
+    }
+
+    // 3. Departamentos
+    if (workbook.Sheets["Departamentos"]) {
+      const data = xlsx.utils.sheet_to_json(workbook.Sheets["Departamentos"]);
+      for (const row of data) {
+        if (row.nombre) {
+          const check = await client.query("SELECT id FROM departamentos WHERE nombre = $1", [row.nombre.trim()]);
+          if (check.rows.length === 0) {
+            await client.query("INSERT INTO departamentos (nombre) VALUES ($1)", [row.nombre.trim()]);
+            resumen.departamentos++;
+          }
+        }
+      }
+    }
+
+    // 4. Colores (Basado en tu regla: validar por código Hexadecimal)
+    if (workbook.Sheets["Colores"]) {
+      const data = xlsx.utils.sheet_to_json(workbook.Sheets["Colores"]);
+      for (const row of data) {
+        if (row.nombre && row.codigo_hex) {
+          const check = await client.query("SELECT id FROM colores WHERE codigo_hex = $1", [row.codigo_hex.trim()]);
+          if (check.rows.length === 0) {
+            await client.query("INSERT INTO colores (nombre, codigo_hex) VALUES ($1, $2)", [row.nombre.trim(), row.codigo_hex.trim()]);
+            resumen.colores++;
+          }
+        }
+      }
+    }
+
+    // 5. Tallas (Lógica Inteligente)
+    if (workbook.Sheets["Tallas"]) {
+      const data = xlsx.utils.sheet_to_json(workbook.Sheets["Tallas"]);
+      for (const row of data) {
+        if (row.tipo && row.valor) {
+          // A. Buscar o crear la clasificación (tipo_talla)
+          let tipoId;
+          const tipoRes = await client.query("SELECT id FROM tipos_talla WHERE nombre = $1", [row.tipo.trim()]);
+          if (tipoRes.rows.length > 0) {
+            tipoId = tipoRes.rows[0].id;
+          } else {
+            const insertTipo = await client.query("INSERT INTO tipos_talla (nombre) VALUES ($1) RETURNING id", [row.tipo.trim()]);
+            tipoId = insertTipo.rows[0].id;
+          }
+          
+          // B. Insertar la talla evitando duplicados
+          const tallaRes = await client.query("SELECT id FROM tallas WHERE tipo_talla_id = $1 AND valor = $2", [tipoId, row.valor.toString().trim()]);
+          if (tallaRes.rows.length === 0) {
+            await client.query("INSERT INTO tallas (tipo_talla_id, valor) VALUES ($1, $2)", [tipoId, row.valor.toString().trim()]);
+            resumen.tallas++;
+          }
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+    return res.json({ 
+      message: `Importación exitosa. Nuevos registros: Categorías (${resumen.categorias}), Marcas (${resumen.marcas}), Deptos (${resumen.departamentos}), Colores (${resumen.colores}), Tallas (${resumen.tallas}).` 
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("Error importarCatalogos:", error);
+    return res.status(500).json({ message: "Error procesando el archivo Excel. Verifica el formato de las hojas." });
+  } finally {
+    client.release();
+  }
+};
+
+// ════════════════════════════════════════════════════════════
+//  EXPORTACIÓN DEL INVENTARIO FÍSICO
+// ════════════════════════════════════════════════════════════
+export const exportarInventario = async (req, res) => {
+  try {
+    // Unimos todas las tablas para dar un reporte completo
+    const { rows } = await pool.query(`
+      SELECT 
+        p.nombre AS "Producto",
+        p.descripcion AS "Descripcion",
+        vp.sku AS "SKU",
+        c.nombre AS "Categoria",
+        m.nombre AS "Marca",
+        d.nombre AS "Departamento",
+        col.nombre AS "Color",
+        t.valor AS "Talla",
+        vp.precio AS "Precio",
+        vp.stock AS "Stock Total",
+        (vp.stock - COALESCE(vp.stock_apartado, 0)) AS "Stock Disponible"
+      FROM inventario.variantes_producto vp
+      JOIN inventario.productos p ON vp.producto_id = p.id
+      LEFT JOIN catalogo.categorias c ON p.categoria_id = c.id
+      LEFT JOIN catalogo.marcas m ON p.marca_id = m.id
+      LEFT JOIN catalogo.departamentos d ON p.departamento_id = d.id
+      JOIN catalogo.colores col ON vp.color_id = col.id
+      JOIN catalogo.tallas t ON vp.talla_id = t.id
+      ORDER BY p.nombre ASC, col.nombre ASC, t.valor ASC
+    `);
+    
+    const worksheet = xlsx.utils.json_to_sheet(rows);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Inventario General");
+    
+    const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader("Content-Disposition", "attachment; filename=Inventario_DanElement.xlsx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    return res.send(buffer);
+  } catch (error) {
+    console.error("Error exportarInventario:", error);
+    return res.status(500).json({ message: "Error al exportar inventario." });
+  }
+};

@@ -5,14 +5,13 @@ import {
   getProductos, createProducto, updateProducto, deleteProducto, createProductoCompleto, 
   getClientes, createCliente, updateCliente, deleteCliente,
   getInventario, createVariante, updateVariante, deleteVariante,
-  importarProductos,
+  importarCatalogos, exportarInventario,
   getMarcas, getDepartamentos, getColores,
   getTallas, getTiposTalla, createTalla, deleteTalla,
   createCatalogoItem, deleteCatalogoItem,
   getRolesActivos, createEmpleado, getEmpleados, updateEmpleado, deleteEmpleado
 } from "../controllers/adminController.js";
 
-// 🔥 IMPORTAMOS LA NUEVA FUNCIÓN
 import { generarRespaldo, getHistorialRespaldos, registrarRespaldoExterno } from "../controllers/respaldosController.js";
 import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum } from "../controllers/monitorController.js";
 import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
@@ -49,7 +48,10 @@ router.post("/productos/completo", checkRole(["rol_admin","rol_gestor_inventario
 router.post("/productos",     checkRole(["rol_admin","rol_gestor_inventario"]), createProducto);
 router.put("/productos/:id",  checkRole(["rol_admin","rol_gestor_inventario"]), updateProducto);
 router.delete("/productos/:id", checkRole(["rol_admin"]), deleteProducto);
-router.post("/productos/importar", checkRole(["rol_admin"]), upload.single("archivo"), importarProductos);
+
+// ── Exportación / Importación (Excel) ──
+router.get("/inventario/exportar", checkRole(["rol_admin", "rol_gestor_inventario"]), exportarInventario);
+router.post("/catalogos/importar", checkRole(["rol_admin"]), upload.single("archivo"), importarCatalogos);
 
 // ── Inventario ──
 router.get("/inventario",     checkRole(["rol_admin","rol_gestor_inventario","rol_vendedor"]), getInventario);

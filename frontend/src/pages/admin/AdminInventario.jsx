@@ -3,10 +3,11 @@ import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
 import "../../styles/theme.css";
 
-const IconX       = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-const IconEdit    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const IconWarning = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
-const IconTrash   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
+const IconX        = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IconEdit     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IconWarning  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+const IconTrash    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
+const IconDownload = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 
 const EMPTY_FORM = { producto_id: "", talla: "", color: "", sku: "", precio: "", stock: "0", stock_apartado: "0" };
 
@@ -152,22 +153,40 @@ export default function AdminInventario() {
     }
   };
   const blockInvalidCharsInt = (e) => {
-    if (['e', 'E', '+', '-', '.'].includes(e.key)) { // Stock no lleva puntos decimales
+    if (['e', 'E', '+', '-', '.'].includes(e.key)) {
       e.preventDefault();
     }
+  };
+
+  // 🔥 FUNCIÓN DE EXPORTACIÓN A EXCEL
+  const exportarExcel = () => {
+    api.get('/admin/inventario/exportar', { responseType: 'blob' })
+      .then((response) => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'Inventario_DanElement.xlsx');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      })
+      .catch((error) => {
+        console.error("Error exportando excel:", error);
+        alert("Error al generar el reporte de inventario.");
+      });
   };
 
   const stockStatus = (v) => {
     const disponible = v.stock - (v.stock_apartado || 0);
     if (disponible <= 0) return { label: "Sin stock",   cls: "adm-badge-red",    pct: 0  };
     if (disponible <= 3) return { label: "Stock bajo",  cls: "adm-badge-yellow", pct: 25 };
-    if (disponible <= 8) return { label: "Stock medio", cls: "adm-badge-blue",   pct: 60 };
+    if (disponible <= 8) return { label: "Stock medio", cls: "adm-badge-blue",    pct: 60 };
     return                      { label: "Stock normal",cls: "adm-badge-green",  pct: 100};
   };
 
-  const fmt       = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-  const sinStock  = variantes.filter(v => (v.stock - (v.stock_apartado || 0)) <= 0).length;
-  const stockBajo = variantes.filter(v => { const d = v.stock-(v.stock_apartado||0); return d > 0 && d <= 3; }).length;
+  const fmt         = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
+  const sinStock    = variantes.filter(v => (v.stock - (v.stock_apartado || 0)) <= 0).length;
+  const stockBajo   = variantes.filter(v => { const d = v.stock-(v.stock_apartado||0); return d > 0 && d <= 3; }).length;
 
   return (
     <AdminLayout pageTitle="Inventario (Base)" breadcrumb="Inventario">
@@ -192,10 +211,17 @@ export default function AdminInventario() {
           </div>
         ))}
       </div>
-      <div className="adm-section-header">
-        <h3 className="adm-section-title">Variantes de inventario</h3>
-        <p style={{ color: "#9ca3af", fontSize: "0.9rem", margin: 0 }}>Gestiona existencias y precios. Los nuevos productos se añaden desde el Creador de Productos.</p>
+      
+      <div className="adm-section-header" style={{ alignItems: "flex-end", marginBottom: "20px" }}>
+        <div>
+          <h3 className="adm-section-title">Variantes de inventario</h3>
+          <p style={{ color: "#9ca3af", fontSize: "0.85rem", margin: 0 }}>Gestiona existencias y precios. Los nuevos productos se añaden desde el Creador de Productos.</p>
+        </div>
+        <button className="adm-btn adm-btn-ghost" onClick={exportarExcel} type="button">
+          <IconDownload /> Exportar Inventario
+        </button>
       </div>
+
       {loading ? (
         <div className="adm-empty"><p>Cargando inventario...</p></div>
       ) : variantes.length === 0 ? (
@@ -289,8 +315,8 @@ export default function AdminInventario() {
                     className={`adm-input ${errors.precio ? "adm-input-error" : ""}`}
                     type="number" min="0" step="0.01" placeholder="0.00"
                     value={form.precio}
-                    onChange={handlePrecioChange} // 🔥 Validación de Regex
-                    onKeyDown={blockInvalidChars} // 🔥 Intercepta teclas basura
+                    onChange={handlePrecioChange}
+                    onKeyDown={blockInvalidChars}
                   />
                   {errors.precio && <p className="adm-error-text">{errors.precio}</p>}
                 </div>
@@ -324,8 +350,8 @@ export default function AdminInventario() {
                   className="adm-input"
                   type="number" min="0" step="1"
                   value={ajusteVal}
-                  onChange={handleStockAjusteChange} // 🔥 Solo números enteros
-                  onKeyDown={blockInvalidCharsInt} // 🔥 Bloquea e, -, +, .
+                  onChange={handleStockAjusteChange}
+                  onKeyDown={blockInvalidCharsInt}
                   autoFocus
                   style={{ fontSize: "22px", fontFamily: "monospace", textAlign: "center" }}
                 />
