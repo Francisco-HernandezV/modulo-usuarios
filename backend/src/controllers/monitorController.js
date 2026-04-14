@@ -71,18 +71,62 @@ export const runExplain = async (req, res) => {
 };
 
 // 4. Indicadores de Salud (Cache Hit Ratio)
+// Variable global en el backend para simular el reinicio
+let statsOffset = { selects: 0, inserts: 0, updates: 0, deletes: 0 };
+
 export const getHealth = async (req, res) => {
   try {
     const query = `
       SELECT 
-        round(sum(blks_hit) * 100.0 / (sum(blks_hit) + sum(blks_read)), 2) AS cache_hit_ratio,
-        sum(xact_commit) AS commits,
-        sum(xact_rollback) AS rollbacks
+        blks_hit, blks_read, 
+        xact_commit AS commits, xact_rollback AS rollbacks,
+        tup_returned AS selects, 
+        tup_inserted AS inserts, 
+        tup_updated AS updates, 
+        tup_deleted AS deletes
       FROM pg_stat_database 
       WHERE datname = current_database();
     `;
     const { rows } = await pool.query(query);
-    res.json(rows[0]);
+    const data = rows[0];
+    
+    let cache_hit_ratio = 0;
+    const hits = parseInt(data.blks_hit);
+    const reads = parseInt(data.blks_read);
+    if (hits + reads > 0) {
+      cache_hit_ratio = ((hits / (hits + reads)) * 100).toFixed(2);
+    }
+
+    // Retornamos los valores reales menos el "offset" (lo acumulado antes del reinicio)
+    res.json({
+      cache_hit_ratio,
+      commits: data.commits,
+      rollbacks: data.rollbacks,
+      selects: Math.max(0, parseInt(data.selects) - statsOffset.selects),
+      inserts: Math.max(0, parseInt(data.inserts) - statsOffset.inserts),
+      updates: Math.max(0, parseInt(data.updates) - statsOffset.updates),
+      deletes: Math.max(0, parseInt(data.deletes) - statsOffset.deletes)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 🔥 Esta es la función que ahora "limpia" la gráfica sin error de permisos
+export const resetStats = async (req, res) => {
+  try {
+    const query = `SELECT tup_returned, tup_inserted, tup_updated, tup_deleted FROM pg_stat_database WHERE datname = current_database();`;
+    const { rows } = await pool.query(query);
+    
+    // Guardamos los valores actuales como el nuevo punto de partida (cero)
+    statsOffset = {
+      selects: parseInt(rows[0].tup_returned),
+      inserts: parseInt(rows[0].tup_inserted),
+      updates: parseInt(rows[0].tup_updated),
+      deletes: parseInt(rows[0].tup_deleted)
+    };
+
+    res.json({ message: "Vista de estadísticas reiniciada para la sesión actual." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -103,3 +147,30 @@ export const getAutovacuum = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// 6. Tamaño Físico de la Base de Datos
+export const getDatabaseSize = async (req, res) => {
+  try {
+    // Obtenemos el tamaño total de la BD
+    const dbSizeQuery = "SELECT pg_size_pretty(pg_database_size(current_database())) AS total_size;";
+    const dbSizeRes = await pool.query(dbSizeQuery);
+
+    // Obtenemos el top 5 de tablas más pesadas
+    const tablesSizeQuery = `
+      SELECT relname AS tabla, pg_size_pretty(pg_total_relation_size(relid)) AS peso 
+      FROM pg_catalog.pg_statio_user_tables 
+      ORDER BY pg_total_relation_size(relid) DESC 
+      LIMIT 5;
+    `;
+    const tablesSizeRes = await pool.query(tablesSizeQuery);
+
+    res.json({
+      total_size: dbSizeRes.rows[0].total_size,
+      top_tables: tablesSizeRes.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// 🔥 BORRAMOS resetStats DE AQUÍ PARA ABAJO
+

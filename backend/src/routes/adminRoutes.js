@@ -13,7 +13,7 @@ import {
 } from "../controllers/adminController.js";
 
 import { generarRespaldo, getHistorialRespaldos, registrarRespaldoExterno } from "../controllers/respaldosController.js";
-import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum } from "../controllers/monitorController.js";
+import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum, getDatabaseSize } from "../controllers/monitorController.js";
 import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
 import { productoCompletoValidator, varianteValidator } from "../middlewares/validators.js";
 
@@ -25,7 +25,7 @@ router.get("/categorias", getCategorias);
 router.get("/productos",  getProductos);
 router.get("/respaldos/generar", generarRespaldo);
 
-// 🔥 NUEVA RUTA PARA POWERSHELL (Protegida por x-backup-secret)
+// 🔥 RUTA PARA REGISTRO DE RESPALDOS DESDE POWERSHELL (Protegida por Secret)
 router.post("/respaldos/registrar", registrarRespaldoExterno);
 
 // ── Middleware de autenticación (A partir de aquí, todo exige login) ──────
@@ -38,27 +38,23 @@ router.get("/empleados", checkRole(["rol_admin"]), getEmpleados);
 router.put("/empleados/:id", checkRole(["rol_admin"]), updateEmpleado);
 router.delete("/empleados/:id", checkRole(["rol_admin"]), deleteEmpleado); 
 
-// ── Categorías ──
+// ── Categorías y Productos ──
 router.post("/categorias",    checkRole(["rol_admin","rol_gestor_inventario"]), createCategoria);
 router.put("/categorias/:id", checkRole(["rol_admin","rol_gestor_inventario"]), updateCategoria);
 router.delete("/categorias/:id", checkRole(["rol_admin"]), deleteCategoria);
-
-// ── Productos ──
 router.post("/productos/completo", checkRole(["rol_admin","rol_gestor_inventario"]), productoCompletoValidator, createProductoCompleto);
 router.post("/productos",     checkRole(["rol_admin","rol_gestor_inventario"]), createProducto);
 router.put("/productos/:id",  checkRole(["rol_admin","rol_gestor_inventario"]), updateProducto);
 router.delete("/productos/:id", checkRole(["rol_admin"]), deleteProducto);
 
-// ── Exportación / Importación (Excel) ──
+// ── Módulo de Importación / Exportación (Excel) ──
 router.get("/inventario/exportar", checkRole(["rol_admin", "rol_gestor_inventario"]), exportarInventario);
 router.post("/catalogos/importar", checkRole(["rol_admin"]), upload.single("archivo"), importarCatalogos);
 
-// ── Inventario ──
+// ── Inventario y Clientes ──
 router.get("/inventario",     checkRole(["rol_admin","rol_gestor_inventario","rol_vendedor"]), getInventario);
 router.put("/inventario/:id", checkRole(["rol_admin","rol_gestor_inventario"]), varianteValidator, updateVariante);
 router.delete("/inventario/:id", checkRole(["rol_admin"]), deleteVariante); 
-
-// ── Clientes ──
 router.get("/clientes",      checkRole(["rol_admin","rol_vendedor"]), getClientes);
 router.post("/clientes",     checkRole(["rol_admin","rol_vendedor"]), createCliente);
 router.put("/clientes/:id",  checkRole(["rol_admin","rol_vendedor"]), updateCliente);
@@ -80,12 +76,13 @@ router.delete("/tallas/:id", checkRole(["rol_admin"]), deleteTalla);
 router.post("/:tabla",       checkRole(["rol_admin","rol_gestor_inventario"]), createCatalogoItem);
 router.delete("/:tabla/:id", checkRole(["rol_admin"]), deleteCatalogoItem);
 
-// ── Monitor DB ──
+// ── Monitor de Base de Datos ──
 router.get("/monitor/activity",   checkRole(["rol_admin"]), getActivity);
 router.get("/monitor/locks",      checkRole(["rol_admin"]), getLocks);
 router.post("/monitor/kill",      checkRole(["rol_admin"]), killProcess);
 router.post("/monitor/explain",   checkRole(["rol_admin"]), runExplain);
 router.get("/monitor/health",     checkRole(["rol_admin"]), getHealth);
 router.get("/monitor/autovacuum", checkRole(["rol_admin"]), getAutovacuum);
+router.get("/monitor/size",       checkRole(["rol_admin"]), getDatabaseSize);
 
 export default router;
