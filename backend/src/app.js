@@ -40,8 +40,6 @@ app.use(raspProtection);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ventas", ventasRoutes);
-
-// ⏰ TAREA AUTOMÁTICA: Punto de control diario a medianoche
 cron.schedule("0 0 * * *", async () => {
   try {
     console.log("⏳ [CRON] Guardando punto de control de estadísticas diario...");

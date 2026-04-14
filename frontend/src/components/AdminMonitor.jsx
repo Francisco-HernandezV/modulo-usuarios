@@ -24,12 +24,14 @@ export default function AdminMonitor() {
     setIsRefreshing(true);
     setAuthError(false);
     try {
+      // 🔥 ESCUDOS ANTI-FALLOS AÑADIDOS DE VUELTA
+      // Si el servidor de producción aún no tiene la ruta, no explota, pone valores por defecto.
       const [actRes, lockRes, healthRes, vacRes, sizeRes] = await Promise.all([
-        api.get("/admin/monitor/activity"),
-        api.get("/admin/monitor/locks"),
-        api.get("/admin/monitor/health"),
-        api.get("/admin/monitor/autovacuum"),
-        api.get("/admin/monitor/size")
+        api.get("/admin/monitor/activity").catch(() => ({ data: { conexiones: [] } })),
+        api.get("/admin/monitor/locks").catch(() => ({ data: [] })),
+        api.get("/admin/monitor/health").catch(() => ({ data: {} })),
+        api.get("/admin/monitor/autovacuum").catch(() => ({ data: [] })),
+        api.get("/admin/monitor/size").catch(() => ({ data: { total_size: "Calculando...", top_tables: [] } }))
       ]);
 
       setActivity(actRes.data?.conexiones || []);
@@ -38,10 +40,12 @@ export default function AdminMonitor() {
       setHealth(healthRes.data || {});
       setVacuum(vacRes.data || []);
       setDbSize(sizeRes.data || { total_size: "0 MB", top_tables: [] });
-      setHasData(true);
+      
+      setHasData(true); // Siempre mostramos la pantalla aunque falte 1 dato
     } catch (error) {
       console.error("Error en monitor:", error);
       if (error.response?.status === 401) setAuthError(true);
+      setHasData(true); // Descongela la pantalla en caso de error crítico
     } finally {
       setIsRefreshing(false);
     }
@@ -74,7 +78,6 @@ export default function AdminMonitor() {
     { name: "Lectura Disco", value: Math.max(0, 100 - cacheHit) }
   ];
 
-  // Gráfica de Dona: Tasa de Transacciones
   const dataTransacciones = [
     { name: "Éxito (Commits)", value: commits },
     { name: "Fallas (Rollbacks)", value: rollbacks }
@@ -88,7 +91,7 @@ export default function AdminMonitor() {
   if (authError) {
     return (
       <AdminLayout pageTitle="Error de Acceso">
-        <div className="adm-alert adm-alert-error">Sesión expirada. Por favor, re-inicia sesión.</div>
+        <div className="adm-alert adm-alert-error">Sesión expirada o sin permisos. Por favor, re-inicia sesión.</div>
       </AdminLayout>
     );
   }
@@ -106,10 +109,8 @@ export default function AdminMonitor() {
         <div className="adm-stat-card">Sincronizando con PostgreSQL...</div>
       ) : (
         <>
-          {/* 1. FILA DE GRÁFICAS PRINCIPALES */}
           <div className="adm-stats-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px", marginBottom: "20px" }}>
             
-            {/* Conexiones */}
             <div className="adm-stat-card" style={{ flexDirection: "column", height: "350px" }}>
               <h4 style={{ fontSize: "12px", color: "#8b949e", marginBottom: "20px" }}>CONEXIONES ({activity.length}/{maxConn})</h4>
               <div style={{ width: "100%", height: "250px" }}>
@@ -126,7 +127,6 @@ export default function AdminMonitor() {
               </div>
             </div>
 
-            {/* Salud Cache */}
             <div className="adm-stat-card" style={{ flexDirection: "column", alignItems: "center", height: "350px" }}>
               <h4 style={{ fontSize: "12px", color: "#8b949e", marginBottom: "10px" }}>HIT RATIO (MEMORIA)</h4>
               <div style={{ width: "100%", height: "250px", position: "relative" }}>
@@ -144,21 +144,19 @@ export default function AdminMonitor() {
               </div>
             </div>
 
-            {/* 🔥 GRÁFICA DE DONA: TRANSACCIONES (RESTAURADA) */}
             <div className="adm-stat-card" style={{ flexDirection: "column", alignItems: "center", height: "350px" }}>
               <h4 style={{ fontSize: "12px", color: "#8b949e", marginBottom: "10px" }}>TASA DE TRANSACCIONES</h4>
               <div style={{ width: "100%", height: "250px", position: "relative" }}>
                 <ResponsiveContainer>
                   <PieChart>
                     <Pie data={dataTransacciones} innerRadius={0} outerRadius={70} dataKey="value" stroke="none">
-                      <Cell fill="#3b82f6" /> {/* Azul para Commits */}
-                      <Cell fill="#f59e0b" /> {/* Naranja para Rollbacks */}
+                      <Cell fill="#3b82f6" />
+                      <Cell fill="#f59e0b" />
                     </Pie>
                     <Tooltip contentStyle={{backgroundColor: '#161b22', border: 'none'}} />
                     <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                   </PieChart>
                 </ResponsiveContainer>
-                {/* Texto central con el total de commits */}
                 <div style={{ position: "absolute", top: "42%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center", pointerEvents: "none" }}>
                   <div style={{ fontSize: "18px", fontWeight: "900", color: "#fff" }}>{commits}</div>
                   <div style={{ fontSize: "8px", color: "#8b949e" }}>COMMITS</div>
@@ -168,7 +166,6 @@ export default function AdminMonitor() {
 
           </div>
 
-          {/* 2. ALMACENAMIENTO Y FRAGMENTACIÓN */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "20px", marginBottom: "30px" }}>
             <div className="adm-stat-card" style={{ flexDirection: "column", justifyContent: "center", textAlign: "center", minHeight: "220px" }}>
               <div style={{ fontSize: "12px", color: "#8b949e" }}>PESO TOTAL DB</div>
@@ -191,7 +188,6 @@ export default function AdminMonitor() {
             </div>
           </div>
 
-          {/* 3. TABLA DE SESIONES */}
           <div className="adm-section-header">
             <h3 className="adm-section-title">Sesiones en Tiempo Real</h3>
             {locks.length > 0 && <span className="adm-badge adm-badge-red">⚠ {locks.length} BLOQUEOS</span>}
