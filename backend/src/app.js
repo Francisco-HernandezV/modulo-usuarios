@@ -3,9 +3,10 @@ import express from "express";
 import cors    from "cors";
 import helmet  from "helmet";
 import rateLimit from "express-rate-limit";
-import cron from "node-cron"; // 🔥 IMPORTAMOS NODE-CRON
-import pool from "./config/db.js"; // 🔥 IMPORTAMOS LA BD PARA EL REINICIO AUTOMÁTICO
+import cron from "node-cron";
+import pool from "./config/db.js";
 import { resetStats } from "./controllers/monitorController.js";
+
 import userRoutes  from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import ventasRoutes from "./routes/ventasRoutes.js";
@@ -16,8 +17,9 @@ const app = express();
 app.set("trust proxy", 1);
 const isProduction = process.env.NODE_ENV === 'production';
 
+// 🔥 CONFIGURACIÓN DE CORS REFORZADA
 app.use(cors({
-  origin: isProduction ? process.env.BASE_URL : "http://localhost:5173",
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173", process.env.BASE_URL].filter(Boolean),
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
@@ -39,13 +41,16 @@ app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ventas", ventasRoutes);
 
-
-// Reiniciar la VISTA de las gráficas a la medianoche (Lógica interna)
-cron.schedule("0 0 * * *", () => {
-  console.log("⏳ [CRON] Reiniciando vista de estadísticas para el nuevo día...");
-  // Llamamos a resetStats pero sin req/res (solo la lógica)
-  resetStats({ body: {} }, { json: () => {} }); 
+// ⏰ TAREA AUTOMÁTICA: Punto de control diario a medianoche
+cron.schedule("0 0 * * *", async () => {
+  try {
+    console.log("⏳ [CRON] Guardando punto de control de estadísticas diario...");
+    await resetStats();
+  } catch (error) {
+    console.error("❌ [CRON] Error en el reinicio automático:", error);
+  }
 }, {
+  scheduled: true,
   timezone: "America/Mexico_City"
 });
 

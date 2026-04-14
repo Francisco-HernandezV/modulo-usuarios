@@ -13,7 +13,7 @@ import {
 } from "../controllers/adminController.js";
 
 import { generarRespaldo, getHistorialRespaldos, registrarRespaldoExterno } from "../controllers/respaldosController.js";
-import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum, getDatabaseSize } from "../controllers/monitorController.js";
+import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum, getDatabaseSize, resetStats } from "../controllers/monitorController.js";
 import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
 import { productoCompletoValidator, varianteValidator } from "../middlewares/validators.js";
 
@@ -84,5 +84,5 @@ router.post("/monitor/explain",   checkRole(["rol_admin"]), runExplain);
 router.get("/monitor/health",     checkRole(["rol_admin"]), getHealth);
 router.get("/monitor/autovacuum", checkRole(["rol_admin"]), getAutovacuum);
 router.get("/monitor/size",       checkRole(["rol_admin"]), getDatabaseSize);
-
+router.post("/monitor/reset-stats", checkRole(["rol_admin"]), resetStats);
 export default router;

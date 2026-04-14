@@ -74,21 +74,28 @@ export const runExplain = async (req, res) => {
 // Variable global en el backend para simular el reinicio
 let statsOffset = { selects: 0, inserts: 0, updates: 0, deletes: 0 };
 
+// monitorController.js
+
 export const getHealth = async (req, res) => {
   try {
-    const query = `
-      SELECT 
-        blks_hit, blks_read, 
-        xact_commit AS commits, xact_rollback AS rollbacks,
-        tup_returned AS selects, 
-        tup_inserted AS inserts, 
-        tup_updated AS updates, 
-        tup_deleted AS deletes
-      FROM pg_stat_database 
-      WHERE datname = current_database();
+    // 1. Consultar estadísticas actuales de Postgres
+    const statsQuery = `
+      SELECT blks_hit, blks_read, xact_commit AS commits, xact_rollback AS rollbacks,
+             tup_returned AS selects, tup_inserted AS inserts, 
+             tup_updated AS updates, tup_deleted AS deletes
+      FROM pg_stat_database WHERE datname = current_database();
     `;
-    const { rows } = await pool.query(query);
-    const data = rows[0];
+    
+    // 2. Consultar el offset guardado en nuestra tabla
+    const offsetQuery = `SELECT selects, inserts, updates, deletes FROM monitor_stats_offset WHERE id = 1;`;
+
+    const [statsRes, offsetRes] = await Promise.all([
+      pool.query(statsQuery),
+      pool.query(offsetQuery)
+    ]);
+
+    const data = statsRes.rows[0];
+    const off = offsetRes.rows[0] || { selects: 0, inserts: 0, updates: 0, deletes: 0 };
     
     let cache_hit_ratio = 0;
     const hits = parseInt(data.blks_hit);
@@ -97,38 +104,45 @@ export const getHealth = async (req, res) => {
       cache_hit_ratio = ((hits / (hits + reads)) * 100).toFixed(2);
     }
 
-    // Retornamos los valores reales menos el "offset" (lo acumulado antes del reinicio)
+    // Retornamos la resta: (Total Actual - Foto de la medianoche)
     res.json({
       cache_hit_ratio,
       commits: data.commits,
       rollbacks: data.rollbacks,
-      selects: Math.max(0, parseInt(data.selects) - statsOffset.selects),
-      inserts: Math.max(0, parseInt(data.inserts) - statsOffset.inserts),
-      updates: Math.max(0, parseInt(data.updates) - statsOffset.updates),
-      deletes: Math.max(0, parseInt(data.deletes) - statsOffset.deletes)
+      selects: Math.max(0, parseInt(data.selects) - parseInt(off.selects)),
+      inserts: Math.max(0, parseInt(data.inserts) - parseInt(off.inserts)),
+      updates: Math.max(0, parseInt(data.updates) - parseInt(off.updates)),
+      deletes: Math.max(0, parseInt(data.deletes) - parseInt(off.deletes))
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// 🔥 Esta es la función que ahora "limpia" la gráfica sin error de permisos
+// Esta función saca la "foto" actual y la guarda en la tabla
+// Al final de tu monitorController.js
+
 export const resetStats = async (req, res) => {
   try {
-    const query = `SELECT tup_returned, tup_inserted, tup_updated, tup_deleted FROM pg_stat_database WHERE datname = current_database();`;
-    const { rows } = await pool.query(query);
+    const queryStats = `SELECT tup_returned, tup_inserted, tup_updated, tup_deleted FROM pg_stat_database WHERE datname = current_database();`;
+    const { rows } = await pool.query(queryStats);
     
-    // Guardamos los valores actuales como el nuevo punto de partida (cero)
-    statsOffset = {
-      selects: parseInt(rows[0].tup_returned),
-      inserts: parseInt(rows[0].tup_inserted),
-      updates: parseInt(rows[0].tup_updated),
-      deletes: parseInt(rows[0].tup_deleted)
-    };
-
-    res.json({ message: "Vista de estadísticas reiniciada para la sesión actual." });
+    const updateQuery = `
+      UPDATE monitor_stats_offset 
+      SET selects = $1, inserts = $2, updates = $3, deletes = $4, fecha_reset = CURRENT_TIMESTAMP
+      WHERE id = 1;
+    `;
+    
+    await pool.query(updateQuery, [rows[0].tup_returned, rows[0].tup_inserted, rows[0].tup_updated, rows[0].tup_deleted]);
+    
+    // Si la función viene de una ruta HTTP enviamos respuesta, si viene del Cron no.
+    if (res) {
+        return res.json({ message: "Contadores reiniciados para la vista actual." });
+    }
+    console.log("✅ Punto de control de estadísticas actualizado automáticamente.");
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("❌ Error al guardar offset:", error.message);
+    if (res) return res.status(500).json({ error: error.message });
   }
 };
 
