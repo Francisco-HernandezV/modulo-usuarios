@@ -25,12 +25,12 @@ export default function POS() {
   const [clientesRes, setClientesRes] = useState([]);
   const [procesando, setProcesando] = useState(false);
 
-  // Búsqueda de productos
+// Búsqueda de productos
   useEffect(() => {
     const delay = setTimeout(async () => {
       if (busqueda.trim().length > 1) {
         try {
-          const res = await api.get(`/ventas/buscar-producto?q=${busqueda}`);
+          const res = await api.get(`/ventas/buscar-producto?q=${busqueda}&_t=${Date.now()}`);
           setResultados(res.data);
         } catch (err) { console.error(err); }
       } else { setResultados([]); }
@@ -38,12 +38,11 @@ export default function POS() {
     return () => clearTimeout(delay);
   }, [busqueda]);
 
-  // Búsqueda de clientes
   useEffect(() => {
     const delay = setTimeout(async () => {
       if (busquedaCli.trim().length > 1) {
         try {
-          const res = await api.get(`/ventas/buscar-cliente?q=${busquedaCli}`);
+          const res = await api.get(`/ventas/buscar-cliente?q=${busquedaCli}&_t=${Date.now()}`);
           setClientesRes(res.data);
         } catch (err) { console.error(err); }
       } else { setClientesRes([]); }
