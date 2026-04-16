@@ -112,7 +112,8 @@ export const buscarProductoPos = async (req, res) => {
       JOIN catalogo.colores c ON c.id = vp.color_id
       WHERE vp.activo = TRUE AND p.activo = TRUE
         AND (vp.sku ILIKE $1 OR p.nombre ILIKE $2)
-      LIMIT 20;
+      ORDER BY stock_disponible DESC, p.nombre ASC, t.valor ASC -- 🔥 ORDEN CLAVE: Los que tienen stock van primero
+      LIMIT 40; -- 🔥 Aumentamos el límite para que no se queden variantes fuera
     `;
     const { rows } = await pool.query(query, [`%${q}%`, `%${q}%`]);
     return res.json(rows);
