@@ -163,9 +163,7 @@ export default function AdminMonitor() {
                 </div>
               </div>
             </div>
-
           </div>
-
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "20px", marginBottom: "30px" }}>
             <div className="adm-stat-card" style={{ flexDirection: "column", justifyContent: "center", textAlign: "center", minHeight: "220px" }}>
               <div style={{ fontSize: "12px", color: "#8b949e" }}>PESO TOTAL DB</div>

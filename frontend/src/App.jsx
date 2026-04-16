@@ -28,6 +28,7 @@ import AdminInventario  from "./pages/admin/AdminInventario";
 import AdminRespaldos   from "./pages/admin/AdminRespaldos";
 import AdminMonitor     from "./components/AdminMonitor"; 
 import AdminEmpleados   from "./pages/admin/AdminEmpleados";
+import AdminPredictivo from "./pages/admin/AdminPredictivo";
 
 // ── VISTAS PUNTO DE VENTA (POS) ──
 import POS              from "./pages/pos/POS";
@@ -66,6 +67,7 @@ function App() {
             <Route path="/admin/empleados"    element={<AdminEmpleados />} /> 
             {/* El admin también puede ver el historial de ventas global */}
             <Route path="/admin/historial"    element={<HistorialVentas />} />
+            <Route path="/admin/predictivo" element={<AdminPredictivo />} />
           </Route>
           
           {/* ── 🛒 MÓDULO PUNTO DE VENTA (COMPARTIDO) ── */}

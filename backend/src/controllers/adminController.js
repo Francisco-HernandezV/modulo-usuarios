@@ -1,9 +1,6 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import * as xlsx from "xlsx";
-// ════════════════════════════════════════════════════════════
-//  CATÁLOGOS BASE (NUEVO EN V2)
-// ════════════════════════════════════════════════════════════
 
 export const getCategorias = async (req, res) => {
   try {
@@ -50,7 +47,10 @@ export const deleteCategoria = async (req, res) => {
     await pool.query("DELETE FROM categorias WHERE id = $1", [req.params.id]);
     return res.json({ message: "Eliminada" });
   } catch (error) {
-    if (error.code === "23503") return res.status(409).json({ message: "Hay productos vinculados a esta categoría" });
+    // 🔥 Agregamos validación para código 23001
+    if (error.code === "23503" || error.code === "23001") {
+      return res.status(409).json({ message: "No se puede eliminar: Hay productos vinculados a esta categoría." });
+    }
     return res.status(500).json({ message: "Error al eliminar" });
   }
 };
@@ -156,8 +156,9 @@ export const deleteTalla = async (req, res) => {
     if (!rows.length) return res.status(404).json({ message: "Talla no encontrada" });
     return res.json({ message: "Talla eliminada correctamente" });
   } catch (error) {
-    if (error.code === "23503")
-      return res.status(409).json({ message: "Esta talla está en uso por variantes de productos" });
+    if (error.code === "23503" || error.code === "23001") {
+      return res.status(409).json({ message: "Esta talla está en uso por variantes de productos." });
+    }
     return res.status(500).json({ message: "Error al eliminar talla" });
   }
 };
@@ -298,6 +299,9 @@ export const deleteProducto = async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ message: "Producto no encontrado" });
     return res.json({ message: "Producto eliminado correctamente" });
   } catch (error) {
+    if (error.code === "23503" || error.code === "23001") {
+      return res.status(409).json({ message: "No se puede eliminar el producto porque tiene variantes en el inventario o historial de ventas." });
+    }
     return res.status(500).json({ message: "Error al eliminar producto" });
   }
 };
@@ -375,7 +379,7 @@ export const deleteVariante = async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ message: "Variante no encontrada" });
     return res.json({ message: "Variante eliminada correctamente" });
   } catch (error) {
-    if (error.code === '23503') {
+    if (error.code === '23503' || error.code === '23001') {
       return res.status(409).json({ message: "No se puede eliminar la variante porque ya tiene historial en ventas, carritos o apartados." });
     }
     console.error("deleteVariante:", error);
@@ -554,7 +558,9 @@ export const deleteCatalogoItem = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: "Registro no encontrado" });
     return res.json({ message: "Eliminado correctamente" });
   } catch (error) {
-    if (error.code === '23503') return res.status(409).json({ message: "No se puede eliminar porque hay productos usándolo" });
+    if (error.code === '23503' || error.code === '23001') {
+      return res.status(409).json({ message: "No se puede eliminar porque hay productos o variantes usándolo en el sistema." });
+    }
     return res.status(500).json({ message: "Error al eliminar" });
   }
 };
@@ -744,9 +750,6 @@ export const deleteEmpleado = async (req, res) => {
 // ════════════════════════════════════════════════════════════
 //  IMPORTACIÓN MULTI-HOJA (CATÁLOGOS BASE)
 // ════════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════════
-//  IMPORTACIÓN MULTI-HOJA (CATÁLOGOS BASE) - VERSIÓN SEGURA
-// ════════════════════════════════════════════════════════════
 export const importarCatalogos = async (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No se detectó ningún archivo Excel." });
   
@@ -893,5 +896,81 @@ export const exportarInventario = async (req, res) => {
   } catch (error) {
     console.error("Error exportarInventario:", error);
     return res.status(500).json({ message: "Error al exportar inventario." });
+  }
+};
+
+// adminController.js — Agregar al final
+
+export const getModeloPredictivo = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        vp.id AS variante_id,
+        p.nombre AS producto,
+        t.valor AS talla,
+        c.nombre AS color,
+        vp.stock AS stock_actual,
+        COALESCE(SUM(dv.cantidad), 0) AS vendido_30_dias,
+        MIN(v.creado_en) AS primera_venta
+      FROM inventario.variantes_producto vp
+      JOIN inventario.productos p ON p.id = vp.producto_id
+      JOIN catalogo.tallas t ON t.id = vp.talla_id
+      JOIN catalogo.colores c ON c.id = vp.color_id
+      LEFT JOIN ventas.detalle_venta dv ON dv.variante_id = vp.id
+      LEFT JOIN ventas.ventas v ON v.id = dv.venta_id
+        AND v.creado_en >= NOW() - INTERVAL '30 days'
+      WHERE p.activo = TRUE
+      GROUP BY vp.id, p.nombre, t.valor, c.nombre, vp.stock
+      ORDER BY vendido_30_dias DESC
+    `);
+
+    const T = 30; // Periodo de análisis
+
+    const resultado = rows.map(r => {
+      const stockActual = Number(r.stock_actual);
+      const vendido = Number(r.vendido_30_dias);
+      const stockInicial = stockActual + vendido; // I₀ estimado
+
+      let k = null;
+      let diasAgotamiento = null;
+      let estado = "sin_movimiento";
+
+      if (stockInicial > 0 && stockActual > 0 && vendido > 0) {
+        // k = -(1/T) * ln(I(T)/I₀)
+        k = -(1 / T) * Math.log(stockActual / stockInicial);
+        k = Math.round(k * 10000) / 10000;
+
+        // Día de agotamiento: t = -ln(1/I₀) / k
+        if (k > 0) {
+          diasAgotamiento = Math.ceil(Math.log(stockInicial) / k);
+        }
+
+        estado = stockActual === 0 ? "agotado"
+               : diasAgotamiento <= 7  ? "critico"
+               : diasAgotamiento <= 15 ? "alerta"
+               : "normal";
+
+      } else if (stockActual === 0) {
+        estado = "agotado";
+      }
+
+      return {
+        variante_id: r.variante_id,
+        producto: r.producto,
+        talla: r.talla,
+        color: r.color,
+        stock_actual: stockActual,
+        vendido_30_dias: vendido,
+        stock_inicial_estimado: stockInicial,
+        k,
+        dias_agotamiento: diasAgotamiento,
+        estado
+      };
+    });
+
+    return res.json(resultado);
+  } catch (error) {
+    console.error("getModeloPredictivo:", error);
+    return res.status(500).json({ message: "Error al calcular modelo predictivo" });
   }
 };

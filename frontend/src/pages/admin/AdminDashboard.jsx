@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   const STATS = [
     { label: "Productos",  value: stats.totalProductos,  icon: "👗", color: "blue",    to: "/admin/productos"  },
     { label: "Clientes",   value: stats.totalClientes,   icon: "👥", color: "green",   to: "/admin/clientes"   },
-    { label: "Categorías", value: stats.totalCategorias, icon: "🏷️", color: "yellow", to: "/admin/catalogos" },
+    { label: "Catálogos", value: stats.totalCategorias, icon: "🏷️", color: "yellow", to: "/admin/catalogos" },
     { label: "Stock bajo", value: stats.stockBajo,       icon: "⚠️", color: "red",     to: "/admin/inventario" },
   ];
 
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
       to: "/admin/clientes", icon: "👥", color: "green",
     },
     {
-      title: "Categorías",
+      title: "Catálogos",
       desc:  "Define y organiza las categorías de prendas para estructurar el catálogo correctamente.",
       to: "/admin/catalogos", icon: "🏷️", color: "yellow",
     },

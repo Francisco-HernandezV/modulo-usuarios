@@ -5,7 +5,6 @@ dotenv.config();
 
 const pool = new pg.Pool({
   connectionString: process.env.DB_URL,
-  // 🔥 CORRECCIÓN: Render exige SSL para conexiones externas siempre
   ssl: { rejectUnauthorized: false },
   max: 5, 
   connectionTimeoutMillis: 15000,
