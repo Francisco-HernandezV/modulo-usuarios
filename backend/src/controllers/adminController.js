@@ -899,8 +899,6 @@ export const exportarInventario = async (req, res) => {
   }
 };
 
-// adminController.js — Agregar al final
-
 export const getModeloPredictivo = async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -911,7 +909,8 @@ export const getModeloPredictivo = async (req, res) => {
         c.nombre AS color,
         vp.stock AS stock_actual,
         COALESCE(SUM(dv.cantidad), 0) AS vendido_30_dias,
-        MIN(v.creado_en) AS primera_venta
+        -- 🔥 EXTRAEMOS LOS DÍAS DIRECTAMENTE DESDE SQL (Ignorando las horas)
+        EXTRACT(DAY FROM (MAX(v.creado_en) - MIN(v.creado_en))) AS dias_historial
       FROM inventario.variantes_producto vp
       JOIN inventario.productos p ON p.id = vp.producto_id
       JOIN catalogo.tallas t ON t.id = vp.talla_id
@@ -924,30 +923,46 @@ export const getModeloPredictivo = async (req, res) => {
       ORDER BY vendido_30_dias DESC
     `);
 
-    const T = 30; // Periodo de análisis
-
     const resultado = rows.map(r => {
       const stockActual = Number(r.stock_actual);
       const vendido = Number(r.vendido_30_dias);
-      const stockInicial = stockActual + vendido; // I₀ estimado
+      const stockInicial = stockActual + vendido; // x_0
+
+      // 🔥 ASIGNAMOS EL T EXACTO DE LA BASE DE DATOS
+      let T = 30; 
+      if (r.dias_historial !== null) {
+        const diffDias = Number(r.dias_historial);
+        // Mantenemos Math.max(1) por si la primera y última venta fueron el mismo día (0 días de dif)
+        T = Math.max(1, Math.min(diffDias, 30));
+      }
 
       let k = null;
-      let diasAgotamiento = null;
+      let diasAlerta = null;       
+      let diasAgotamiento = null;  
       let estado = "sin_movimiento";
+      const NIVEL_ALERTA = 10;
 
       if (stockInicial > 0 && stockActual > 0 && vendido > 0) {
-        // k = -(1/T) * ln(I(T)/I₀)
-        k = -(1 / T) * Math.log(stockActual / stockInicial);
-        k = Math.round(k * 10000) / 10000;
+        
+        // k = ln(31 / 50) / 10 = -0.0478
+        k = Math.log(stockActual / stockInicial) / T;
+        k = Math.round(k * 10000) / 10000; 
 
-        // Día de agotamiento: t = -ln(1/I₀) / k
-        if (k > 0) {
-          diasAgotamiento = Math.ceil(Math.log(stockInicial) / k);
+        if (k < 0) {
+          if (stockActual <= NIVEL_ALERTA) {
+             diasAlerta = 0; 
+          } else {
+             // t_a = ln(10 / 50) / -0.0478 = 34
+             diasAlerta = Math.ceil(Math.log(NIVEL_ALERTA / stockInicial) / k);
+          }
+
+          // t_f = ln(1 / 50) / -0.0478 = 82
+          diasAgotamiento = Math.ceil(Math.log(1 / stockInicial) / k);
         }
 
         estado = stockActual === 0 ? "agotado"
-               : diasAgotamiento <= 7  ? "critico"
-               : diasAgotamiento <= 15 ? "alerta"
+               : diasAlerta <= 7  ? "critico"
+               : diasAlerta <= 15 ? "alerta"
                : "normal";
 
       } else if (stockActual === 0) {
@@ -961,10 +976,11 @@ export const getModeloPredictivo = async (req, res) => {
         color: r.color,
         stock_actual: stockActual,
         vendido_30_dias: vendido,
-        stock_inicial_estimado: stockInicial,
         k,
-        dias_agotamiento: diasAgotamiento,
-        estado
+        dias_alerta: diasAlerta,           
+        dias_agotamiento: diasAgotamiento, 
+        estado,
+        dias_historial: T
       };
     });
 
