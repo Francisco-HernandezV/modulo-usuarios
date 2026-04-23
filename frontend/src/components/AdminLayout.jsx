@@ -16,18 +16,20 @@ const IconMonitor  = () => <svg width="17" height="17" viewBox="0 0 24 24" fill=
 const IconBadge = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M9 12h.01M15 12h.01M12 12h.01"/></svg>;
 const IconPOS = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h.01M12 15h.01M17 15h.01M7 11h.01M12 11h.01M17 11h.01"/></svg>;
 const IconChart = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+const IconReport = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
 
 const NAV_ITEMS = [
   { path: "/admin",             label: "Dashboard",          icon: <IconHome />,     section: "GENERAL"   },
-  { path: "/pos",               label: "Caja / POS",      icon: <IconPOS />,   section: "GENERAL" },
+  { path: "/pos",               label: "Caja / POS",         icon: <IconPOS />,      section: "GENERAL" },
   { path: "/admin/catalogos",   label: "Catálogos Base",     icon: <IconTag />,      section: "CATÁLOGOS" }, 
   { path: "/admin/productos",   label: "Catálogo Productos", icon: <IconGrid />,     section: "CATÁLOGOS" },
   { path: "/admin/clientes",    label: "Gestión Clientes",   icon: <IconUsers />,    section: "CATÁLOGOS" },
   { path: "/admin/inventario",  label: "Inventario",         icon: <IconBox />,      section: "CATÁLOGOS" },
   { path: "/admin/respaldos",   label: "Respaldos DB",       icon: <IconDatabase />, section: "SISTEMA"   },
   { path: "/admin/monitor",     label: "Monitor DB",         icon: <IconMonitor />,  section: "SISTEMA"   },
-  { path: "/admin/predictivo", label: "Modelo Predictivo", icon: <IconChart />, section: "SISTEMA" },
-  { path: "/admin/empleados", label: "Gestión Empleados", icon: <IconBadge />, section: "SISTEMA" } 
+  { path: "/admin/predictivo",  label: "Modelo Predictivo",  icon: <IconChart />,    section: "SISTEMA" },
+  { path: "/admin/reportes",    label: "Reportes de Ventas", icon: <IconReport />,   section: "SISTEMA" }, // <-- NUEVA LÍNEA
+  { path: "/admin/empleados",   label: "Gestión Empleados",  icon: <IconBadge />,    section: "SISTEMA" } 
 ];
 
 export default function AdminLayout({ children, pageTitle, breadcrumb }) {
