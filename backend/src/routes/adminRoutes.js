@@ -10,7 +10,7 @@ import {
   getTallas, getTiposTalla, createTalla, deleteTalla,
   createCatalogoItem, deleteCatalogoItem,
   getRolesActivos, createEmpleado, getEmpleados, updateEmpleado, deleteEmpleado,
-  getFiltrosPredictivo, getModeloPredictivo, getReporteVentas
+  getFiltrosPredictivo, getModeloPredictivo, getReporteVentas, getInventarioAlexa
 } from "../controllers/adminController.js";
 
 import { generarRespaldo, getHistorialRespaldos, registrarRespaldoExterno } from "../controllers/respaldosController.js";
@@ -25,10 +25,9 @@ const router = express.Router();
 router.get("/categorias", getCategorias);
 router.get("/productos",  getProductos);
 router.get("/respaldos/generar", generarRespaldo);
-
-// 🔥 RUTA PARA REGISTRO DE RESPALDOS DESDE POWERSHELL (Protegida por Secret)
 router.post("/respaldos/registrar", registrarRespaldoExterno);
 
+router.get("/alexa/inventario", getInventarioAlexa);
 // ── Middleware de autenticación (A partir de aquí, todo exige login) ──────
 router.use(verifyToken);
 

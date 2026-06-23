@@ -1227,3 +1227,36 @@ export const getReporteVentas = async (req, res) => {
     return res.status(500).json({ message: "Error al generar el reporte de ventas" });
   }
 };
+
+// ════════════════════════════════════════════════════════════
+//  ENDPOINT PARA ALEXA SKILL (Solo lectura, protegido por secreto)
+// ════════════════════════════════════════════════════════════
+export const getInventarioAlexa = async (req, res) => {
+  const secretHeader = req.headers["x-alexa-secret"];
+  if (secretHeader !== process.env.ALEXA_SKILL_SECRET) {
+    return res.status(403).json({ message: "Acceso denegado." });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT vp.id, vp.sku, vp.stock, vp.stock_apartado, vp.precio, vp.activo,
+             p.nombre AS producto_nombre, p.activo AS producto_activo,
+             c.nombre AS categoria_nombre,
+             m.nombre AS marca_nombre,
+             t.valor AS talla,
+             col.nombre AS color
+      FROM inventario.variantes_producto vp
+      JOIN inventario.productos p ON p.id = vp.producto_id
+      LEFT JOIN catalogo.categorias c ON c.id = p.categoria_id
+      LEFT JOIN catalogo.marcas m ON m.id = p.marca_id
+      JOIN catalogo.tallas t ON t.id = vp.talla_id
+      JOIN catalogo.colores col ON col.id = vp.color_id
+      WHERE vp.activo = TRUE AND p.activo = TRUE
+      ORDER BY p.nombre ASC
+    `);
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("getInventarioAlexa:", error);
+    return res.status(500).json({ message: "Error al obtener inventario para Alexa" });
+  }
+};
