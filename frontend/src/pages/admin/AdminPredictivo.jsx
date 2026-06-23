@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label
 } from "recharts";
 
 const IconChart = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
@@ -75,37 +75,51 @@ export default function AdminPredictivo() {
   const generarDatosCurva = (v) => {
     if (!v) return [];
     const puntos = [];
-    
-    const x0 = Number(v.stock_actual); 
+    const x0 = Number(v.stock_inicial || v.stock_actual); 
+
+    let fechaOrigen = new Date();
+    if (parametrosBusqueda.fecha_inicio) {
+      fechaOrigen = new Date(parametrosBusqueda.fecha_inicio + 'T12:00:00Z');
+    } else {
+      fechaOrigen.setDate(fechaOrigen.getDate() - (v.dias_historial || 30));
+    }
+
+    const obtenerFechaStr = (diasExtra) => {
+      const d = new Date(fechaOrigen);
+      d.setDate(d.getDate() + diasExtra);
+      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+    };
     
     if (!v.k || v.k === 0) {
       for (let t = 0; t <= 30; t += 5) {
-        puntos.push({ dia: t, unidades: x0 });
+        puntos.push({ dia: t, fecha_str: obtenerFechaStr(t), unidades: x0 });
       }
       return puntos;
     }
     
     const maxDias = Math.max(v.dias_agotamiento || 0, 90); 
-    const step = maxDias > 150 ? 2 : 1; 
+    let step = 1;
+    if (maxDias > 150) step = 2;
+    if (maxDias > 300) step = 5;
+    if (maxDias > 500) step = 10;
     
     for (let t = 0; t <= maxDias + 15; t += step) {
       const x = x0 * Math.exp(v.k * t); 
       if (x < 0.1) {
-        puntos.push({ dia: t, unidades: 0 });
+        puntos.push({ dia: t, fecha_str: obtenerFechaStr(t), unidades: 0 });
         break; 
       }
-      puntos.push({ dia: t, unidades: Number(x.toFixed(2)) });
+      puntos.push({ dia: t, fecha_str: obtenerFechaStr(t), unidades: Number(x.toFixed(2)) });
     }
 
     if (v.dias_alerta && !puntos.some(p => p.dia === v.dias_alerta)) {
-       puntos.push({ dia: v.dias_alerta, unidades: Number((x0 * Math.exp(v.k * v.dias_alerta)).toFixed(2)) });
+       puntos.push({ dia: v.dias_alerta, fecha_str: obtenerFechaStr(v.dias_alerta), unidades: Number((x0 * Math.exp(v.k * v.dias_alerta)).toFixed(2)) });
     }
     if (v.dias_agotamiento && !puntos.some(p => p.dia === v.dias_agotamiento)) {
-       puntos.push({ dia: v.dias_agotamiento, unidades: Number((x0 * Math.exp(v.k * v.dias_agotamiento)).toFixed(2)) });
+       puntos.push({ dia: v.dias_agotamiento, fecha_str: obtenerFechaStr(v.dias_agotamiento), unidades: Number((x0 * Math.exp(v.k * v.dias_agotamiento)).toFixed(2)) });
     }
 
     puntos.sort((a, b) => a.dia - b.dia);
-
     return puntos;
   };
 
@@ -128,9 +142,7 @@ export default function AdminPredictivo() {
   return (
     <AdminLayout pageTitle="Modelo Predictivo de Inventario" breadcrumb="Predictivo">
       
-      {/* SECCIÓN DE FILTROS */}
       <div style={{ background: "#161b22", padding: "16px", borderRadius: "8px", marginBottom: "24px", border: "1px solid #30363d", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
-        
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <label style={{ fontSize: "12px", color: "#8b949e" }}>Desde (Ventas)</label>
           <input 
@@ -144,7 +156,6 @@ export default function AdminPredictivo() {
             style={{ width: "150px", colorScheme: "dark" }}
           />
         </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <label style={{ fontSize: "12px", color: "#8b949e" }}>Hasta (Ventas)</label>
           <input 
@@ -158,7 +169,6 @@ export default function AdminPredictivo() {
             style={{ width: "150px", colorScheme: "dark" }}
           />
         </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <label style={{ fontSize: "12px", color: "#8b949e" }}>Categoría</label>
           <select name="categoria_id" value={parametrosBusqueda.categoria_id} onChange={handleFilterChange} className="adm-input">
@@ -166,7 +176,6 @@ export default function AdminPredictivo() {
             {filtrosData.categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <label style={{ fontSize: "12px", color: "#8b949e" }}>Color</label>
           <select name="color_id" value={parametrosBusqueda.color_id} onChange={handleFilterChange} className="adm-input">
@@ -174,7 +183,6 @@ export default function AdminPredictivo() {
             {filtrosData.colores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <label style={{ fontSize: "12px", color: "#8b949e" }}>Talla</label>
           <select name="talla_id" value={parametrosBusqueda.talla_id} onChange={handleFilterChange} className="adm-input">
@@ -182,7 +190,6 @@ export default function AdminPredictivo() {
             {tallasDisponibles.map(t => <option key={t.id} value={t.id}>{t.valor}</option>)}
           </select>
         </div>
-
         <button 
           onClick={cargarDatos} 
           style={{ background: "#3b82f6", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", height: "38px", fontWeight: "bold" }}>
@@ -190,22 +197,22 @@ export default function AdminPredictivo() {
         </button>
       </div>
 
-      {/* SECCIÓN DE PREDICCIÓN GENERAL */}
       {!loading && datosGenerales && datosGenerales.stock_actual > 0 && (
         <div style={{ background: "#161b22", border: "1px solid #30363d", borderRadius: "12px", padding: "20px", marginBottom: "24px" }}>
           <h3 style={{ color: "white", marginBottom: "16px", fontSize: "18px" }}>Predicción General de Inventario (Filtro Actual)</h3>
-          
           <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-            
-            {/* Tarjetas Estadísticas Generales */}
             <div style={{ flex: "1", minWidth: "250px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ background: "#0d1117", padding: "12px", borderRadius: "6px", border: "1px solid #30363d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#8b949e", fontSize: "13px" }}>Cantidad Inicial:</span>
+                <span style={{ color: "#8b949e", fontSize: "13px" }}>Stock Inicial:</span>
                 <span style={{ color: "white", fontWeight: "bold", fontSize: "16px" }}>{datosGenerales.stock_inicial}</span>
               </div>
               <div style={{ background: "#0d1117", padding: "12px", borderRadius: "6px", border: "1px solid #30363d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#8b949e", fontSize: "13px" }}>Cantidad Actual:</span>
+                <span style={{ color: "#8b949e", fontSize: "13px" }}>Stock Actual:</span>
                 <span style={{ color: "#3b82f6", fontWeight: "bold", fontSize: "16px" }}>{datosGenerales.stock_actual}</span>
+              </div>
+              <div style={{ background: "#0d1117", padding: "12px", borderRadius: "6px", border: "1px solid #30363d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "#8b949e", fontSize: "13px" }}>Ventas en este Rango:</span>
+                <span style={{ color: "#10b981", fontWeight: "bold", fontSize: "16px" }}>{datosGenerales.vendido_filtro}</span>
               </div>
               <div style={{ background: "#0d1117", padding: "12px", borderRadius: "6px", border: "1px solid #30363d", display: "flex", flexDirection: "column" }}>
                 <span style={{ color: "#8b949e", fontSize: "12px", marginBottom: "4px" }}>Proyección de Alerta (10 unidades):</span>
@@ -223,10 +230,9 @@ export default function AdminPredictivo() {
               </div>
             </div>
 
-            {/* Gráfica de Decaimiento General */}
             <div style={{ flex: "2", minWidth: "400px", height: "300px", background: "#0d1117", borderRadius: "8px", padding: "10px", border: "1px solid #30363d" }}>
                <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={generarDatosCurva(datosGenerales)} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                <AreaChart data={generarDatosCurva(datosGenerales)} margin={{ top: 20, right: 30, left: 0, bottom: 40 }}>
                   <defs>
                     <linearGradient id="colorGeneral" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.5}/>
@@ -235,9 +241,11 @@ export default function AdminPredictivo() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
                   <XAxis 
-                    dataKey="dia" 
+                    dataKey="fecha_str" 
                     stroke="#8b949e" 
-                    label={{ value: 'Días', position: 'insideBottomRight', offset: -10, fill: '#8b949e', fontSize: 12 }} 
+                    tick={{ fontSize: 11, angle: -45, textAnchor: "end", dy: 10 }}
+                    height={60}
+                    minTickGap={20} 
                   />
                   <YAxis 
                     stroke="#8b949e" 
@@ -247,14 +255,36 @@ export default function AdminPredictivo() {
                   <Tooltip 
                     contentStyle={{ backgroundColor: "#161b22", borderColor: "#30363d", color: "white" }}
                     formatter={(value) => [`${value} unidades`, "Inventario Exacto"]}
-                    labelFormatter={(label) => `Día ${label}`}
+                    labelFormatter={(label) => `Fecha: ${label}`}
                   />
-                  <ReferenceLine y={10} stroke="#f59e0b" strokeDasharray="5 5" ifOverflow="extendDomain">
-                    <Label value="Alerta (10)" fill="#f59e0b" position="insideTopRight" fontSize={12} />
-                  </ReferenceLine>
-                  <ReferenceLine y={1} stroke="#ef4444" strokeDasharray="3 3" ifOverflow="extendDomain">
-                    <Label value="Agotamiento (1)" fill="#ef4444" position="insideTopRight" fontSize={12} />
-                  </ReferenceLine>
+                  
+                  {/* NODOS EXACTOS EN LA CURVA */}
+                  {datosGenerales.fecha_alerta && (
+                    <ReferenceDot 
+                      x={formatearFechaExacta(datosGenerales.fecha_alerta)} 
+                      y={10} 
+                      r={5} 
+                      fill="#161b22" 
+                      stroke="#f59e0b" 
+                      strokeWidth={3}
+                    >
+                      <Label value="Alerta (10)" position="top" fill="#f59e0b" fontSize={12} />
+                    </ReferenceDot>
+                  )}
+                  
+                  {datosGenerales.fecha_agotamiento && (
+                    <ReferenceDot 
+                      x={formatearFechaExacta(datosGenerales.fecha_agotamiento)} 
+                      y={1} 
+                      r={5} 
+                      fill="#161b22" 
+                      stroke="#ef4444" 
+                      strokeWidth={3}
+                    >
+                      <Label value="Agotamiento (1)" position="top" fill="#ef4444" fontSize={12} />
+                    </ReferenceDot>
+                  )}
+
                   <Area 
                     type="monotone" 
                     dataKey="unidades" 
@@ -267,12 +297,10 @@ export default function AdminPredictivo() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* SECCIÓN DE ESTADÍSTICAS INDIVIDUALES */}
       <div style={{ display: "flex", gap: "16px", marginBottom: 24, flexWrap: "wrap" }}>
         {[
           { label: "Agotados",    value: conteo.agotado,  color: "red",    icon: "⛔", key: "agotado"  },
@@ -295,7 +323,6 @@ export default function AdminPredictivo() {
         ))}
       </div>
 
-      {/* TABLA DE VARIANTES */}
       {loading ? (
         <div className="adm-empty"><p>Calculando proyecciones matemáticas...</p></div>
       ) : filtrados.length === 0 ? (
@@ -332,21 +359,18 @@ export default function AdminPredictivo() {
                       <span style={{ marginLeft: 8, fontSize: 12, color: "#8b949e", whiteSpace: "nowrap" }}>{d.color}</span>
                     </td>
                     <td style={{ fontWeight: 700 }}>{d.stock_actual}</td>
-                    
                     <td style={{ color: "#f59e0b" }}>
                       <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
                         <span style={{ fontWeight: "bold" }}>{d.vendido_periodo} <span style={{ fontSize: "10px", fontWeight: "normal" }}>en filtro</span></span>
                         <span style={{ fontSize: "11px", opacity: 0.8 }}>{d.vendido_historico} histórico</span>
                       </div>
                     </td>
-
                     <td style={{ fontWeight: 600, color: "#60a5fa", whiteSpace: "nowrap" }}>
                       {d.dias_historial ? `${d.dias_historial} d` : "—"}
                     </td>
                     <td style={{ fontFamily: "monospace", fontSize: 12, color: "#8b949e" }}>
                       {d.k ? d.k.toFixed(4) : "0.0000"}
                     </td>
-                    
                     <td style={{ color: "#f59e0b", fontWeight: 600 }}>
                       {d.estado === "sin_movimiento" || d.dias_alerta === null ? "—" : (
                         <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
@@ -355,7 +379,6 @@ export default function AdminPredictivo() {
                         </div>
                       )}
                     </td>
-                    
                     <td style={{ color: "#ef4444", fontWeight: 600 }}>
                       {d.estado === "sin_movimiento" || d.dias_agotamiento === null ? "—" : (
                         <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
@@ -364,7 +387,6 @@ export default function AdminPredictivo() {
                         </div>
                       )}
                     </td>
-
                     <td style={{ whiteSpace: "nowrap" }}>
                       <span className={`adm-badge ${cfg.cls}`}>
                         {cfg.icono} {cfg.label}
@@ -388,7 +410,6 @@ export default function AdminPredictivo() {
         </div>
       )}
 
-      {/* MODAL DE GRÁFICA INDIVIDUAL */}
       {selectedVariant && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
           <div style={{ background: "#161b22", border: "1px solid #30363d", borderRadius: "12px", width: "100%", maxWidth: "800px", padding: "24px", position: "relative" }}>
@@ -406,42 +427,58 @@ export default function AdminPredictivo() {
 
             <div style={{ height: "400px", width: "100%", background: "#0d1117", borderRadius: "8px", padding: "10px" }}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={generarDatosCurva(selectedVariant)} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                  
+                <AreaChart data={generarDatosCurva(selectedVariant)} margin={{ top: 20, right: 30, left: 0, bottom: 40 }}>
                   <defs>
                     <linearGradient id="colorUnidades" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.5}/>
                       <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-
                   <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
-                  
                   <XAxis 
-                    dataKey="dia" 
+                    dataKey="fecha_str" 
                     stroke="#8b949e" 
-                    label={{ value: 'Días transcurridos desde fecha de corte (t)', position: 'insideBottomRight', offset: -10, fill: '#8b949e', fontSize: 12 }} 
+                    tick={{ fontSize: 11, angle: -45, textAnchor: "end", dy: 10 }}
+                    height={60}
+                    minTickGap={20} 
                   />
-                  
                   <YAxis 
                     stroke="#8b949e" 
                     domain={[0, dataMax => Math.ceil(dataMax + 5)]} 
                     label={{ value: 'Inventario (x)', angle: -90, position: 'insideLeft', fill: '#8b949e', fontSize: 12 }} 
                   />
-                  
                   <Tooltip 
                     contentStyle={{ backgroundColor: "#161b22", borderColor: "#30363d", color: "white" }}
                     formatter={(value) => [`${value} unidades`, "Inventario Exacto"]}
-                    labelFormatter={(label) => `Día ${label}`}
+                    labelFormatter={(label) => `Fecha: ${label}`}
                   />
                   
-                  <ReferenceLine y={10} stroke="#f59e0b" strokeDasharray="5 5" ifOverflow="extendDomain">
-                    <Label value="Alerta (10)" fill="#f59e0b" position="insideTopRight" fontSize={12} />
-                  </ReferenceLine>
-
-                  <ReferenceLine y={1} stroke="#ef4444" strokeDasharray="3 3" ifOverflow="extendDomain">
-                    <Label value="Agotamiento (1)" fill="#ef4444" position="insideTopRight" fontSize={12} />
-                  </ReferenceLine>
+                  {/* NODOS EXACTOS EN LA CURVA */}
+                  {selectedVariant.fecha_alerta && (
+                    <ReferenceDot 
+                      x={formatearFechaExacta(selectedVariant.fecha_alerta)} 
+                      y={10} 
+                      r={5} 
+                      fill="#161b22" 
+                      stroke="#f59e0b" 
+                      strokeWidth={3}
+                    >
+                      <Label value="Alerta (10)" position="top" fill="#f59e0b" fontSize={12} />
+                    </ReferenceDot>
+                  )}
+                  
+                  {selectedVariant.fecha_agotamiento && (
+                    <ReferenceDot 
+                      x={formatearFechaExacta(selectedVariant.fecha_agotamiento)} 
+                      y={1} 
+                      r={5} 
+                      fill="#161b22" 
+                      stroke="#ef4444" 
+                      strokeWidth={3}
+                    >
+                      <Label value="Agotamiento (1)" position="top" fill="#ef4444" fontSize={12} />
+                    </ReferenceDot>
+                  )}
 
                   <Area 
                     type="monotone" 

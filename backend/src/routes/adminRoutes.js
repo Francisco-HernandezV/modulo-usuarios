@@ -10,7 +10,7 @@ import {
   getTallas, getTiposTalla, createTalla, deleteTalla,
   createCatalogoItem, deleteCatalogoItem,
   getRolesActivos, createEmpleado, getEmpleados, updateEmpleado, deleteEmpleado,
-  getModeloPredictivo
+  getFiltrosPredictivo, getModeloPredictivo, getReporteVentas
 } from "../controllers/adminController.js";
 
 import { generarRespaldo, getHistorialRespaldos, registrarRespaldoExterno } from "../controllers/respaldosController.js";
@@ -87,5 +87,7 @@ router.get("/monitor/autovacuum", checkRole(["rol_admin"]), getAutovacuum);
 router.get("/monitor/size",       checkRole(["rol_admin"]), getDatabaseSize);
 router.post("/monitor/reset-stats", checkRole(["rol_admin"]), resetStats);
 
+router.get("/inventario/predictivo/filtros", checkRole(["rol_admin", "rol_gestor_inventario"]), getFiltrosPredictivo);
 router.get("/inventario/predictivo", checkRole(["rol_admin", "rol_gestor_inventario"]), getModeloPredictivo);
+router.get("/reportes/ventas", checkRole(["rol_admin", "rol_gestor_inventario"]), getReporteVentas);
 export default router;

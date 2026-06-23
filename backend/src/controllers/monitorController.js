@@ -186,5 +186,3 @@ export const getDatabaseSize = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-// 🔥 BORRAMOS resetStats DE AQUÍ PARA ABAJO
-

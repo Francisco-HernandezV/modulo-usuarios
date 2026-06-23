@@ -899,72 +899,180 @@ export const exportarInventario = async (req, res) => {
   }
 };
 
+// 🔥 NUEVO ENDPOINT: Obtiene catálogos y la fecha de la primera venta para los filtros
+// C:\Users\Lenovo\Desktop\proyecto-usuarios\backend\src\controllers\adminController.js
+
+export const getFiltrosPredictivo = async (req, res) => {
+  try {
+    const [minDateRes, categoriasRes, coloresRes, tallasRes, relTallasRes] = await Promise.all([
+      pool.query("SELECT MIN(creado_en) AS min_fecha FROM ventas.ventas"),
+      pool.query("SELECT id, nombre FROM categorias ORDER BY nombre ASC"),
+      pool.query("SELECT id, nombre FROM colores ORDER BY nombre ASC"),
+      pool.query("SELECT id, valor FROM tallas ORDER BY valor ASC"),
+      // 🔥 NUEVO: Extraemos qué tallas se están usando realmente en cada categoría
+      pool.query(`
+        SELECT DISTINCT p.categoria_id, vp.talla_id
+        FROM inventario.variantes_producto vp
+        JOIN inventario.productos p ON p.id = vp.producto_id
+        WHERE p.categoria_id IS NOT NULL
+      `)
+    ]);
+
+    let minFecha = null;
+    if (minDateRes.rows[0]?.min_fecha) {
+      minFecha = new Date(minDateRes.rows[0].min_fecha).toISOString().split('T')[0];
+    }
+
+    return res.json({
+      min_fecha: minFecha,
+      categorias: categoriasRes.rows,
+      colores: coloresRes.rows,
+      tallas: tallasRes.rows,
+      relacion_cat_tallas: relTallasRes.rows // Enviamos la relación al frontend
+    });
+  } catch (error) {
+    console.error("getFiltrosPredictivo:", error);
+    return res.status(500).json({ message: "Error al obtener filtros" });
+  }
+};
+
+
+// backend/src/controllers/adminController.js
+
 export const getModeloPredictivo = async (req, res) => {
   try {
-    const { rows } = await pool.query(`
+    const { fecha_inicio, fecha_fin, categoria_id, color_id, talla_id } = req.query;
+
+    let whereClause = "p.activo = TRUE";
+    const queryParams = [];
+    let paramIndex = 1;
+
+    if (categoria_id) {
+      whereClause += ` AND p.categoria_id = $${paramIndex++}`;
+      queryParams.push(categoria_id);
+    }
+    if (color_id) {
+      whereClause += ` AND vp.color_id = $${paramIndex++}`;
+      queryParams.push(color_id);
+    }
+    if (talla_id) {
+      whereClause += ` AND vp.talla_id = $${paramIndex++}`;
+      queryParams.push(talla_id);
+    }
+
+    let queryVentasPeriodo = ""; 
+    let queryVentasFuturas = ""; 
+    let queryVentasHistoricas = ""; 
+
+    if (fecha_inicio && fecha_fin) {
+      queryVentasPeriodo = `
+        SELECT dv.variante_id, SUM(dv.cantidad) as total_vendido
+        FROM ventas.detalle_venta dv
+        JOIN ventas.ventas v ON v.id = dv.venta_id
+        WHERE v.creado_en >= $${paramIndex}::date AND v.creado_en < $${paramIndex + 1}::date + INTERVAL '1 day'
+        GROUP BY dv.variante_id
+      `;
+      queryVentasFuturas = `
+        SELECT dv.variante_id, SUM(dv.cantidad) as total_vendido
+        FROM ventas.detalle_venta dv
+        JOIN ventas.ventas v ON v.id = dv.venta_id
+        WHERE v.creado_en >= $${paramIndex + 1}::date + INTERVAL '1 day'
+        GROUP BY dv.variante_id
+      `;
+      queryVentasHistoricas = `
+        SELECT dv.variante_id, SUM(dv.cantidad) as total_vendido
+        FROM ventas.detalle_venta dv
+        JOIN ventas.ventas v ON v.id = dv.venta_id
+        WHERE v.creado_en < $${paramIndex + 1}::date + INTERVAL '1 day'
+        GROUP BY dv.variante_id
+      `;
+      queryParams.push(fecha_inicio, fecha_fin);
+      paramIndex += 2;
+    } else {
+      queryVentasPeriodo = `SELECT dv.variante_id, SUM(dv.cantidad) as total_vendido FROM ventas.detalle_venta dv GROUP BY dv.variante_id`;
+      queryVentasFuturas = `SELECT dv.variante_id, 0 as total_vendido FROM ventas.detalle_venta dv WHERE 1=0`;
+      queryVentasHistoricas = `SELECT dv.variante_id, SUM(dv.cantidad) as total_vendido FROM ventas.detalle_venta dv GROUP BY dv.variante_id`;
+    }
+
+    const query = `
+      WITH ventas_periodo AS (${queryVentasPeriodo}),
+           ventas_futuras AS (${queryVentasFuturas}),
+           ventas_historicas AS (${queryVentasHistoricas})
       SELECT 
         vp.id AS variante_id,
         p.nombre AS producto,
         t.valor AS talla,
         c.nombre AS color,
-        vp.stock AS stock_actual,
-        COALESCE(SUM(dv.cantidad), 0) AS vendido_30_dias,
-        -- 🔥 EXTRAEMOS LOS DÍAS DIRECTAMENTE DESDE SQL (Ignorando las horas)
-        EXTRACT(DAY FROM (MAX(v.creado_en) - MIN(v.creado_en))) AS dias_historial
+        vp.stock AS stock_fisico_hoy,
+        (vp.stock + COALESCE(vf.total_vendido, 0)) AS stock_historico_final,
+        COALESCE(vp_ventas.total_vendido, 0) AS vendido_filtro,
+        COALESCE(vh.total_vendido, 0) AS vendido_acumulado,
+        EXTRACT(DAY FROM (NOW() - MIN(p.creado_en))) as dias_creacion
       FROM inventario.variantes_producto vp
       JOIN inventario.productos p ON p.id = vp.producto_id
       JOIN catalogo.tallas t ON t.id = vp.talla_id
       JOIN catalogo.colores c ON c.id = vp.color_id
-      LEFT JOIN ventas.detalle_venta dv ON dv.variante_id = vp.id
-      LEFT JOIN ventas.ventas v ON v.id = dv.venta_id
-        AND v.creado_en >= NOW() - INTERVAL '30 days'
-      WHERE p.activo = TRUE
-      GROUP BY vp.id, p.nombre, t.valor, c.nombre, vp.stock
-      ORDER BY vendido_30_dias DESC
-    `);
+      LEFT JOIN ventas_periodo vp_ventas ON vp_ventas.variante_id = vp.id
+      LEFT JOIN ventas_futuras vf ON vf.variante_id = vp.id
+      LEFT JOIN ventas_historicas vh ON vh.variante_id = vp.id
+      WHERE ${whereClause}
+      GROUP BY vp.id, p.nombre, t.valor, c.nombre, vp.stock, vf.total_vendido, vp_ventas.total_vendido, vh.total_vendido
+      ORDER BY vendido_acumulado DESC, p.nombre ASC
+    `;
 
-    const resultado = rows.map(r => {
-      const stockActual = Number(r.stock_actual);
-      const vendido = Number(r.vendido_30_dias);
-      const stockInicial = stockActual + vendido; // x_0
+    const { rows } = await pool.query(query, queryParams);
 
-      // 🔥 ASIGNAMOS EL T EXACTO DE LA BASE DE DATOS
-      let T = 30; 
-      if (r.dias_historial !== null) {
-        const diffDias = Number(r.dias_historial);
-        // Mantenemos Math.max(1) por si la primera y última venta fueron el mismo día (0 días de dif)
-        T = Math.max(1, Math.min(diffDias, 30));
+    const sumarDias = (fechaBase, dias) => {
+        const d = new Date(fechaBase);
+        d.setDate(d.getDate() + dias);
+        return d.toISOString().split('T')[0];
+    };
+
+    let stockActualGlobal = 0;
+    let vendidoAcumuladoGlobal = 0;
+    let vendidoFiltroGlobal = 0;
+    let T_global = 30; 
+
+    if (fecha_inicio && fecha_fin) {
+        const fFin = new Date(fecha_fin + 'T12:00:00Z');
+        const fIni = new Date(fecha_inicio + 'T12:00:00Z');
+        const diffDays = Math.round((fFin - fIni) / (1000 * 60 * 60 * 24));
+        T_global = diffDays === 0 ? 1 : diffDays; 
+    }
+
+    const individual = rows.map(r => {
+      const stockActual = Number(r.stock_historico_final);
+      const vendidoK = Number(r.vendido_acumulado); 
+      const stockInicial = stockActual + vendidoK; 
+
+      stockActualGlobal += stockActual;
+      vendidoAcumuladoGlobal += vendidoK;
+      vendidoFiltroGlobal += Number(r.vendido_filtro);
+
+      let T = T_global; 
+      if (!fecha_inicio && !fecha_fin && r.dias_creacion) {
+        T = Math.max(1, Number(r.dias_creacion));
       }
 
-      let k = null;
-      let diasAlerta = null;       
-      let diasAgotamiento = null;  
+      let fechaBaseLocal = new Date();
+      if (fecha_inicio) {
+          fechaBaseLocal = new Date(fecha_inicio + 'T12:00:00Z');
+      } else {
+          fechaBaseLocal.setDate(fechaBaseLocal.getDate() - T);
+      }
+
+      let k = null, diasAlerta = null, diasAgotamiento = null, fechaAlerta = null, fechaAgotamiento = null;
       let estado = "sin_movimiento";
-      const NIVEL_ALERTA = 10;
 
-      if (stockInicial > 0 && stockActual > 0 && vendido > 0) {
-        
-        // k = ln(31 / 50) / 10 = -0.0478
-        k = Math.log(stockActual / stockInicial) / T;
-        k = Math.round(k * 10000) / 10000; 
-
+      if (stockInicial > 0 && stockActual > 0 && vendidoK > 0) {
+        k = Math.round((Math.log(stockActual / stockInicial) / T) * 10000) / 10000;
         if (k < 0) {
-          if (stockActual <= NIVEL_ALERTA) {
-             diasAlerta = 0; 
-          } else {
-             // t_a = ln(10 / 50) / -0.0478 = 34
-             diasAlerta = Math.ceil(Math.log(NIVEL_ALERTA / stockInicial) / k);
-          }
-
-          // t_f = ln(1 / 50) / -0.0478 = 82
-          diasAgotamiento = Math.ceil(Math.log(1 / stockInicial) / k);
+          diasAlerta = Math.round(Math.log(10 / stockInicial) / k);
+          diasAgotamiento = Math.round(Math.log(1 / stockInicial) / k);
+          fechaAlerta = sumarDias(fechaBaseLocal, diasAlerta);
+          fechaAgotamiento = sumarDias(fechaBaseLocal, diasAgotamiento);
         }
-
-        estado = stockActual === 0 ? "agotado"
-               : diasAlerta <= 7  ? "critico"
-               : diasAlerta <= 15 ? "alerta"
-               : "normal";
-
+        estado = stockActual <= 0 ? "agotado" : (diasAlerta - T) <= 7 ? "critico" : (diasAlerta - T) <= 15 ? "alerta" : "normal";
       } else if (stockActual === 0) {
         estado = "agotado";
       }
@@ -974,19 +1082,148 @@ export const getModeloPredictivo = async (req, res) => {
         producto: r.producto,
         talla: r.talla,
         color: r.color,
+        stock_inicial: stockInicial, 
         stock_actual: stockActual,
-        vendido_30_dias: vendido,
-        k,
-        dias_alerta: diasAlerta,           
-        dias_agotamiento: diasAgotamiento, 
-        estado,
-        dias_historial: T
+        vendido_periodo: Number(r.vendido_filtro), 
+        vendido_historico: vendidoK, 
+        k, dias_alerta: diasAlerta, dias_agotamiento: diasAgotamiento,
+        fecha_alerta: fechaAlerta, fecha_agotamiento: fechaAgotamiento,
+        estado, dias_historial: T
       };
     });
 
-    return res.json(resultado);
+    const stockInicialG = stockActualGlobal + vendidoAcumuladoGlobal;
+    let k_g = null, dAlertaG = null, dAgotG = null, fAlertaG = null, fAgotG = null;
+
+    let fechaBaseGlobal = new Date();
+    if (fecha_inicio) {
+        fechaBaseGlobal = new Date(fecha_inicio + 'T12:00:00Z');
+    } else {
+        fechaBaseGlobal.setDate(fechaBaseGlobal.getDate() - T_global);
+    }
+
+    if (stockInicialG > 0 && stockActualGlobal > 0 && vendidoAcumuladoGlobal > 0) {
+        k_g = Math.round((Math.log(stockActualGlobal / stockInicialG) / T_global) * 10000) / 10000;
+        if (k_g < 0) {
+            dAlertaG = Math.round(Math.log(10 / stockInicialG) / k_g);
+            dAgotG = Math.round(Math.log(1 / stockInicialG) / k_g);
+            fAlertaG = sumarDias(fechaBaseGlobal, dAlertaG);
+            fAgotG = sumarDias(fechaBaseGlobal, dAgotG);
+        }
+    }
+
+    return res.json({
+      individual,
+      general: {
+        stock_inicial: stockInicialG,
+        stock_actual: stockActualGlobal,
+        vendido_filtro: vendidoFiltroGlobal, 
+        vendido_historico: vendidoAcumuladoGlobal, 
+        k: k_g,
+        dias_alerta: dAlertaG, fecha_alerta: fAlertaG,
+        dias_agotamiento: dAgotG, fecha_agotamiento: fAgotG,
+        dias_historial: T_global
+      }
+    });
   } catch (error) {
-    console.error("getModeloPredictivo:", error);
-    return res.status(500).json({ message: "Error al calcular modelo predictivo" });
+    console.error(error);
+    return res.status(500).json({ message: "Error en el modelo" });
+  }
+};
+
+export const getReporteVentas = async (req, res) => {
+  try {
+    const { fecha_inicio, fecha_fin, categoria_id } = req.query;
+    
+    const queryParams = [];
+    let paramIndex = 1;
+    let whereClause = "TRUE";
+
+    if (fecha_inicio && fecha_fin) {
+      whereClause += ` AND v.creado_en >= $${paramIndex}::date AND v.creado_en < $${paramIndex + 1}::date + INTERVAL '1 day'`;
+      queryParams.push(fecha_inicio, fecha_fin);
+      paramIndex += 2;
+    }
+
+    if (categoria_id) {
+      whereClause += ` AND p.categoria_id = $${paramIndex}`;
+      queryParams.push(categoria_id);
+    }
+
+    // 1. Serie de tiempo diaria
+    const queryDiario = `
+      SELECT 
+        TO_CHAR(v.creado_en, 'YYYY-MM-DD') AS fecha,
+        SUM(dv.cantidad) AS total_prendas,
+        SUM(dv.cantidad * dv.precio_unitario) AS total_monto
+      FROM ventas.ventas v
+      JOIN ventas.detalle_venta dv ON v.id = dv.venta_id
+      JOIN inventario.variantes_producto vp ON dv.variante_id = vp.id
+      JOIN inventario.productos p ON vp.producto_id = p.id
+      WHERE ${whereClause}
+      GROUP BY fecha
+      ORDER BY fecha ASC
+    `;
+
+    // 2. Indicadores Clave (KPIs)
+    const queryKPIs = `
+      SELECT 
+        COALESCE(SUM(dv.cantidad), 0) AS total_prendas,
+        COALESCE(SUM(dv.cantidad * dv.precio_unitario), 0) AS total_ingresos,
+        COUNT(DISTINCT v.id) AS total_tickets
+      FROM ventas.ventas v
+      JOIN ventas.detalle_venta dv ON v.id = dv.venta_id
+      JOIN inventario.variantes_producto vp ON dv.variante_id = vp.id
+      JOIN inventario.productos p ON vp.producto_id = p.id
+      WHERE ${whereClause}
+    `;
+
+    // 3. Agrupación por Categorías
+    const queryCategorias = `
+      SELECT 
+        c.nombre AS name,
+        SUM(dv.cantidad) AS value
+      FROM ventas.ventas v
+      JOIN ventas.detalle_venta dv ON v.id = dv.venta_id
+      JOIN inventario.variantes_producto vp ON dv.variante_id = vp.id
+      JOIN inventario.productos p ON vp.producto_id = p.id
+      JOIN catalogo.categorias c ON p.categoria_id = c.id
+      WHERE ${whereClause}
+      GROUP BY c.nombre
+      ORDER BY value DESC
+    `;
+
+    // 4. Top Productos más rentables
+    const queryProductos = `
+      SELECT 
+        p.nombre AS producto,
+        SUM(dv.cantidad) AS cantidad,
+        SUM(dv.cantidad * dv.precio_unitario) AS ingresos
+      FROM ventas.ventas v
+      JOIN ventas.detalle_venta dv ON v.id = dv.venta_id
+      JOIN inventario.variantes_producto vp ON dv.variante_id = vp.id
+      JOIN inventario.productos p ON vp.producto_id = p.id
+      WHERE ${whereClause}
+      GROUP BY p.nombre
+      ORDER BY ingresos DESC
+      LIMIT 5
+    `;
+
+    const [resDiario, resKPIs, resCategorias, resProductos] = await Promise.all([
+      pool.query(queryDiario, queryParams),
+      pool.query(queryKPIs, queryParams),
+      pool.query(queryCategorias, queryParams),
+      pool.query(queryProductos, queryParams)
+    ]);
+
+    return res.json({
+      diario: resDiario.rows,
+      kpis: resKPIs.rows[0],
+      topCategorias: resCategorias.rows,
+      topProductos: resProductos.rows
+    });
+  } catch (error) {
+    console.error("getReporteVentas:", error);
+    return res.status(500).json({ message: "Error al generar el reporte de ventas" });
   }
 };
