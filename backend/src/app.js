@@ -9,6 +9,7 @@ import { resetStats } from "./controllers/monitorController.js";
 import userRoutes  from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import ventasRoutes from "./routes/ventasRoutes.js";
+import inventarioRoutes from "./routes/inventarioRoutes.js";
 import { raspProtection } from "./middlewares/rasp.js";
 
 const app = express();
@@ -37,6 +38,7 @@ app.use(raspProtection);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ventas", ventasRoutes);
+app.use("/api/inventario", inventarioRoutes);
 cron.schedule("0 0 * * *", async () => {
   try {
     console.log("[CRON] Guardando punto de control de estadísticas diario...");

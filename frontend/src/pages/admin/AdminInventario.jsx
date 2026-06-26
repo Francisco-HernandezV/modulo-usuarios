@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
 import "../../styles/theme.css";
 
 const IconX        = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 const IconEdit     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IconBox = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
+const IconHistory = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>;
 const IconWarning  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 const IconTrash    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconDownload = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
@@ -21,6 +24,9 @@ const getAlertClass = (type) => type === "success" ? "adm-alert-success" : "adm-
 const getAlertIcon = (type) => type === "success" ? "✓" : "✕";
 
 export default function AdminInventario() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [variantes,   setVariantes]   = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [modal,       setModal]       = useState(false);
@@ -31,6 +37,18 @@ export default function AdminInventario() {
   const [ajusteModal, setAjusteModal] = useState(null);
   const [ajusteVal,   setAjusteVal]   = useState("");
   const [confirmDel,  setConfirmDel]  = useState(null);
+  const [showHistorial, setShowHistorial] = useState(false);
+  const [historial, setHistorial] = useState([]);
+  const [detalleHist, setDetalleHist] = useState(null);
+
+  // 🔥 Recibir alerta de éxito desde la página de Ingreso
+  useEffect(() => {
+    if (location.state?.alert) {
+      setAlert(location.state.alert);
+      // Limpiar el state para que no reaparezca al refrescar
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const cargar = async () => {
     setLoading(true);
@@ -49,7 +67,7 @@ export default function AdminInventario() {
 
   useEffect(() => {
     if (!alert) return;
-    const t = setTimeout(() => setAlert(null), 3500);
+    const t = setTimeout(() => setAlert(null), 4000);
     return () => clearTimeout(t);
   }, [alert]);
 
@@ -130,7 +148,7 @@ export default function AdminInventario() {
     if (errors[field]) setErrors(e => ({ ...e, [field]: null }));
   };
 
-  // 🔥 VALIDACIÓN DE PRECIO (2 Decimales)
+  // VALIDACIÓN DE PRECIO (2 Decimales)
   const handlePrecioChange = (e) => {
     let val = e.target.value;
     if (val === '' || /^\d+(\.\d{0,2})?$/.test(val)) {
@@ -138,7 +156,7 @@ export default function AdminInventario() {
     }
   };
 
-  // 🔥 VALIDACIÓN DE STOCK (Enteros, sin decimales)
+  // VALIDACIÓN DE STOCK (Enteros, sin decimales)
   const handleStockAjusteChange = (e) => {
     let val = e.target.value;
     if (val === '' || /^\d+$/.test(val)) {
@@ -146,19 +164,13 @@ export default function AdminInventario() {
     }
   };
 
-  // 🔥 BLOQUEO DE TECLAS INVÁLIDAS
   const blockInvalidChars = (e) => {
-    if (['e', 'E', '+', '-'].includes(e.key)) {
-      e.preventDefault();
-    }
+    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
   };
   const blockInvalidCharsInt = (e) => {
-    if (['e', 'E', '+', '-', '.'].includes(e.key)) {
-      e.preventDefault();
-    }
+    if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
   };
 
-  // 🔥 FUNCIÓN DE EXPORTACIÓN A EXCEL
   const exportarExcel = () => {
     api.get('/admin/inventario/exportar', { responseType: 'blob' })
       .then((response) => {
@@ -172,7 +184,7 @@ export default function AdminInventario() {
       })
       .catch((error) => {
         console.error("Error exportando excel:", error);
-        alert("Error al generar el reporte de inventario.");
+        setAlert({ type: "error", msg: "Error al generar el reporte de inventario." });
       });
   };
 
@@ -182,6 +194,43 @@ export default function AdminInventario() {
     if (disponible <= 3) return { label: "Stock bajo",  cls: "adm-badge-yellow", pct: 25 };
     if (disponible <= 8) return { label: "Stock medio", cls: "adm-badge-blue",    pct: 60 };
     return                      { label: "Stock normal",cls: "adm-badge-green",  pct: 100};
+  };
+
+  // ── HISTORIAL DE ENTRADAS ──
+  const cargarHistorial = async () => {
+    try {
+      const res = await api.get("/inventario/entradas");
+      setHistorial(res.data || []);
+    } catch (error) {
+      console.error("Error historial:", error);
+      setAlert({ type: "error", msg: "Error al cargar historial de entradas." });
+    }
+  };
+
+  const verDetalleHistorial = async (id) => {
+    try {
+      const res = await api.get(`/inventario/entradas/${id}`);
+      setDetalleHist(res.data);
+    } catch {
+      setAlert({ type: "error", msg: "Error al cargar el detalle." });
+    }
+  };
+
+  const anularEntrada = async (id) => {
+    const motivo = window.prompt("Motivo de la anulación (obligatorio):");
+    if (!motivo?.trim()) return;
+    
+    if (!window.confirm("¿Confirmas anular esta entrada? Se revertirá el stock.")) return;
+
+    try {
+      await api.put(`/inventario/entradas/${id}/anular`, { motivo });
+      setAlert({ type: "success", msg: "Entrada anulada y stock revertido." });
+      setDetalleHist(null);
+      cargarHistorial();
+      cargar();
+    } catch (error) {
+      setAlert({ type: "error", msg: error.response?.data?.message || "Error al anular." });
+    }
   };
 
   const fmt         = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
@@ -217,9 +266,17 @@ export default function AdminInventario() {
           <h3 className="adm-section-title">Variantes de inventario</h3>
           <p style={{ color: "#9ca3af", fontSize: "0.85rem", margin: 0 }}>Gestiona existencias y precios. Los nuevos productos se añaden desde el Creador de Productos.</p>
         </div>
-        <button className="adm-btn adm-btn-ghost" onClick={exportarExcel} type="button">
-          <IconDownload /> Exportar Inventario
-        </button>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button className="adm-btn adm-btn-ghost" onClick={() => { cargarHistorial(); setShowHistorial(true); }} type="button">
+            <IconHistory /> Historial de Entradas
+          </button>
+          <button className="adm-btn adm-btn-ghost" onClick={exportarExcel} type="button">
+            <IconDownload /> Exportar Inventario
+          </button>
+          <button className="adm-btn adm-btn-primary" onClick={() => navigate("/admin/inventario/ingreso")} type="button">
+            <IconBox /> Ingresar Mercancía
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -381,6 +438,129 @@ export default function AdminInventario() {
                 <button className="adm-btn adm-btn-ghost" onClick={() => setConfirmDel(null)}>Cancelar</button>
                 <button className="adm-btn adm-btn-danger" onClick={handleEliminarConfirmado}>Sí, eliminar</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HISTORIAL DE ENTRADAS */}
+      {showHistorial && (
+        <div className="adm-modal-overlay" onClick={() => setShowHistorial(false)}>
+          <div className="adm-modal" style={{ maxWidth: "900px", width: "95%", maxHeight: "85vh" }} onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-header">
+              <h3 className="adm-modal-title">📋 Historial de Entradas de Mercancía</h3>
+              <button className="adm-modal-close" onClick={() => setShowHistorial(false)} type="button"><IconX /></button>
+            </div>
+            <div className="adm-modal-body" style={{ overflowY: "auto", maxHeight: "70vh" }}>
+              {historial.length === 0 ? (
+                <div className="adm-empty"><p>No hay entradas registradas.</p></div>
+              ) : (
+                <table className="adm-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Fecha</th>
+                      <th>Origen</th>
+                      <th>Nota</th>
+                      <th>Productos</th>
+                      <th>Piezas</th>
+                      <th>Total</th>
+                      <th>Usuario</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historial.map(h => (
+                      <tr key={h.id}>
+                        <td style={{ fontWeight: "bold", color: "#3b82f6" }}>#{h.id}</td>
+                        <td style={{ fontSize: "11px" }}>{new Date(h.fecha_entrada).toLocaleString("es-MX")}</td>
+                        <td>{h.origen_mercancia || "—"}</td>
+                        <td style={{ fontSize: "11px", color: "#9ca3af" }}>{h.nota_referencia || "—"}</td>
+                        <td style={{ textAlign: "center" }}>{h.total_renglones}</td>
+                        <td style={{ textAlign: "center", fontWeight: "bold" }}>{h.total_piezas}</td>
+                        <td style={{ fontFamily: "monospace", fontWeight: "bold" }}>{fmt(h.total_lote)}</td>
+                        <td style={{ fontSize: "11px" }}>{h.usuario_nombre}</td>
+                        <td>
+                          <span className={`adm-badge ${h.estado === "activa" ? "adm-badge-green" : "adm-badge-red"}`}>
+                            {h.estado === "activa" ? "Activa" : "Anulada"}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => verDetalleHistorial(h.id)} title="Ver detalle">Ver</button>
+                            {h.estado === "activa" && (
+                              <button className="adm-btn adm-btn-danger adm-btn-sm" onClick={() => anularEntrada(h.id)} title="Anular">Anular</button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALLE DE ENTRADA */}
+      {detalleHist && (
+        <div className="adm-modal-overlay" onClick={() => setDetalleHist(null)}>
+          <div className="adm-modal" style={{ maxWidth: "700px", width: "95%" }} onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-header">
+              <h3 className="adm-modal-title">Detalle de Entrada #{detalleHist.cabecera.id}</h3>
+              <button className="adm-modal-close" onClick={() => setDetalleHist(null)} type="button"><IconX /></button>
+            </div>
+            <div className="adm-modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+              <div style={{ background: "#0d1117", border: "1px solid #30363d", borderRadius: "8px", padding: "14px", marginBottom: "14px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "13px" }}>
+                  <div><span style={{ color: "#9ca3af" }}>Fecha:</span> {new Date(detalleHist.cabecera.fecha_entrada).toLocaleString("es-MX")}</div>
+                  <div><span style={{ color: "#9ca3af" }}>Usuario:</span> {detalleHist.cabecera.usuario_nombre}</div>
+                  <div><span style={{ color: "#9ca3af" }}>Origen:</span> {detalleHist.cabecera.origen_mercancia || "—"}</div>
+                  <div><span style={{ color: "#9ca3af" }}>Nota:</span> {detalleHist.cabecera.nota_referencia || "—"}</div>
+                  <div><span style={{ color: "#9ca3af" }}>Total:</span> <strong style={{ color: "#10b981" }}>{fmt(detalleHist.cabecera.total_lote)}</strong></div>
+                  <div>
+                    <span style={{ color: "#9ca3af" }}>Estado:</span>{" "}
+                    <span className={`adm-badge ${detalleHist.cabecera.estado === "activa" ? "adm-badge-green" : "adm-badge-red"}`}>
+                      {detalleHist.cabecera.estado === "activa" ? "Activa" : "Anulada"}
+                    </span>
+                  </div>
+                </div>
+                {detalleHist.cabecera.estado === "anulada" && (
+                  <div style={{ marginTop: "12px", padding: "10px", background: "rgba(239,68,68,0.1)", borderRadius: "6px", fontSize: "12px" }}>
+                    <div><strong>Anulada por:</strong> {detalleHist.cabecera.anulada_por_nombre}</div>
+                    <div><strong>Fecha:</strong> {new Date(detalleHist.cabecera.anulada_en).toLocaleString("es-MX")}</div>
+                    <div><strong>Motivo:</strong> {detalleHist.cabecera.motivo_anulacion}</div>
+                  </div>
+                )}
+              </div>
+
+              <table className="adm-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>SKU</th>
+                    <th style={{ textAlign: "center" }}>Cant.</th>
+                    <th style={{ textAlign: "right" }}>Costo Unit.</th>
+                    <th style={{ textAlign: "right" }}>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detalleHist.renglones.map(r => (
+                    <tr key={r.id}>
+                      <td>
+                        <div style={{ fontWeight: "bold" }}>{r.producto_nombre}</div>
+                        <div style={{ fontSize: "10px", color: "#9ca3af" }}>{r.talla} · {r.color}</div>
+                      </td>
+                      <td style={{ fontFamily: "monospace", fontSize: "11px" }}>{r.sku}</td>
+                      <td style={{ textAlign: "center" }}>{r.cantidad}</td>
+                      <td style={{ textAlign: "right", fontFamily: "monospace" }}>{fmt(r.costo_unitario)}</td>
+                      <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: "bold" }}>{fmt(r.subtotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
