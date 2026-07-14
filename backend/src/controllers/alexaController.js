@@ -148,3 +148,39 @@ export const getPerfilAlexa = (req, res) => {
     rol: req.user.rol
   });
 };
+
+// ════════════════════════════════════════════════════════════
+//  GET /api/alexa/ultimos-ingresos  → variantes por fecha real de entrada
+// ════════════════════════════════════════════════════════════
+export const getUltimosIngresos = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT ON (vp.id)
+             vp.id, vp.sku, vp.stock, vp.stock_apartado,
+             p.nombre AS producto_nombre,
+             m.nombre AS marca_nombre,
+             t.valor AS talla,
+             col.nombre AS color,
+             ei.fecha_entrada
+      FROM inventario.detalle_entrada de
+      JOIN inventario.entradas_inventario ei ON ei.id = de.entrada_id
+      JOIN inventario.variantes_producto vp ON vp.id = de.variante_id
+      JOIN inventario.productos p ON p.id = vp.producto_id
+      LEFT JOIN catalogo.marcas m ON m.id = p.marca_id
+      JOIN catalogo.tallas t ON t.id = vp.talla_id
+      JOIN catalogo.colores col ON col.id = vp.color_id
+      WHERE ei.estado = 'activa' AND vp.activo = TRUE AND p.activo = TRUE
+      ORDER BY vp.id, ei.fecha_entrada DESC
+    `);
+
+    // Reordenar por fecha (el DISTINCT ON obliga a ordenar por vp.id primero)
+    const ordenados = result.rows
+      .sort((a, b) => new Date(b.fecha_entrada) - new Date(a.fecha_entrada))
+      .slice(0, 10);
+
+    return res.json(ordenados);
+  } catch (error) {
+    console.error("Error getUltimosIngresos:", error);
+    return res.status(500).json({ message: "Error al obtener últimos ingresos" });
+  }
+};
