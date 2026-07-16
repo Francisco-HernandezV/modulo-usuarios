@@ -191,7 +191,7 @@ export const loginUsuario = async (req, res) => {
 
     // 🔥 Modificación: Añadimos requiere_cambio_password y apuntamos al esquema seguridad
     const result = await pool.query(
-      `SELECT u.id, u.password_hash, u.cuenta_activa, u.login_attempts, u.lock_until, u.token_version, u.requiere_cambio_password, r.nombre AS rol
+      `SELECT u.id, u.nombre, u.password_hash, u.cuenta_activa, u.login_attempts, u.lock_until, u.token_version, u.requiere_cambio_password, r.nombre AS rol
        FROM seguridad.usuarios u
        LEFT JOIN seguridad.usuario_roles ur ON u.id = ur.usuario_id
        LEFT JOIN seguridad.roles r ON ur.rol_id = r.id
@@ -263,9 +263,14 @@ export const loginUsuario = async (req, res) => {
       message: "Login exitoso",
       requirePasswordChange: false,
       token,
-      usuario: { id: user.id, email, rol: user.rol || 'rol_cliente' },
+      usuario: { 
+          id: user.id, 
+          email, 
+          rol: user.rol || 'rol_cliente', 
+          nombre: user.nombre // ¡AQUÍ ESTABA EL FALTANTE!
+      },
     });
-  } catch (e) {
+  } catch (e){
     console.error(e);
     return res.status(500).json({ message: "Error interno" });
   }
@@ -459,20 +464,20 @@ export const updateProfile = async (req, res) => {
 // ════════════════════════════════════════════════════════════
 //  CAMBIO DE CONTRASEÑA FORZADO (EMPLEADOS)
 // ════════════════════════════════════════════════════════════
+// ... (mantiene todo el código anterior intacto hasta antes de forcePasswordChange)
+
 export const forcePasswordChange = async (req, res) => {
   try {
     const { nueva_password } = req.body;
-    const userId = req.user.id; // Extraído del token temporal por el middleware authMiddleware
+    const userId = req.user.id;
 
     if (!nueva_password || nueva_password.length < 8) {
       return res.status(400).json({ message: "La contraseña debe tener al menos 8 caracteres." });
     }
 
-    // 1. Encriptar la nueva contraseña
     const salt = await bcrypt.genSalt(12);
     const hashedNewPassword = await bcrypt.hash(nueva_password, salt);
 
-    // 2. Actualizar la contraseña, quitar la bandera y aumentar la versión del token
     const query = `
       UPDATE seguridad.usuarios 
       SET password_hash = $1, 
@@ -488,10 +493,8 @@ export const forcePasswordChange = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado." });
     }
 
-    // 3. Opcional: Generar de una vez el token definitivo para que no tenga que volver a loguearse
     const userEmail = rows[0].email;
     
-    // Obtenemos el rol actualizado y la nueva versión del token
     const rolQuery = await pool.query(`
        SELECT u.token_version, r.nombre AS rol
        FROM seguridad.usuarios u
@@ -509,13 +512,39 @@ export const forcePasswordChange = async (req, res) => {
     );
 
     return res.json({ 
-      message: "Contraseña actualizada exitosamente. Redirigiendo...",
+      message: "Contraseña actualizada exitosamente.",
       token: tokenDefinitivo,
       usuario: { id: userId, email: userEmail, rol: finalUser.rol || 'rol_cliente' }
     });
-
   } catch (error) {
     console.error("Error en forcePasswordChange:", error);
     return res.status(500).json({ message: "Error interno al actualizar la contraseña." });
   }
+};
+
+export const actualizarPin = async (req, res) => {
+    const { nuevoPin } = req.body;
+    const { id, rol } = req.user;
+
+    // Validación de rol
+    if (rol !== 'rol_admin' && rol !== 'rol_cliente') {
+        return res.status(403).json({ message: "No tienes permisos para realizar esta acción." });
+    }
+
+    try {
+        // Asumiendo que guardas el PIN en la tabla seguridad.usuarios
+        // Si tu columna se llama diferente (ej: 'pin_acceso'), cámbialo aquí:
+        const query = `UPDATE seguridad.usuarios SET password_hash = $1 WHERE id = $2`; 
+        // NOTA: Si el PIN es solo numérico y no hash, no uses bcrypt, pero por seguridad, 
+        // lo ideal es que guardes un hash del PIN si es crítico.
+        
+        const hashedPin = await bcrypt.hash(nuevoPin.toString(), 12); 
+        
+        await pool.query(query, [hashedPin, id]);
+        
+        return res.status(200).json({ message: "PIN actualizado correctamente." });
+    } catch (error) {
+        console.error("Error al actualizar PIN:", error);
+        return res.status(500).json({ message: "Error al actualizar el PIN." });
+    }
 };

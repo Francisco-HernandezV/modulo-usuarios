@@ -9,8 +9,12 @@ import {
   logoutUsuario,
   getProfile,
   updateProfile,
-  forcePasswordChange // 🔥 NUEVA IMPORTACIÓN
+  forcePasswordChange,
+  actualizarPin
 } from "../controllers/userController.js";
+
+// IMPORTANTE: Cambia los requires por imports
+import { authMiddleware } from "../middlewares/authMiddleware.js"; 
 import { registerValidator, loginValidator, recoverValidator, resetPasswordValidator } from "../middlewares/validators.js";
 import { loginLimiter, recoverLimiter } from "../middlewares/rateLimiter.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
@@ -33,8 +37,8 @@ router.get("/verify",  verifyToken, (req, res) => res.sendStatus(200));
 router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, updateProfile);
 
-// 🔥 NUEVA RUTA: Cambio forzado de contraseña para nuevos empleados
-// Usa verifyToken porque el usuario ya hizo login y recibió un token temporal
+// Aquí usamos el middleware de autenticación
+router.post('/cambiar-pin', authMiddleware, actualizarPin);
 router.post("/force-password-change", verifyToken, forcePasswordChange);
 
 export default router;
