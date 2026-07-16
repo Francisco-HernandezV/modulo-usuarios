@@ -2,6 +2,7 @@ import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
+import { hashPin } from "../services/tokenService.js";
 import { sendVerificationEmail, sendResetEmail } from "../services/mailService.js";
 import { generateToken, hashToken } from "../services/tokenService.js";
 
@@ -523,28 +524,49 @@ export const forcePasswordChange = async (req, res) => {
 };
 
 export const actualizarPin = async (req, res) => {
-    const { nuevoPin } = req.body;
-    const { id, rol } = req.user;
+  const { nuevoPin } = req.body;
+  const { id } = req.user;
 
-    // Validación de rol
-    if (rol !== 'rol_admin' && rol !== 'rol_cliente') {
-        return res.status(403).json({ message: "No tienes permisos para realizar esta acción." });
-    }
+  if (!/^\d{4}$/.test(String(nuevoPin))) {
+    return res.status(400).json({ message: "El PIN debe ser de 4 dígitos numéricos." });
+  }
 
-    try {
-        // Asumiendo que guardas el PIN en la tabla seguridad.usuarios
-        // Si tu columna se llama diferente (ej: 'pin_acceso'), cámbialo aquí:
-        const query = `UPDATE seguridad.usuarios SET password_hash = $1 WHERE id = $2`; 
-        // NOTA: Si el PIN es solo numérico y no hash, no uses bcrypt, pero por seguridad, 
-        // lo ideal es que guardes un hash del PIN si es crítico.
-        
-        const hashedPin = await bcrypt.hash(nuevoPin.toString(), 12); 
-        
-        await pool.query(query, [hashedPin, id]);
-        
-        return res.status(200).json({ message: "PIN actualizado correctamente." });
-    } catch (error) {
-        console.error("Error al actualizar PIN:", error);
-        return res.status(500).json({ message: "Error al actualizar el PIN." });
+  try {
+    const lookup = hashPin(String(nuevoPin));
+    await pool.query(
+      `UPDATE seguridad.usuarios SET pin_lookup = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [lookup, id]
+    );
+    return res.status(200).json({ message: "PIN actualizado correctamente." });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({ message: "Ese PIN ya está en uso. Elige otro." });
     }
+    console.error("Error al actualizar PIN:", error);
+    return res.status(500).json({ message: "Error al actualizar el PIN." });
+  }
+};
+
+export const adminAsignarPinVendedor = async (req, res) => {
+  const { vendedorId, nuevoPin } = req.body;
+
+  if (!vendedorId || !/^\d{4}$/.test(String(nuevoPin))) {
+    return res.status(400).json({ message: "Se requiere vendedorId y un PIN de 4 dígitos." });
+  }
+
+  try {
+    const lookup = hashPin(String(nuevoPin));
+    const { rowCount } = await pool.query(
+      `UPDATE seguridad.usuarios SET pin_lookup = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [lookup, vendedorId]
+    );
+    if (rowCount === 0) return res.status(404).json({ message: "Vendedor no encontrado." });
+    return res.json({ message: "PIN del vendedor asignado correctamente." });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({ message: "Ese PIN ya está en uso por otra persona. Elige otro." });
+    }
+    console.error("Error asignando PIN a vendedor:", error);
+    return res.status(500).json({ message: "Error al asignar el PIN." });
+  }
 };

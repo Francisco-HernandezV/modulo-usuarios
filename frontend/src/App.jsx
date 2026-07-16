@@ -26,15 +26,19 @@ import AdminProductos   from "./pages/admin/AdminProductos";
 import AdminClientes    from "./pages/admin/AdminClientes";
 import AdminInventario  from "./pages/admin/AdminInventario";
 import AdminRespaldos   from "./pages/admin/AdminRespaldos";
-import AdminMonitor     from "./components/AdminMonitor"; 
+import AdminMonitor     from "./components/AdminMonitor";
 import AdminEmpleados   from "./pages/admin/AdminEmpleados";
-import AdminPredictivo from "./pages/admin/AdminPredictivo";
-import AdminReportes from './pages/admin/AdminReportes';
+import AdminPredictivo  from "./pages/admin/AdminPredictivo";
+import AdminReportes    from './pages/admin/AdminReportes';
 import IngresoMercancia from "./pages/admin/IngresoMercancia";
 
 // ── VISTAS PUNTO DE VENTA (POS) ──
 import POS              from "./pages/pos/POS";
 import HistorialVentas  from "./pages/pos/HistorialVentas";
+
+// ── PIN (Alexa) ──
+import ChangePin          from "./pages/ChangePin";
+import AsignarPinVendedor from "./pages/admin/AsignarPinVendedor";
 
 function App() {
   return (
@@ -52,42 +56,47 @@ function App() {
           <Route path="/error-400"          element={<Error400 />} />
           <Route path="/error-500"          element={<Error500 />} />
 
-          {/* ── RUTAS PRIVADAS BÁSICAS (Clientes y Admins) ── */}
+          {/* ── RUTAS PRIVADAS BÁSICAS (Cualquier usuario logueado) ── */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/profile"     element={<UserProfile />} />
+            <Route path="/cambiar-pin" element={<ChangePin />} />
           </Route>
 
           {/* ── 🛡️ RUTAS PROTEGIDAS STRICTAS (Solo Staff) ── */}
           <Route element={<ProtectedRoute rolesPermitidos={["rol_admin", "rol_vendedor", "rol_gestor_inventario"]} />}>
-            <Route path="/admin"              element={<AdminDashboard />} />
-            <Route path="/admin/catalogos"    element={<AdminCatalogos />} />
-            <Route path="/admin/productos"    element={<AdminProductos />} />
-            <Route path="/admin/clientes"     element={<AdminClientes />} />
-            <Route path="/admin/inventario"        element={<AdminInventario />} />
-            <Route path="/admin/inventario/ingreso" element={<IngresoMercancia />} />
-            <Route path="/admin/respaldos"         element={<AdminRespaldos />} />
-            <Route path="/admin/monitor"      element={<AdminMonitor />} />
-            <Route path="/admin/empleados"    element={<AdminEmpleados />} /> 
-            {/* El admin también puede ver el historial de ventas global */}
-            <Route path="/admin/historial"    element={<HistorialVentas />} />
-            <Route path="/admin/predictivo" element={<AdminPredictivo />} />
-            <Route path="/admin/reportes" element={<AdminReportes />} />
+            <Route path="/admin"                     element={<AdminDashboard />} />
+            <Route path="/admin/catalogos"           element={<AdminCatalogos />} />
+            <Route path="/admin/productos"           element={<AdminProductos />} />
+            <Route path="/admin/clientes"            element={<AdminClientes />} />
+            <Route path="/admin/inventario"          element={<AdminInventario />} />
+            <Route path="/admin/inventario/ingreso"  element={<IngresoMercancia />} />
+            <Route path="/admin/respaldos"           element={<AdminRespaldos />} />
+            <Route path="/admin/monitor"             element={<AdminMonitor />} />
+            <Route path="/admin/empleados"           element={<AdminEmpleados />} />
+            <Route path="/admin/historial"           element={<HistorialVentas />} />
+            <Route path="/admin/predictivo"          element={<AdminPredictivo />} />
+            <Route path="/admin/reportes"            element={<AdminReportes />} />
           </Route>
-          
+
+          {/* ── 🔑 ASIGNAR PIN A VENDEDORES (Solo Admin) ── */}
+          <Route element={<ProtectedRoute rolesPermitidos={["rol_admin"]} />}>
+            <Route path="/admin/asignar-pin" element={<AsignarPinVendedor />} />
+          </Route>
+
           {/* ── 🛒 MÓDULO PUNTO DE VENTA (COMPARTIDO) ── */}
           <Route element={<ProtectedRoute rolesPermitidos={["rol_admin", "rol_vendedor"]} />}>
-              <Route path="/pos" element={<POS />} />
+            <Route path="/pos" element={<POS />} />
           </Route>
 
           {/* ── 💰 RUTA ESPECÍFICA PARA VENDEDORES ── */}
           <Route element={<ProtectedRoute rolesPermitidos={["rol_vendedor"]} />}>
-              <Route path="/vendedor" element={<POS />} />
-              <Route path="/vendedor/clientes" element={<AdminClientes />} />
-              <Route path="/vendedor/historial" element={<HistorialVentas />} />
+            <Route path="/vendedor"           element={<POS />} />
+            <Route path="/vendedor/clientes"  element={<AdminClientes />} />
+            <Route path="/vendedor/historial" element={<HistorialVentas />} />
           </Route>
 
           {/* Fallback para URLs no encontradas */}
-          <Route path="*"                   element={<Error404 />} />
+          <Route path="*" element={<Error404 />} />
         </Routes>
       </BrowserRouter>
     </SearchProvider>

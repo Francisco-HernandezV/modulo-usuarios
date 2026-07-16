@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { hashPin } from "../services/tokenService.js"; // ⬅️ agrega este import arriba
 
 const ALEXA_TOKEN_EXP_HOURS = 8;
 
@@ -35,13 +36,8 @@ export const verifyAlexaToken = async (req, res, next) => {
       return res.status(403).json({ message: "Token no válido para Alexa" });
     }
 
-    // Cliente NO existe en BD (es un rol virtual), no validar contra usuarios
-    if (decoded.rol === 'rol_cliente') {
-      req.user = { rol: 'rol_cliente', nombre: 'Cliente' };
-      return next();
-    }
-
-    req.user = { rol: decoded.rol, nombre: decoded.nombre };
+    // Ahora todos son personas reales: confiamos en el JWT
+    req.user = { id: decoded.id, rol: decoded.rol, nombre: decoded.nombre };
     next();
   } catch (error) {
     console.error("Error verifyAlexaToken:", error.message);
@@ -60,49 +56,48 @@ export const loginAlexa = async (req, res) => {
   }
 
   try {
-    // Cargar los 3 hashes desde variables de entorno
-    const hashes = [
-      { rol: 'rol_admin',    nombre: 'Administrador', hash: process.env.ALEXA_PIN_ADMIN },
-      { rol: 'rol_vendedor', nombre: 'Vendedor',      hash: process.env.ALEXA_PIN_VENDEDOR },
-      { rol: 'rol_cliente',  nombre: 'Cliente',       hash: process.env.ALEXA_PIN_CLIENTE }
-    ];
+    const lookup = hashPin(pin);
 
-    // Buscar cuál PIN corresponde
-    let usuario = null;
-    for (const h of hashes) {
-      if (!h.hash) continue;
-      const match = await bcrypt.compare(pin, h.hash);
-      if (match) {
-        usuario = { rol: h.rol, nombre: h.nombre };
-        break;
-      }
-    }
+    // Buscamos a la PERSONA dueña de ese PIN
+    const result = await pool.query(
+      `SELECT u.id, u.nombre, u.cuenta_activa, r.nombre AS rol
+       FROM seguridad.usuarios u
+       LEFT JOIN seguridad.usuario_roles ur ON ur.usuario_id = u.id
+       LEFT JOIN seguridad.roles r ON r.id = ur.rol_id
+       WHERE u.pin_lookup = $1
+       LIMIT 1`,
+      [lookup]
+    );
 
-    if (!usuario) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ message: "PIN incorrecto" });
     }
 
-    // Log opcional de acceso (si tienes tabla auditoria.log_alexa; si no, ignora)
+    const usuario = result.rows[0];
+
+    if (!usuario.cuenta_activa) {
+      return res.status(403).json({ message: "Cuenta inactiva. Actívala antes de usar Alexa." });
+    }
+
+    // Log opcional (si no existe la tabla, no rompe)
     try {
       await pool.query(
         `INSERT INTO auditoria.log_alexa (usuario_id, intent_name, exitoso, ip_origen)
-         VALUES (NULL, 'IniciarSesionIntent', TRUE, $1)`,
-        [req.ip]
+         VALUES ($1, 'IniciarSesionIntent', TRUE, $2)`,
+        [usuario.id, req.ip]
       );
-    } catch (e) {
-      // Si la tabla no existe todavía, no rompe el flujo
-    }
+    } catch (e) { /* tabla opcional */ }
 
-    // Emitir JWT
+    // JWT con la identidad REAL
     const token = jwt.sign(
-      { rol: usuario.rol, nombre: usuario.nombre, origen: 'alexa' },
+      { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol || 'rol_cliente', origen: 'alexa' },
       process.env.JWT_SECRET,
       { expiresIn: `${ALEXA_TOKEN_EXP_HOURS}h` }
     );
 
     return res.json({
       token,
-      usuario: { nombre: usuario.nombre, rol: usuario.rol },
+      usuario: { nombre: usuario.nombre, rol: usuario.rol || 'rol_cliente' }, // ⬅️ ahora el nombre REAL
       expira_en_horas: ALEXA_TOKEN_EXP_HOURS
     });
   } catch (error) {
@@ -110,7 +105,6 @@ export const loginAlexa = async (req, res) => {
     return res.status(500).json({ message: "Error interno" });
   }
 };
-
 // ════════════════════════════════════════════════════════════
 //  GET /api/alexa/inventario  → mismo query, con JWT
 // ════════════════════════════════════════════════════════════
