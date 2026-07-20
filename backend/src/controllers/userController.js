@@ -2,6 +2,7 @@ import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
+import { hashPin } from "../services/tokenService.js";
 import { sendVerificationEmail, sendResetEmail } from "../services/mailService.js";
 import { generateToken, hashToken } from "../services/tokenService.js";
 
@@ -191,7 +192,7 @@ export const loginUsuario = async (req, res) => {
 
     // 🔥 Modificación: Añadimos requiere_cambio_password y apuntamos al esquema seguridad
     const result = await pool.query(
-      `SELECT u.id, u.password_hash, u.cuenta_activa, u.login_attempts, u.lock_until, u.token_version, u.requiere_cambio_password, r.nombre AS rol
+      `SELECT u.id, u.nombre, u.password_hash, u.cuenta_activa, u.login_attempts, u.lock_until, u.token_version, u.requiere_cambio_password, r.nombre AS rol
        FROM seguridad.usuarios u
        LEFT JOIN seguridad.usuario_roles ur ON u.id = ur.usuario_id
        LEFT JOIN seguridad.roles r ON ur.rol_id = r.id
@@ -263,9 +264,14 @@ export const loginUsuario = async (req, res) => {
       message: "Login exitoso",
       requirePasswordChange: false,
       token,
-      usuario: { id: user.id, email, rol: user.rol || 'rol_cliente' },
+      usuario: { 
+          id: user.id, 
+          email, 
+          rol: user.rol || 'rol_cliente', 
+          nombre: user.nombre // ¡AQUÍ ESTABA EL FALTANTE!
+      },
     });
-  } catch (e) {
+  } catch (e){
     console.error(e);
     return res.status(500).json({ message: "Error interno" });
   }
@@ -459,20 +465,20 @@ export const updateProfile = async (req, res) => {
 // ════════════════════════════════════════════════════════════
 //  CAMBIO DE CONTRASEÑA FORZADO (EMPLEADOS)
 // ════════════════════════════════════════════════════════════
+// ... (mantiene todo el código anterior intacto hasta antes de forcePasswordChange)
+
 export const forcePasswordChange = async (req, res) => {
   try {
     const { nueva_password } = req.body;
-    const userId = req.user.id; // Extraído del token temporal por el middleware authMiddleware
+    const userId = req.user.id;
 
     if (!nueva_password || nueva_password.length < 8) {
       return res.status(400).json({ message: "La contraseña debe tener al menos 8 caracteres." });
     }
 
-    // 1. Encriptar la nueva contraseña
     const salt = await bcrypt.genSalt(12);
     const hashedNewPassword = await bcrypt.hash(nueva_password, salt);
 
-    // 2. Actualizar la contraseña, quitar la bandera y aumentar la versión del token
     const query = `
       UPDATE seguridad.usuarios 
       SET password_hash = $1, 
@@ -488,10 +494,8 @@ export const forcePasswordChange = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado." });
     }
 
-    // 3. Opcional: Generar de una vez el token definitivo para que no tenga que volver a loguearse
     const userEmail = rows[0].email;
     
-    // Obtenemos el rol actualizado y la nueva versión del token
     const rolQuery = await pool.query(`
        SELECT u.token_version, r.nombre AS rol
        FROM seguridad.usuarios u
@@ -509,13 +513,60 @@ export const forcePasswordChange = async (req, res) => {
     );
 
     return res.json({ 
-      message: "Contraseña actualizada exitosamente. Redirigiendo...",
+      message: "Contraseña actualizada exitosamente.",
       token: tokenDefinitivo,
       usuario: { id: userId, email: userEmail, rol: finalUser.rol || 'rol_cliente' }
     });
-
   } catch (error) {
     console.error("Error en forcePasswordChange:", error);
     return res.status(500).json({ message: "Error interno al actualizar la contraseña." });
+  }
+};
+
+export const actualizarPin = async (req, res) => {
+  const { nuevoPin } = req.body;
+  const { id } = req.user;
+
+  if (!/^\d{4}$/.test(String(nuevoPin))) {
+    return res.status(400).json({ message: "El PIN debe ser de 4 dígitos numéricos." });
+  }
+
+  try {
+    const lookup = hashPin(String(nuevoPin));
+    await pool.query(
+      `UPDATE seguridad.usuarios SET pin_lookup = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [lookup, id]
+    );
+    return res.status(200).json({ message: "PIN actualizado correctamente." });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({ message: "Ese PIN ya está en uso. Elige otro." });
+    }
+    console.error("Error al actualizar PIN:", error);
+    return res.status(500).json({ message: "Error al actualizar el PIN." });
+  }
+};
+
+export const adminAsignarPinVendedor = async (req, res) => {
+  const { vendedorId, nuevoPin } = req.body;
+
+  if (!vendedorId || !/^\d{4}$/.test(String(nuevoPin))) {
+    return res.status(400).json({ message: "Se requiere vendedorId y un PIN de 4 dígitos." });
+  }
+
+  try {
+    const lookup = hashPin(String(nuevoPin));
+    const { rowCount } = await pool.query(
+      `UPDATE seguridad.usuarios SET pin_lookup = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [lookup, vendedorId]
+    );
+    if (rowCount === 0) return res.status(404).json({ message: "Vendedor no encontrado." });
+    return res.json({ message: "PIN del vendedor asignado correctamente." });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({ message: "Ese PIN ya está en uso por otra persona. Elige otro." });
+    }
+    console.error("Error asignando PIN a vendedor:", error);
+    return res.status(500).json({ message: "Error al asignar el PIN." });
   }
 };

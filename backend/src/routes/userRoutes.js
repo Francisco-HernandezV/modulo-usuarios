@@ -9,11 +9,15 @@ import {
   logoutUsuario,
   getProfile,
   updateProfile,
-  forcePasswordChange // 🔥 NUEVA IMPORTACIÓN
+  forcePasswordChange,
+  actualizarPin,
+  adminAsignarPinVendedor
 } from "../controllers/userController.js";
+
+// ✅ checkRole vive en authMiddleware.js, NO en el controller
+import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
 import { registerValidator, loginValidator, recoverValidator, resetPasswordValidator } from "../middlewares/validators.js";
 import { loginLimiter, recoverLimiter } from "../middlewares/rateLimiter.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -23,7 +27,7 @@ router.post("/login", loginLimiter, loginValidator, loginUsuario);
 router.get("/activar/:token", activarCuenta);
 
 // ── Recuperación de Contraseña ────────────────────────────────────────────
-router.post("/recover/send-email",    recoverLimiter, requestPasswordReset);
+router.post("/recover/send-email",     recoverLimiter, requestPasswordReset);
 router.post("/recover/validate-token", recoverLimiter, validateResetToken);
 router.post("/recover/reset",          resetPasswordValidator, resetPassword);
 
@@ -33,8 +37,9 @@ router.get("/verify",  verifyToken, (req, res) => res.sendStatus(200));
 router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, updateProfile);
 
-// 🔥 NUEVA RUTA: Cambio forzado de contraseña para nuevos empleados
-// Usa verifyToken porque el usuario ya hizo login y recibió un token temporal
+// ── PIN y cambio de contraseña ────────────────────────────────────────────
+router.post("/cambiar-pin",       verifyToken, checkRole(['rol_cliente']), actualizarPin);
+router.post("/admin/asignar-pin", verifyToken, checkRole(['rol_admin']),  adminAsignarPinVendedor);
 router.post("/force-password-change", verifyToken, forcePasswordChange);
 
 export default router;
