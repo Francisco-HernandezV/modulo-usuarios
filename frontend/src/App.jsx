@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SearchProvider } from "./context/SearchContext";
+import { ConfigProvider } from "./context/ConfigContext";
 
 // ── VISTAS PÚBLICAS ──
 import Home             from "./pages/Home";
@@ -30,6 +31,7 @@ import AdminMonitor     from "./components/AdminMonitor";
 import AdminEmpleados   from "./pages/admin/AdminEmpleados";
 import AdminPredictivo from "./pages/admin/AdminPredictivo";
 import AdminReportes from './pages/admin/AdminReportes';
+import AdminConfiguracion from "./pages/admin/AdminConfiguracion";
 import IngresoMercancia from "./pages/admin/IngresoMercancia";
 
 // ── VISTAS PUNTO DE VENTA (POS) ──
@@ -38,6 +40,7 @@ import HistorialVentas  from "./pages/pos/HistorialVentas";
 
 function App() {
   return (
+    <ConfigProvider>
     <SearchProvider>
       <BrowserRouter>
         <Routes>
@@ -73,6 +76,11 @@ function App() {
             <Route path="/admin/predictivo" element={<AdminPredictivo />} />
             <Route path="/admin/reportes" element={<AdminReportes />} />
           </Route>
+
+          {/* ── ⚙️ CONFIGURACIÓN (Solo Administrador) ── */}
+          <Route element={<ProtectedRoute rolesPermitidos={["rol_admin"]} />}>
+            <Route path="/admin/configuracion" element={<AdminConfiguracion />} />
+          </Route>
           
           {/* ── 🛒 MÓDULO PUNTO DE VENTA (COMPARTIDO) ── */}
           <Route element={<ProtectedRoute rolesPermitidos={["rol_admin", "rol_vendedor"]} />}>
@@ -91,6 +99,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </SearchProvider>
+    </ConfigProvider>
   );
 }
 

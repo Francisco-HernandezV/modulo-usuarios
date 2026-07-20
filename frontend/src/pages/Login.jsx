@@ -92,7 +92,16 @@ export default function Login() {
 
   return (
     <div className="form-container">
+      <div className="auth-brand">
+        <span className="auth-brand-logo">Dan Element</span>
+        <span className="auth-brand-sub">Boutique</span>
+      </div>
       <h2>{requireChange ? "Configura tu Contraseña" : "Iniciar Sesión"}</h2>
+      <p className="form-subtitle">
+        {requireChange
+          ? "Define una contraseña definitiva para continuar."
+          : "Bienvenido de nuevo. Ingresa tus credenciales."}
+      </p>
       {mensaje && (
         <p className={mensaje.includes("⚠️") || mensaje.includes("✅") ? "mensaje-exito" : "mensaje-error"} style={mensaje.includes("⚠️") ? {backgroundColor: "#f59e0b", color: "black", border: "none"} : {}}>
           {mensaje}

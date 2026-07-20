@@ -15,21 +15,47 @@ import {
 
 import { generarRespaldo, getHistorialRespaldos, registrarRespaldoExterno } from "../controllers/respaldosController.js";
 import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum, getDatabaseSize, resetStats } from "../controllers/monitorController.js";
+import { getConfiguracion, updateConfiguracion } from "../controllers/configController.js";
 import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
 import { productoCompletoValidator, varianteValidator } from "../middlewares/validators.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Subida del logo de la tienda: solo imágenes, máximo 2 MB.
+const uploadLogo = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("El logo debe ser una imagen."));
+  },
+});
+
 const router = express.Router();
 
 // ── Rutas públicas (No requieren Token JWT) ───────────────────────────────
 router.get("/categorias", getCategorias);
 router.get("/productos",  getProductos);
+router.get("/configuracion", getConfiguracion); // La tienda lee logo/redes/contacto sin login
 router.get("/respaldos/generar", generarRespaldo);
 router.post("/respaldos/registrar", registrarRespaldoExterno);
 
 router.get("/alexa/inventario", getInventarioAlexa);
 // ── Middleware de autenticación (A partir de aquí, todo exige login) ──────
 router.use(verifyToken);
+
+// ── Configuración general de la tienda (solo administrador) ──
+router.put(
+  "/configuracion",
+  checkRole(["rol_admin"]),
+  (req, res, next) => {
+    uploadLogo.single("logo")(req, res, (err) => {
+      if (err) return res.status(400).json({ message: err.message });
+      next();
+    });
+  },
+  updateConfiguracion
+);
 
 // ── Gestión de Empleados y Roles ──
 router.get("/roles", checkRole(["rol_admin"]), getRolesActivos);

@@ -92,15 +92,20 @@ export default function AdminDashboard() {
           </p>
         </div>
         <span style={{
-          background:   "rgba(59,130,246,.15)",
-          color:        "#3b82f6",
-          padding:      "5px 14px",
+          display:      "inline-flex",
+          alignItems:   "center",
+          gap:          "7px",
+          background:   "rgba(16,185,129,.12)",
+          color:        "#10b981",
+          padding:      "6px 14px",
           borderRadius: "20px",
           fontSize:     "12px",
           fontWeight:   600,
-          border:       "1px solid rgba(59,130,246,.3)",
+          border:       "1px solid rgba(16,185,129,.3)",
           whiteSpace:   "nowrap",
         }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", display: "inline-block" }}></span>
+          Sistema activo
         </span>
       </div>
 

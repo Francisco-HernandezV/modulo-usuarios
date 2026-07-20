@@ -89,12 +89,14 @@ function Catalog() {
           <h2 className="section-title">{titles[filtro] || "Productos"}</h2>
         </div>
         {loading ? (
-          <div style={{ color: "white", textAlign: "center", padding: "50px" }}>
-            <h3>Sincronizando con base de datos...</h3>
+          <div className="state-block">
+            <div className="spinner"></div>
+            <h3>Cargando productos...</h3>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div style={{color: "white", textAlign: "center", padding: "50px"}}>
+          <div className="state-block">
             <h3>No hay productos en esta categoría por el momento.</h3>
+            <p>Vuelve pronto o revisa otras categorías.</p>
           </div>
         ) : (
           Object.entries(groupedProducts).map(([tipo, items]) => (

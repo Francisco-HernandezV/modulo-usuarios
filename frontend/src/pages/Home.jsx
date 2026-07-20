@@ -83,17 +83,18 @@ function Home() {
           )}
         </div>
         {loading ? (
-          <div style={{color: "white", textAlign: "center", padding: "80px 20px"}}>
-             <h3>Conectando con la base de datos...</h3>
+          <div className="state-block">
+             <div className="spinner"></div>
+             <h3>Cargando productos...</h3>
           </div>
         ) : displayProducts.length === 0 ? (
-          <div style={{color: "white", textAlign: "center", padding: "80px 20px"}}>
+          <div className="state-block">
              <h3>No encontramos coincidencias para "{searchTerm}" 😔</h3>
-             <p style={{color: "#9ca3af"}}>Prueba con otra palabra clave o revisa nuestro catálogo completo.</p>
-             <button 
-                onClick={() => navigate('/catalogo/todo')} 
-                className="add-btn" 
-                style={{marginTop: "20px", background: "#3b82f6", border: "none", width: "auto", display: "inline-block"}}
+             <p>Prueba con otra palabra clave o revisa nuestro catálogo completo.</p>
+             <button
+                onClick={() => navigate('/catalogo/todo')}
+                className="add-btn"
+                style={{marginTop: "8px", background: "#3b82f6", border: "none", width: "auto", display: "inline-block"}}
                 type="button"
              >
                Ver todo el catálogo

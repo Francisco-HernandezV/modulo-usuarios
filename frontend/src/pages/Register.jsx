@@ -47,7 +47,12 @@ function Register() {
 
   return (
     <div className="form-container">
-      <h2>Registro de Usuario</h2>
+      <div className="auth-brand">
+        <span className="auth-brand-logo">Dan Element</span>
+        <span className="auth-brand-sub">Boutique</span>
+      </div>
+      <h2>Crear Cuenta</h2>
+      <p className="form-subtitle">Regístrate para comprar y seguir tus pedidos.</p>
 
       <form onSubmit={handleSubmit}>
         

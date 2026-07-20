@@ -223,7 +223,8 @@
 }
 
 .adm-btn {
-  display: inline-flex; align-items: center; gap: 7px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  width: auto; /* evita que el `button { width:100% }` global se filtre al panel */
   padding: 8px 16px; border-radius: 8px;
   font-size: 13px; font-weight: 600; cursor: pointer; border: none;
   transition: all var(--adm-transition);
@@ -239,6 +240,14 @@
 .adm-btn-danger:hover { background: #ef4444; color: #fff; }
 .adm-btn-sm { padding: 5px 11px; font-size: 12px; }
 .adm-btn-icon { padding: 7px; }
+
+/* Aunque se usen sin la clase base .adm-btn, las variantes no deben
+   heredar el `button { width:100% }` global de theme.css */
+.adm-btn-primary,
+.adm-btn-ghost,
+.adm-btn-danger,
+.adm-btn-sm,
+.adm-btn-icon { width: auto; }
 
 .adm-stats-grid {
   display: grid;

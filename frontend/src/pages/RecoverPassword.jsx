@@ -78,12 +78,18 @@ function RecoverPassword() {
 
   return (
     <div className="form-container">
+      <div className="auth-brand">
+        <span className="auth-brand-logo">Dan Element</span>
+        <span className="auth-brand-sub">Boutique</span>
+      </div>
       <h2>Recuperar Contraseña</h2>
+      <p className="form-subtitle">
+        {step === 1 && "Te enviaremos un código para restablecerla."}
+        {step === 2 && "Verifica el código que enviamos a tu correo."}
+        {step === 3 && "Crea una nueva contraseña segura."}
+      </p>
       {step === 1 && (
         <form onSubmit={handleSendEmail}>
-          <p style={{ fontSize: "14px", color: "#888", marginBottom: "15px" }}>
-            Ingresa tu correo y te enviaremos un código de 6 dígitos.
-          </p>
           <label htmlFor="recover_email" className="sr-only" style={{display: 'none'}}>Correo electrónico</label>
           <input
             id="recover_email"
@@ -127,7 +133,6 @@ function RecoverPassword() {
 
       {step === 3 && (
         <form onSubmit={handleResetPassword}>
-          <h3 style={{ marginBottom: "15px" }}>Crea tu nueva contraseña</h3>
           <div className="password-wrapper">
             <label htmlFor="new_pass" className="sr-only" style={{display: 'none'}}>Nueva contraseña</label>
             <input

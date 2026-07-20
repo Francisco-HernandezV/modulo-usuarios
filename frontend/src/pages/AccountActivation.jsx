@@ -32,8 +32,12 @@ function AccountActivation() {
 
   return (
     <div className="form-container">
+      <div className="auth-brand">
+        <span className="auth-brand-logo">Dan Element</span>
+        <span className="auth-brand-sub">Boutique</span>
+      </div>
       <h2>Activación de Cuenta</h2>
-      
+
       {cargando ? (
         <p style={{ color: "#3b82f6", fontWeight: "bold" }}>⏳ Verificando token de seguridad...</p>
       ) : (

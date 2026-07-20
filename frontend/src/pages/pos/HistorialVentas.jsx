@@ -73,15 +73,26 @@ export default function HistorialVentas() {
                 <td style={{ color: "var(--color-accent)", fontWeight: "bold" }}>${Number(v.total).toFixed(2)}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="adm-btn-sm" onClick={() => descargarPDF(v.id)} title="Descargar PDF">📄</button>
-                    <button className="adm-btn-sm" onClick={() => enviarWhatsApp(v)} title="WhatsApp">💬</button>
+                    <button className="adm-btn adm-btn-ghost adm-btn-icon" onClick={() => descargarPDF(v.id)} title="Descargar PDF">📄</button>
+                    <button className="adm-btn adm-btn-ghost adm-btn-icon" onClick={() => enviarWhatsApp(v)} title="Enviar por WhatsApp">💬</button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {ventas.length === 0 && !loading && <div className="adm-empty">No hay ventas registradas.</div>}
+        {loading && (
+          <div className="adm-empty">
+            <div className="spinner" style={{ margin: "0 auto 14px" }}></div>
+            <p>Cargando ventas...</p>
+          </div>
+        )}
+        {ventas.length === 0 && !loading && (
+          <div className="adm-empty">
+            <div className="adm-empty-icon">🧾</div>
+            <p>No hay ventas registradas todavía.</p>
+          </div>
+        )}
       </div>
     </Layout>
   );

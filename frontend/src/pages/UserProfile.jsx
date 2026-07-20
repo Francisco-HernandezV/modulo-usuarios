@@ -45,7 +45,12 @@ function UserProfile() {
     }
   };
 
-  if (loading) return <div style={{padding:"50px", textAlign:"center", color:"white"}}>Cargando perfil...</div>;
+  if (loading) return (
+    <div className="state-block">
+      <div className="spinner"></div>
+      <h3>Cargando perfil...</h3>
+    </div>
+  );
 
   return (
     <>
