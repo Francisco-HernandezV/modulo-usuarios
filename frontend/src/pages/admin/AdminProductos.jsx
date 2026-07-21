@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
+import GestorImagenes from "../../components/GestorImagenes";
+import { cldUrl, PLACEHOLDER } from "../../utils/cloudinary";
 import "../../styles/theme.css";
 
 const IconPlus = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
@@ -23,6 +25,9 @@ export default function AdminProductos() {
   const [tallasSeleccionadas, setTallasSeleccionadas] = useState([]); 
   const [coloresSeleccionados, setColoresSeleccionados] = useState([]); 
   const [matriz, setMatriz] = useState({}); 
+  const [productoCreadoId, setProductoCreadoId] = useState(null);
+  const [editando, setEditando] = useState(null);
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
 
   useEffect(() => { cargarProductos(); cargarCatalogos(); }, []);
 
@@ -74,7 +79,7 @@ export default function AdminProductos() {
     }
   };
 
-  const handleNext = () => setPaso(p => Math.min(p + 1, 4));
+  const handleNext = () => setPaso(p => Math.min(p + 1, 5));
   const handlePrev = () => setPaso(p => Math.max(p - 1, 1));
   const handleCambioTipoTalla = (e) => { setTipoTallaSeleccionado(e.target.value); setTallasSeleccionadas([]); setMatriz({}); };
   const toggleTalla = (id) => setTallasSeleccionadas(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
@@ -90,7 +95,7 @@ export default function AdminProductos() {
 
   const iniciarNuevoProducto = () => {
     setForm({ nombre: "", descripcion: "", precio_base: "", marca_id: "", departamento_id: "", categoria_id: "", activo: true });
-    setTipoTallaSeleccionado(""); setTallasSeleccionadas([]); setColoresSeleccionados([]); setMatriz({}); setPaso(1); setVistaActiva("wizard");
+    setTipoTallaSeleccionado(""); setTallasSeleccionadas([]); setColoresSeleccionados([]); setMatriz({}); setProductoCreadoId(null); setPaso(1); setVistaActiva("wizard");
   };
   const handleCrearProducto = async () => {
       if (isSubmitting) return; // 🔥 Evita que pase un segundo clic si ya está cargando
@@ -98,8 +103,10 @@ export default function AdminProductos() {
       
       try {
         const payload = { ...form, precio_base: parseFloat(form.precio_base), matriz };
-        await api.post("/admin/productos/completo", payload);
-        setVistaActiva("lista"); 
+        const res = await api.post("/admin/productos/completo", payload);
+        // El backend ahora devuelve el id: lo usamos para subir las fotos
+        setProductoCreadoId(res.data.producto_id);
+        setPaso(5);
         cargarProductos();
       } catch (error) {
         alert(error.response?.data?.message || "Ocurrió un error al crear el producto.");
@@ -107,6 +114,36 @@ export default function AdminProductos() {
         setIsSubmitting(false); // 🔥 Liberamos el botón sin importar si hubo éxito o error
       }
   };
+  const abrirEdicion = (p) => {
+    setEditando({
+      id: p.id,
+      nombre: p.nombre || "",
+      descripcion: p.descripcion || "",
+      precio_base: p.precio_base ?? "",
+      marca_id: p.marca_id || "",
+      departamento_id: p.departamento_id || "",
+      categoria_id: p.categoria_id || "",
+      activo: p.activo
+    });
+  };
+
+  const guardarEdicion = async () => {
+    if (guardandoEdit) return;
+    setGuardandoEdit(true);
+    try {
+      await api.put(`/admin/productos/${editando.id}`, {
+        ...editando,
+        precio_base: parseFloat(editando.precio_base)
+      });
+      setEditando(null);
+      cargarProductos();
+    } catch (error) {
+      alert(error.response?.data?.message || "Error al actualizar el producto.");
+    } finally {
+      setGuardandoEdit(false);
+    }
+  };
+
   const inputStyle = { width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #374151", background: "#111827", color: "white", outline: "none" };
 
   return (
@@ -128,6 +165,7 @@ export default function AdminProductos() {
                 <thead>
                   <tr style={{ background: "#1f2937", borderBottom: "1px solid #374151" }}>
                     <th style={{ padding: "15px", color: "#d1d5db" }}>#</th>
+                    <th style={{ padding: "15px", color: "#d1d5db" }}>FOTO</th>
                     <th style={{ padding: "15px", color: "#d1d5db" }}>NOMBRE</th>
                     <th style={{ padding: "15px", color: "#d1d5db" }}>CATEGORÍA</th>
                     <th style={{ padding: "15px", color: "#d1d5db" }}>PRECIO</th>
@@ -139,13 +177,20 @@ export default function AdminProductos() {
                   {productos.map((p, idx) => (
                     <tr key={p.id} style={{ borderBottom: "1px solid #374151" }}>
                       <td style={{ padding: "15px", color: "#8b949e" }}>{idx + 1}</td>
+                      <td style={{ padding: "10px 15px" }}>
+                        <img
+                          src={p.imagen ? cldUrl(p.imagen, "w_120,h_120,c_fill") : PLACEHOLDER}
+                          alt={p.nombre}
+                          style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "8px", border: "1px solid #374151", display: "block" }}
+                        />
+                      </td>
                       <td style={{ padding: "15px", fontWeight: "bold", color: "white" }}>{p.nombre}</td>
                       <td style={{ padding: "15px" }}><span className="adm-badge adm-badge-blue" style={{ textTransform: "capitalize" }}>{p.categoria_nombre || "—"}</span></td>
                       <td style={{ padding: "15px", fontFamily: "monospace", fontWeight: "bold", fontSize: "14px", color: "white" }}>${Number(p.precio_base).toFixed(2)}</td>
                       <td style={{ padding: "15px", textAlign: "center" }}><span className={`adm-badge ${p.activo ? "adm-badge-green" : "adm-badge-gray"}`}>{p.activo ? "Activo" : "Inactivo"}</span></td>
                       <td style={{ padding: "15px", textAlign: "right" }}>
                         <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                          <button className="adm-btn adm-btn-ghost adm-btn-sm" title="Editar producto" onClick={() => alert("Próximamente edición.")} type="button"><IconEdit /></button>
+                          <button className="adm-btn adm-btn-ghost adm-btn-sm" title="Editar producto" onClick={() => abrirEdicion(p)} type="button"><IconEdit /></button>
                           <button className="adm-btn adm-btn-danger adm-btn-sm" title="Eliminar producto" onClick={() => setConfirmDel(p.id)} type="button"><IconTrash /></button>
                         </div>
                       </td>
@@ -184,7 +229,7 @@ export default function AdminProductos() {
           </div>
 
           <div style={{ display: "flex", gap: "10px", marginBottom: "40px" }}>
-            {["Información", "Tallas", "Colores", "Resumen"].map((label, idx) => (
+            {["Información", "Tallas", "Colores", "Resumen", "Imágenes"].map((label, idx) => (
               <div key={label} style={{ flex: 1, borderBottom: `4px solid ${paso >= idx + 1 ? "#3b82f6" : "#374151"}`, paddingBottom: "10px", color: paso >= idx + 1 ? "white" : "#9ca3af", fontWeight: "bold", fontSize: "14px", transition: "all 0.3s" }}>{idx + 1}. {label}</div>
             ))}
           </div>
@@ -325,6 +370,109 @@ export default function AdminProductos() {
               </div>
             </div>
           )}
+
+          {paso === 5 && (
+            <div className="wizard-step">
+              <div style={{ textAlign: "center", marginBottom: "25px" }}>
+                <div style={{ fontSize: "34px", marginBottom: "8px" }}>✅</div>
+                <h2 style={{ color: "white", margin: "0 0 6px" }}>Producto creado</h2>
+                <p style={{ color: "#9ca3af", margin: 0 }}>
+                  Ahora sube las fotos. Se guardan en Cloudinary y en tu base solo queda el enlace.
+                </p>
+              </div>
+
+              <GestorImagenes productoId={productoCreadoId} onCambio={cargarProductos} />
+
+              <div style={{ marginTop: "40px", display: "flex", justifyContent: "flex-end" }}>
+                <button className="adm-btn adm-btn-primary" onClick={() => { setVistaActiva("lista"); cargarProductos(); }}>
+                  Terminar <IconArrowRight />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {editando && (
+        <div className="adm-modal-overlay" onClick={() => setEditando(null)}>
+          <div className="adm-modal" style={{ maxWidth: "720px", width: "100%" }} onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-header">
+              <h3 className="adm-modal-title">Editar producto</h3>
+              <button className="adm-modal-close" onClick={() => setEditando(null)} type="button"><IconX /></button>
+            </div>
+            <div className="adm-modal-body" style={{ maxHeight: "72vh", overflowY: "auto" }}>
+
+              <div style={{ display: "grid", gap: "16px", marginBottom: "30px" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Nombre *</label>
+                  <input type="text" value={editando.nombre} style={inputStyle}
+                         onChange={e => setEditando({ ...editando, nombre: e.target.value })} />
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Descripción</label>
+                  <textarea value={editando.descripcion} style={{ ...inputStyle, minHeight: "80px" }}
+                            onChange={e => setEditando({ ...editando, descripcion: e.target.value })} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Precio ($) *</label>
+                    <input type="number" value={editando.precio_base} style={inputStyle}
+                           onKeyDown={blockInvalidChars}
+                           onChange={e => {
+                             const val = e.target.value;
+                             if (val === "" || /^\d+(\.\d{0,2})?$/.test(val)) setEditando({ ...editando, precio_base: val });
+                           }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Marca</label>
+                    <select value={editando.marca_id} style={inputStyle}
+                            onChange={e => setEditando({ ...editando, marca_id: e.target.value })}>
+                      <option value="">Sin marca</option>
+                      {catalogos.marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Departamento</label>
+                    <select value={editando.departamento_id} style={inputStyle}
+                            onChange={e => setEditando({ ...editando, departamento_id: e.target.value })}>
+                      <option value="">Sin departamento</option>
+                      {catalogos.departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "8px", color: "#d1d5db" }}>Categoría</label>
+                    <select value={editando.categoria_id} style={inputStyle}
+                            onChange={e => setEditando({ ...editando, categoria_id: e.target.value })}>
+                      <option value="">Sin categoría</option>
+                      {catalogos.categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", color: "#d1d5db", cursor: "pointer" }}>
+                  <input type="checkbox" checked={editando.activo}
+                         onChange={e => setEditando({ ...editando, activo: e.target.checked })} />
+                  Producto visible en la tienda
+                </label>
+              </div>
+
+              <div style={{ borderTop: "1px solid #374151", paddingTop: "24px" }}>
+                <h4 style={{ color: "white", margin: "0 0 4px" }}>Imágenes</h4>
+                <p style={{ color: "#9ca3af", fontSize: "13px", margin: "0 0 18px" }}>
+                  Agrega o quita fotos. Los cambios se aplican al instante, sin necesidad de guardar.
+                </p>
+                <GestorImagenes productoId={editando.id} onCambio={cargarProductos} />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "28px" }}>
+                <button className="adm-btn adm-btn-ghost" onClick={() => setEditando(null)}>Cerrar</button>
+                <button className="adm-btn adm-btn-primary" onClick={guardarEdicion} disabled={guardandoEdit || !editando.nombre.trim() || !editando.precio_base}>
+                  <IconCheck /> {guardandoEdit ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </AdminLayout>

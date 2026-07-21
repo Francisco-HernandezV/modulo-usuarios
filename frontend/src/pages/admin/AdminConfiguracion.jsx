@@ -7,6 +7,7 @@ const IconPin   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="no
 const IconPhone = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 const IconShare = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>;
 const IconSave  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+const IconClock = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
 const EMPTY_FORM = {
   nombre_tienda: "",
@@ -20,6 +21,7 @@ const EMPTY_FORM = {
   instagram: "",
   tiktok: "",
   twitter: "",
+  dias_apartado: 7,
 };
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -55,6 +57,7 @@ export default function AdminConfiguracion() {
         instagram: data.instagram || "",
         tiktok: data.tiktok || "",
         twitter: data.twitter || "",
+        dias_apartado: data.dias_apartado ?? 7,
       });
       setLogoActual(data.logo || null);
     } catch (error) {
@@ -275,6 +278,25 @@ export default function AdminConfiguracion() {
                 <input id="cfg_tw" className="adm-input" value={form.twitter}
                   onChange={(e) => handleChange("twitter", e.target.value)} placeholder="https://x.com/tutienda" maxLength={255} />
               </div>
+            </div>
+          </section>
+
+          {/* ── POLÍTICA DE APARTADOS (P19) ── */}
+          <section className="adm-stat-card" style={{ flexDirection: "column", alignItems: "stretch", gap: "16px", padding: "22px" }}>
+            <div className="adm-section-title" style={{ display: "flex", alignItems: "center", gap: "8px", border: "none", paddingLeft: "0" }}>
+              <IconClock /> Política de apartados
+            </div>
+            <div style={{ maxWidth: 320 }}>
+              <div className="adm-form-group">
+                <label htmlFor="cfg_dias">Días máximos de vigencia</label>
+                <input id="cfg_dias" type="number" min={1} max={365} className="adm-input"
+                  value={form.dias_apartado}
+                  onChange={(e) => handleChange("dias_apartado", e.target.value)} />
+              </div>
+              <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px", lineHeight: 1.5 }}>
+                Tiempo límite para liquidar un apartado. Al crearlo, el sistema calcula la fecha
+                de vencimiento sumando estos días a la fecha actual. Aplica a todos los apartados nuevos.
+              </p>
             </div>
           </section>
 

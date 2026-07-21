@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
+import { getTurnoAbierto } from "./cajaController.js";
 
 // ════════════════════════════════════════════════════════════
 //  PROCESAR VENTA (TRANSACCIÓN POS CON PAGOS DIVIDIDOS)
@@ -21,6 +22,12 @@ export const procesarVenta = async (req, res) => {
 
   try {
     await client.query('BEGIN');
+
+    // La caja debe estar abierta para poder cobrar (POS-F1 / regla de fondo inicial)
+    const turno = await getTurnoAbierto(client);
+    if (!turno) {
+      throw new Error("La caja no está abierta. Registra el monto inicial para poder cobrar.");
+    }
 
     let subtotal_venta = 0;
 

@@ -37,6 +37,8 @@ import IngresoMercancia from "./pages/admin/IngresoMercancia";
 // ── VISTAS PUNTO DE VENTA (POS) ──
 import POS              from "./pages/pos/POS";
 import HistorialVentas  from "./pages/pos/HistorialVentas";
+import GestionApartados from "./pages/pos/GestionApartados";
+import CorteCaja        from "./pages/pos/CorteCaja";
 
 // ── PIN (Alexa) ──
 import ChangePin          from "./pages/ChangePin";
@@ -94,6 +96,8 @@ function App() {
           {/* ── 🛒 MÓDULO PUNTO DE VENTA (COMPARTIDO) ── */}
           <Route element={<ProtectedRoute rolesPermitidos={["rol_admin", "rol_vendedor"]} />}>
             <Route path="/pos" element={<POS />} />
+            <Route path="/apartados" element={<GestionApartados />} />
+            <Route path="/caja" element={<CorteCaja />} />
           </Route>
 
           {/* ── 💰 RUTA ESPECÍFICA PARA VENDEDORES ── */}

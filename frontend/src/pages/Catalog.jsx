@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import api from "../services/api";
+import { cldUrl, PLACEHOLDER } from "../utils/cloudinary";
 import "./Home.css";
 
 const ProductTag = ({ esOferta }) => {
@@ -45,7 +46,8 @@ function Catalog() {
         const prods = res.data.filter(p => p.activo).map(p => ({
           ...p,
           precio: p.precio_base,
-          imagen: p.imagen || "https://via.placeholder.com/400x400?text=DanElement+Product",
+          // p.imagen viene del backend: es la URL de Cloudinary marcada como portada
+          imagen: p.imagen ? cldUrl(p.imagen, "w_600,h_600,c_fill") : PLACEHOLDER,
           esOferta: false,
           categoria_normalizada: p.categoria_nombre ? p.categoria_nombre.toLowerCase() : "unisex",
           tipo: p.categoria_nombre || "Otros"
@@ -112,7 +114,7 @@ function Catalog() {
                     className="product-card"
                   >
                     <div className="image-wrapper">
-                      <img src={p.imagen} alt={p.nombre} />
+                      <img src={p.imagen} alt={p.nombre} loading="lazy" />
                       <ProductTag esOferta={p.esOferta} />
                     </div>
                     <div className="card-info">

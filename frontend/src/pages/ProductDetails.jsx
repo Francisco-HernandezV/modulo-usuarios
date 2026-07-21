@@ -6,26 +6,27 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import qrImage from "../assets/qr.jpg";
+import { cldUrl, PLACEHOLDER } from "../utils/cloudinary";
 
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [imagenActiva, setImagenActiva] = useState(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
+      setLoading(true);
       try {
-        const res = await api.get("/admin/productos");
-        const found = res.data.find(p => p.id === Number.parseInt(form.producto_id, 10));
-        if (found) {
-          setProduct({
-            ...found,
-            precio: found.precio_base,
-            imagen: found.imagen || "https://via.placeholder.com/400x400?text=DanElement+Product",
-            categoria_display: found.categoria_nombre || "Colección General"
-          });
-        }
+        // Una sola llamada: producto + galería completa
+        const res = await api.get(`/admin/productos/${id}/detalle`);
+        setProduct({
+          ...res.data,
+          precio: res.data.precio_base,
+          categoria_display: res.data.categoria_nombre || "Colección General",
+        });
+        setImagenActiva(0);
       } catch (error) {
         console.error("Error al obtener detalle de producto", error);
       } finally {
@@ -35,21 +36,58 @@ function ProductDetails() {
     fetchProduct();
   }, [id]);
 
-  if (loading) return <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0f1115", color: "white" }}>Cargando detalles...</div>;
-  if (!product) return <div className="not-found" style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0f1115", color: "white" }}>Producto no encontrado</div>;
+  const estadoStyle = {
+    minHeight: "80vh", display: "flex", alignItems: "center",
+    justifyContent: "center", backgroundColor: "#0f1115", color: "white",
+  };
+
+  if (loading) return <div style={estadoStyle}>Cargando detalles...</div>;
+  if (!product) return <div className="not-found" style={estadoStyle}>Producto no encontrado</div>;
+
+  const imagenes = product.imagenes || [];
+  const principal = imagenes[imagenActiva]?.url;
 
   return (
     <>
       <Navbar />
       <div className="page-wrapper">
-        <Breadcrumbs 
-          links={[{ name: "Inicio", url: "/" }, { name: "Catálogo", url: "/catalogo/todo" }]} 
-          current={product.nombre} 
+        <Breadcrumbs
+          links={[{ name: "Inicio", url: "/" }, { name: "Catálogo", url: "/catalogo/todo" }]}
+          current={product.nombre}
         />
-        
+
         <div className="details-card">
           <div className="details-image-container">
-            <img src={product.imagen} className="details-main-img" alt={product.nombre} />
+            <img
+              src={principal ? cldUrl(principal, "w_900") : PLACEHOLDER}
+              className="details-main-img"
+              alt={product.nombre}
+            />
+
+            {/* Miniaturas: solo aparecen si hay más de una foto */}
+            {imagenes.length > 1 && (
+              <div style={{ display: "flex", gap: "10px", marginTop: "14px", flexWrap: "wrap" }}>
+                {imagenes.map((img, idx) => (
+                  <button
+                    key={img.id}
+                    type="button"
+                    onClick={() => setImagenActiva(idx)}
+                    style={{
+                      padding: 0, borderRadius: "8px", overflow: "hidden", cursor: "pointer",
+                      border: `2px solid ${idx === imagenActiva ? "#3b82f6" : "#30363d"}`,
+                      background: "transparent", lineHeight: 0,
+                    }}
+                  >
+                    <img
+                      src={cldUrl(img.url, "w_160,h_160,c_fill")}
+                      alt={`${product.nombre} vista ${idx + 1}`}
+                      style={{ width: "64px", height: "64px", objectFit: "cover", display: "block" }}
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="details-content">
@@ -58,14 +96,16 @@ function ProductDetails() {
                 <span className="details-category">{product.categoria_display}</span>
                 <h1>{product.nombre}</h1>
                 <div className="details-price">${product.precio}</div>
-                <p className="details-description">{product.descripcion || "Este producto no cuenta con descripción detallada en este momento."}</p>
+                <p className="details-description">
+                  {product.descripcion || "Este producto no cuenta con descripción detallada en este momento."}
+                </p>
               </div>
               <div className="details-qr">
                 <img src={qrImage} alt="QR Code" />
                 <span>Escanear</span>
               </div>
             </div>
-            
+
             <div className="details-actions">
               <button className="details-add-btn" onClick={() => alert("Añadido al carrito")}>
                 Añadir al carrito

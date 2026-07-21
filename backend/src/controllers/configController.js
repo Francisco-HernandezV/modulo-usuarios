@@ -54,6 +54,10 @@ function ensureConfigTable() {
           CONSTRAINT configuracion_single_row CHECK (id = 1)
         );
       `);
+      // Días de vigencia de apartados (P19). Se agrega a la tabla existente.
+      await pool.query(
+        `ALTER TABLE public.configuracion ADD COLUMN IF NOT EXISTS dias_apartado INTEGER NOT NULL DEFAULT 7;`
+      );
       await pool.query(
         `INSERT INTO public.configuracion (id) VALUES (1) ON CONFLICT (id) DO NOTHING;`
       );
@@ -91,6 +95,15 @@ export const updateConfiguracion = async (req, res) => {
     // Cláusula SET base con los 11 campos de texto.
     const setParts = COLUMNAS.map((col, i) => `${col} = $${i + 1}`);
     const params = [...valores];
+
+    // Días de vigencia de apartados (entero >= 1). Solo se actualiza si viene.
+    if (req.body.dias_apartado !== undefined && req.body.dias_apartado !== "") {
+      const dias = parseInt(req.body.dias_apartado, 10);
+      if (!Number.isNaN(dias) && dias >= 1) {
+        params.push(dias);
+        setParts.push(`dias_apartado = $${params.length}`);
+      }
+    }
 
     // Manejo del logo:
     //  - Si llega un archivo nuevo → se guarda como Data URI base64.

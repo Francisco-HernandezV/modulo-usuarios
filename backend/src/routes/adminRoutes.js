@@ -13,6 +13,11 @@ import {
   getFiltrosPredictivo, getModeloPredictivo, getReporteVentas, getInventarioAlexa
 } from "../controllers/adminController.js";
 
+import {
+  getImagenesProducto, subirImagenesProducto, eliminarImagenProducto,
+  marcarImagenPrincipal, reordenarImagenes, getProductoConImagenes
+} from "../controllers/imagenesController.js";
+
 import { generarRespaldo, getHistorialRespaldos, registrarRespaldoExterno } from "../controllers/respaldosController.js";
 import { getActivity, getLocks, killProcess, runExplain, getHealth, getAutovacuum, getDatabaseSize, resetStats } from "../controllers/monitorController.js";
 import { getConfiguracion, updateConfiguracion } from "../controllers/configController.js";
@@ -31,11 +36,26 @@ const uploadLogo = multer({
   },
 });
 
+// Fotos de producto: solo imágenes, 5 MB c/u, máximo 4 por envío.
+// memoryStorage = el archivo vive en RAM y va directo a Cloudinary,
+// nunca se escribe en el disco del servidor.
+const uploadFotos = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 4 },
+  fileFilter: (req, file, cb) => {
+    const permitidos = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+    if (permitidos.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Formato no permitido. Usa JPG, PNG, WEBP o AVIF."));
+  },
+});
+
 const router = express.Router();
 
 // ── Rutas públicas (No requieren Token JWT) ───────────────────────────────
 router.get("/categorias", getCategorias);
 router.get("/productos",  getProductos);
+router.get("/productos/:id/detalle", getProductoConImagenes);   // producto + galería
+router.get("/productos/:id/imagenes", getImagenesProducto);     // solo la galería
 router.get("/configuracion", getConfiguracion); // La tienda lee logo/redes/contacto sin login
 router.get("/respaldos/generar", generarRespaldo);
 router.post("/respaldos/registrar", registrarRespaldoExterno);
@@ -72,6 +92,22 @@ router.post("/productos/completo", checkRole(["rol_admin","rol_gestor_inventario
 router.post("/productos",     checkRole(["rol_admin","rol_gestor_inventario"]), createProducto);
 router.put("/productos/:id",  checkRole(["rol_admin","rol_gestor_inventario"]), updateProducto);
 router.delete("/productos/:id", checkRole(["rol_admin"]), deleteProducto);
+
+// ── Imágenes de producto (Cloudinary) ──
+router.post(
+  "/productos/:id/imagenes",
+  checkRole(["rol_admin", "rol_gestor_inventario"]),
+  (req, res, next) => {
+    uploadFotos.array("imagenes", 4)(req, res, (err) => {
+      if (err) return res.status(400).json({ message: err.message });
+      next();
+    });
+  },
+  subirImagenesProducto
+);
+router.put("/productos/:id/imagenes/orden", checkRole(["rol_admin", "rol_gestor_inventario"]), reordenarImagenes);
+router.put("/productos/:id/imagenes/:imagenId/principal", checkRole(["rol_admin", "rol_gestor_inventario"]), marcarImagenPrincipal);
+router.delete("/productos/:id/imagenes/:imagenId", checkRole(["rol_admin", "rol_gestor_inventario"]), eliminarImagenProducto);
 
 // ── Módulo de Importación / Exportación (Excel) ──
 router.get("/inventario/exportar", checkRole(["rol_admin", "rol_gestor_inventario"]), exportarInventario);

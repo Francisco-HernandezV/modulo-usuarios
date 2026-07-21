@@ -121,8 +121,9 @@ function Navbar() {
                     <div style={{ borderTop: "1px solid #30363d", margin: "5px 0" }}></div>
 
                     <Link to="/profile" className="dropdown-item">👤 Mi Perfil</Link>
-                    
-                    <button 
+                    <Link to="/cambiar-pin" className="dropdown-item">🔑 Cambiar PIN</Link>
+
+                    <button
                         onClick={handleLogout} 
                         className="dropdown-item" 
                         style={{color: "#ef4444", cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left'}}

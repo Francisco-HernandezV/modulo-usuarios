@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { borrarCarpetaProducto } from "../config/cloudinary.js";
 import bcrypt from "bcryptjs";
 import * as xlsx from "xlsx";
 
@@ -174,7 +175,15 @@ export const getProductos = async (req, res) => {
       SELECT p.*, 
              c.nombre AS categoria_nombre,
              m.nombre AS marca_nombre,
-             d.nombre AS departamento_nombre
+             d.nombre AS departamento_nombre,
+             (SELECT ip.url
+                FROM inventario.imagenes_producto ip
+               WHERE ip.producto_id = p.id
+               ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC
+               LIMIT 1) AS imagen,
+             (SELECT COUNT(*)::int
+                FROM inventario.imagenes_producto ip
+               WHERE ip.producto_id = p.id) AS total_imagenes
       FROM productos p
       LEFT JOIN categorias c ON c.id = p.categoria_id
       LEFT JOIN marcas m ON m.id = p.marca_id
@@ -239,7 +248,11 @@ export const createProductoCompleto = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    return res.status(201).json({ message: "Producto y variantes de inventario creados correctamente." });
+    return res.status(201).json({
+      message: "Producto y variantes de inventario creados correctamente.",
+      producto_id: productoId,
+      nombre: productoNombre
+    });
 
   } catch (error) {
     await client.query('ROLLBACK');
@@ -297,6 +310,11 @@ export const deleteProducto = async (req, res) => {
   try {
     const result = await pool.query("DELETE FROM productos WHERE id = $1 RETURNING id", [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ message: "Producto no encontrado" });
+
+    // Las filas de imagenes_producto se borran solas (ON DELETE CASCADE),
+    // pero los archivos en Cloudinary hay que limpiarlos a mano.
+    await borrarCarpetaProducto(req.params.id);
+
     return res.json({ message: "Producto eliminado correctamente" });
   } catch (error) {
     if (error.code === "23503" || error.code === "23001") {

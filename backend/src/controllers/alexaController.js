@@ -116,7 +116,18 @@ export const getInventarioAutenticado = async (req, res) => {
              c.nombre AS categoria_nombre,
              m.nombre AS marca_nombre,
              t.valor AS talla,
-             col.nombre AS color
+             col.nombre AS color,
+             p.id AS producto_id,
+             -- Foto: primero la de la variante (si el color tiene la suya),
+             -- si no, la portada del producto. NULL si aun no sube ninguna.
+             COALESCE(
+               (SELECT ip.url FROM inventario.imagenes_producto ip
+                 WHERE ip.variante_id = vp.id
+                 ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1),
+               (SELECT ip.url FROM inventario.imagenes_producto ip
+                 WHERE ip.producto_id = p.id
+                 ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1)
+             ) AS imagen
       FROM inventario.variantes_producto vp
       JOIN inventario.productos p ON p.id = vp.producto_id
       LEFT JOIN catalogo.categorias c ON c.id = p.categoria_id
@@ -155,6 +166,17 @@ export const getUltimosIngresos = async (req, res) => {
              m.nombre AS marca_nombre,
              t.valor AS talla,
              col.nombre AS color,
+             p.id AS producto_id,
+             -- Foto: primero la de la variante (si el color tiene la suya),
+             -- si no, la portada del producto. NULL si aun no sube ninguna.
+             COALESCE(
+               (SELECT ip.url FROM inventario.imagenes_producto ip
+                 WHERE ip.variante_id = vp.id
+                 ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1),
+               (SELECT ip.url FROM inventario.imagenes_producto ip
+                 WHERE ip.producto_id = p.id
+                 ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1)
+             ) AS imagen,
              ei.fecha_entrada
       FROM inventario.detalle_entrada de
       JOIN inventario.entradas_inventario ei ON ei.id = de.entrada_id
