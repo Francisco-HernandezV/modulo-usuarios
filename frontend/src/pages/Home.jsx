@@ -5,7 +5,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import api from "../services/api";
 import "./Home.css";
-import { useSearch } from "../context/SearchContext"; 
+import { useSearch } from "../context/SearchContext";
+import { cldUrl } from "../utils/cloudinary";
 
 const ProductStatusBadge = ({ esOferta }) => {
     if (esOferta) return <span className="tag-new" style={{background: "#f59e0b", color: "black"}}>Oferta</span>;
@@ -29,7 +30,7 @@ function Home() {
         const prods = res.data.filter(p => p.activo).map(p => ({
           ...p,
           precio: p.precio_base,
-          imagen: p.imagen || "https://via.placeholder.com/400x400?text=DanElement+Product", 
+          imagen: p.imagen || null,
           esOferta: false 
         }));
         setProducts(prods);
@@ -109,7 +110,7 @@ function Home() {
                 className="product-card"
               >
                 <div className="image-wrapper">
-                  <img src={p.imagen} alt={p.nombre} />
+                  <img src={cldUrl(p.imagen, "w_400,h_400,c_fill")} alt={p.nombre} loading="lazy" />
                   <ProductStatusBadge esOferta={p.esOferta} />
                 </div>
                 <div className="card-info">

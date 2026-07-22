@@ -38,7 +38,9 @@ router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, updateProfile);
 
 // ── PIN y cambio de contraseña ────────────────────────────────────────────
-router.post("/cambiar-pin",       verifyToken, checkRole(['rol_cliente']), actualizarPin);
+// Cada persona administra su PROPIO PIN (actualizarPin usa req.user.id),
+// por eso aplica a todos los roles: admin, vendedor, gestor y cliente.
+router.post("/cambiar-pin",       verifyToken, checkRole(['rol_admin','rol_vendedor','rol_gestor_inventario','rol_cliente']), actualizarPin);
 router.post("/admin/asignar-pin", verifyToken, checkRole(['rol_admin']),  adminAsignarPinVendedor);
 router.post("/force-password-change", verifyToken, forcePasswordChange);
 

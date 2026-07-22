@@ -37,6 +37,7 @@ const NAV_ITEMS = [
   { path: "/admin/reportes",    label: "Reportes de Ventas", icon: <IconReport />,   section: "SISTEMA" }, // <-- NUEVA LÍNEA
   { path: "/admin/empleados",   label: "Gestión Empleados",  icon: <IconBadge />,    section: "SISTEMA" },
   { path: "/admin/asignar-pin", label: "Asignar PIN Alexa",  icon: <IconKey />,      section: "SISTEMA" },
+  { path: "/cambiar-pin",       label: "Mi PIN Alexa",       icon: <IconKey />,      section: "SISTEMA" },
   { path: "/admin/configuracion", label: "Configuración",    icon: <IconSettings />, section: "SISTEMA" }
 ];
 

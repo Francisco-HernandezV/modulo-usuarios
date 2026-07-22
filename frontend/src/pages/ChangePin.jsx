@@ -1,10 +1,18 @@
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import AdminLayout from "../components/AdminLayout";
+import VendedorLayout from "../components/VendedorLayout";
 import api from "../services/api";
 import "../styles/theme.css";
 
 function ChangePin() {
+  // El PIN es personal: lo cambia cualquier usuario (admin, vendedor, gestor o
+  // cliente). Se muestra dentro del panel si es staff, o en la tienda si es cliente.
+  const rol = localStorage.getItem("rol");
+  const esStaff = ["rol_admin", "rol_gestor_inventario", "rol_vendedor"].includes(rol);
+  const StaffLayout = rol === "rol_vendedor" ? VendedorLayout : AdminLayout;
+
   const [nuevoPin, setNuevoPin] = useState("");
   const [confirmarPin, setConfirmarPin] = useState("");
   const [mensaje, setMensaje] = useState("");
@@ -40,10 +48,7 @@ function ChangePin() {
     }
   };
 
-  return (
-    <>
-      <Navbar />
-      <div className="main-content">
+  const contenido = (
         <div className="profile-wrapper">
           <div className="profile-header">
             <h2 className="section-title">Cambiar mi PIN de Alexa</h2>
@@ -96,7 +101,22 @@ function ChangePin() {
             )}
           </form>
         </div>
-      </div>
+  );
+
+  // Staff: dentro del panel administrativo / de vendedor
+  if (esStaff) {
+    return (
+      <StaffLayout pageTitle="Mi PIN de Alexa" breadcrumb="Mi PIN">
+        {contenido}
+      </StaffLayout>
+    );
+  }
+
+  // Cliente: dentro de la tienda
+  return (
+    <>
+      <Navbar />
+      <div className="main-content">{contenido}</div>
       <Footer />
     </>
   );
