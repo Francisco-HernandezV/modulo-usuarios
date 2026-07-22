@@ -27,7 +27,6 @@ import AdminProductos   from "./pages/admin/AdminProductos";
 import AdminClientes    from "./pages/admin/AdminClientes";
 import AdminInventario  from "./pages/admin/AdminInventario";
 import AdminRespaldos   from "./pages/admin/AdminRespaldos";
-import AdminMonitor     from "./components/AdminMonitor";
 import AdminEmpleados   from "./pages/admin/AdminEmpleados";
 import AdminPredictivo  from "./pages/admin/AdminPredictivo";
 import AdminReportes    from './pages/admin/AdminReportes';
@@ -76,7 +75,6 @@ function App() {
             <Route path="/admin/inventario"          element={<AdminInventario />} />
             <Route path="/admin/inventario/ingreso"  element={<IngresoMercancia />} />
             <Route path="/admin/respaldos"           element={<AdminRespaldos />} />
-            <Route path="/admin/monitor"             element={<AdminMonitor />} />
             <Route path="/admin/empleados"           element={<AdminEmpleados />} />
             <Route path="/admin/historial"           element={<HistorialVentas />} />
             <Route path="/admin/predictivo"          element={<AdminPredictivo />} />

@@ -3,9 +3,7 @@ import express from "express";
 import cors    from "cors";
 import helmet  from "helmet";
 import rateLimit from "express-rate-limit";
-import cron from "node-cron";
 import pool from "./config/db.js";
-import { resetStats } from "./controllers/monitorController.js";
 import userRoutes  from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import ventasRoutes from "./routes/ventasRoutes.js";
@@ -40,17 +38,6 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/ventas", ventasRoutes);
 app.use("/api/inventario", inventarioRoutes);
 app.use("/api/alexa", alexaRoutes);
-cron.schedule("0 0 * * *", async () => {
-  try {
-    console.log("[CRON] Guardando punto de control de estadísticas diario...");
-    await resetStats();
-  } catch (error) {
-    console.error("[CRON] Error en el reinicio automático:", error);
-  }
-}, {
-  scheduled: true,
-  timezone: "America/Mexico_City"
-});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () =>
