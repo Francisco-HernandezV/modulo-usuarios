@@ -13,8 +13,6 @@ import {
   actualizarPin,
   adminAsignarPinVendedor
 } from "../controllers/userController.js";
-
-// ✅ checkRole vive en authMiddleware.js, NO en el controller
 import { verifyToken, checkRole } from "../middlewares/authMiddleware.js";
 import { registerValidator, loginValidator, recoverValidator, resetPasswordValidator } from "../middlewares/validators.js";
 import { loginLimiter, recoverLimiter } from "../middlewares/rateLimiter.js";
@@ -37,11 +35,7 @@ router.get("/verify",  verifyToken, (req, res) => res.sendStatus(200));
 router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, updateProfile);
 
-// ── PIN y cambio de contraseña ────────────────────────────────────────────
-// Cada persona administra su PROPIO PIN (actualizarPin usa req.user.id),
-// por eso aplica a todos los roles: admin, vendedor, gestor y cliente.
 router.post("/cambiar-pin",       verifyToken, checkRole(['rol_admin','rol_vendedor','rol_gestor_inventario','rol_cliente']), actualizarPin);
 router.post("/admin/asignar-pin", verifyToken, checkRole(['rol_admin']),  adminAsignarPinVendedor);
 router.post("/force-password-change", verifyToken, forcePasswordChange);
-
 export default router;
