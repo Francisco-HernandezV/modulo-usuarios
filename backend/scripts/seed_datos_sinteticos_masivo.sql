@@ -17,7 +17,7 @@
 
 BEGIN;
 
-SELECT setval(pg_get_serial_sequence('ventas.clientes','id'),          COALESCE((SELECT MAX(id) FROM ventas.clientes), 1));
+SELECT setval(pg_get_serial_sequence('seguridad.personas','id'),          COALESCE((SELECT MAX(id) FROM seguridad.personas), 1));
 SELECT setval(pg_get_serial_sequence('ventas.ventas','id'),            COALESCE((SELECT MAX(id) FROM ventas.ventas), 1));
 SELECT setval(pg_get_serial_sequence('ventas.detalle_venta','id'),     COALESCE((SELECT MAX(id) FROM ventas.detalle_venta), 1));
 SELECT setval(pg_get_serial_sequence('ventas.pagos','id'),             COALESCE((SELECT MAX(id) FROM ventas.pagos), 1));
@@ -55,8 +55,8 @@ DECLARE
   v_estado VARCHAR; v_ratio NUMERIC; v_abonado NUMERIC; v_p1 NUMERIC;
   cnt_ventas INT := 0; cnt_apartados INT := 0;
 BEGIN
-  SELECT id INTO v_vend FROM seguridad.usuarios WHERE id = 6;
-  IF v_vend IS NULL THEN SELECT MIN(id) INTO v_vend FROM seguridad.usuarios; END IF;
+  SELECT id INTO v_vend FROM seguridad.personas WHERE id = 6 AND es_empleado = TRUE;
+  IF v_vend IS NULL THEN SELECT MIN(id) INTO v_vend FROM seguridad.personas WHERE es_empleado = TRUE; END IF;
 
   -- Todas las variantes activas con stock (reparte el consumo)
   SELECT array_agg(id), array_agg(precio) INTO v_variantes, v_precios
@@ -72,14 +72,15 @@ BEGIN
 
   -- Clientes
   FOR v_i IN 1..N_CLIENTES LOOP
-    INSERT INTO ventas.clientes (nombre, telefono, email, rfc, notas, creado_en)
+    INSERT INTO seguridad.personas (nombre, telefono, email, rfc, notas, creado_en, es_cliente, es_empleado, rol_id)
     VALUES (
       v_pnombres[1 + floor(random()*array_length(v_pnombres,1))::int] || ' ' ||
       v_anombres[1 + floor(random()*array_length(v_anombres,1))::int] || ' ' ||
       v_anombres[1 + floor(random()*array_length(v_anombres,1))::int],
       lpad((floor(random()*9000000000)::bigint)::text, 10, '0'),
       'seed_masivo_' || v_i || '_' || floor(random()*1000000)::int || '@example.com',
-      NULL, MARCA, now() - ((random()*120)::int || ' days')::interval
+      NULL, MARCA, now() - ((random()*120)::int || ' days')::interval,
+      TRUE, FALSE, 4   -- cliente de mostrador: sin credenciales de acceso
     ) RETURNING id INTO v_cid;
     v_clientes := array_append(v_clientes, v_cid);
   END LOOP;
@@ -190,12 +191,12 @@ COMMIT;
 --  REVERTIR (opcional) — borra SOLO este lote (notas = 'SEED_MASIVO_20260720')
 -- ----------------------------------------------------------------------------
 -- BEGIN;
--- DELETE FROM ventas.abonos           WHERE apartado_id IN (SELECT id FROM ventas.apartados WHERE cliente_id IN (SELECT id FROM ventas.clientes WHERE notas='SEED_MASIVO_20260720'));
--- DELETE FROM ventas.detalle_apartado WHERE apartado_id IN (SELECT id FROM ventas.apartados WHERE cliente_id IN (SELECT id FROM ventas.clientes WHERE notas='SEED_MASIVO_20260720'));
--- DELETE FROM ventas.apartados        WHERE cliente_id IN (SELECT id FROM ventas.clientes WHERE notas='SEED_MASIVO_20260720');
--- DELETE FROM ventas.pagos            WHERE venta_id IN (SELECT id FROM ventas.ventas WHERE cliente_id IN (SELECT id FROM ventas.clientes WHERE notas='SEED_MASIVO_20260720'));
--- DELETE FROM ventas.detalle_venta    WHERE venta_id IN (SELECT id FROM ventas.ventas WHERE cliente_id IN (SELECT id FROM ventas.clientes WHERE notas='SEED_MASIVO_20260720'));
--- DELETE FROM ventas.ventas           WHERE cliente_id IN (SELECT id FROM ventas.clientes WHERE notas='SEED_MASIVO_20260720');
--- DELETE FROM ventas.clientes         WHERE notas='SEED_MASIVO_20260720';
+-- DELETE FROM ventas.abonos           WHERE apartado_id IN (SELECT id FROM ventas.apartados WHERE cliente_id IN (SELECT id FROM seguridad.personas WHERE notas='SEED_MASIVO_20260720'));
+-- DELETE FROM ventas.detalle_apartado WHERE apartado_id IN (SELECT id FROM ventas.apartados WHERE cliente_id IN (SELECT id FROM seguridad.personas WHERE notas='SEED_MASIVO_20260720'));
+-- DELETE FROM ventas.apartados        WHERE cliente_id IN (SELECT id FROM seguridad.personas WHERE notas='SEED_MASIVO_20260720');
+-- DELETE FROM ventas.pagos            WHERE venta_id IN (SELECT id FROM ventas.ventas WHERE cliente_id IN (SELECT id FROM seguridad.personas WHERE notas='SEED_MASIVO_20260720'));
+-- DELETE FROM ventas.detalle_venta    WHERE venta_id IN (SELECT id FROM ventas.ventas WHERE cliente_id IN (SELECT id FROM seguridad.personas WHERE notas='SEED_MASIVO_20260720'));
+-- DELETE FROM ventas.ventas           WHERE cliente_id IN (SELECT id FROM seguridad.personas WHERE notas='SEED_MASIVO_20260720');
+-- DELETE FROM seguridad.personas         WHERE notas='SEED_MASIVO_20260720';
 -- COMMIT;
 -- ============================================================================

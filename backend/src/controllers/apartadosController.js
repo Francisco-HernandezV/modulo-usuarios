@@ -207,8 +207,8 @@ export const listarApartados = async (req, res) => {
         c.id AS cliente_id, c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
         u.nombre AS vendedor_nombre
       FROM ventas.apartados a
-      JOIN ventas.clientes c ON c.id = a.cliente_id
-      LEFT JOIN seguridad.usuarios u ON u.id = a.usuario_id
+      JOIN seguridad.personas c ON c.id = a.cliente_id
+      LEFT JOIN seguridad.personas u ON u.id = a.usuario_id
       ${whereSql}
       ORDER BY
         (a.estado = 'activo' AND a.fecha_limite < CURRENT_DATE) DESC,
@@ -236,8 +236,8 @@ export const getApartadosVencidos = async (req, res) => {
         c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
         u.nombre AS vendedor_nombre
       FROM ventas.apartados a
-      JOIN ventas.clientes c ON c.id = a.cliente_id
-      LEFT JOIN seguridad.usuarios u ON u.id = a.usuario_id
+      JOIN seguridad.personas c ON c.id = a.cliente_id
+      LEFT JOIN seguridad.personas u ON u.id = a.usuario_id
       WHERE a.estado = 'activo' AND a.fecha_limite < CURRENT_DATE
       ORDER BY a.fecha_limite ASC;
     `;
@@ -264,8 +264,8 @@ export const getApartadoDetalle = async (req, res) => {
          c.nombre AS cliente_nombre, c.telefono AS cliente_tel, c.email AS cliente_email,
          u.nombre AS vendedor_nombre
        FROM ventas.apartados a
-       JOIN ventas.clientes c ON c.id = a.cliente_id
-       LEFT JOIN seguridad.usuarios u ON u.id = a.usuario_id
+       JOIN seguridad.personas c ON c.id = a.cliente_id
+       LEFT JOIN seguridad.personas u ON u.id = a.usuario_id
        WHERE a.id = $1`,
       [id]
     );
@@ -290,7 +290,7 @@ export const getApartadoDetalle = async (req, res) => {
     const abonosRes = await pool.query(
       `SELECT ab.id, ab.monto, ab.metodo, ab.fecha, u.nombre AS usuario_nombre
        FROM ventas.abonos ab
-       LEFT JOIN seguridad.usuarios u ON u.id = ab.usuario_id
+       LEFT JOIN seguridad.personas u ON u.id = ab.usuario_id
        WHERE ab.apartado_id = $1
        ORDER BY ab.fecha ASC`,
       [id]
@@ -438,8 +438,8 @@ export const generarApartadoPDF = async (req, res) => {
               c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
               u.nombre AS vendedor_nombre
        FROM ventas.apartados a
-       JOIN ventas.clientes c ON c.id = a.cliente_id
-       LEFT JOIN seguridad.usuarios u ON u.id = a.usuario_id
+       JOIN seguridad.personas c ON c.id = a.cliente_id
+       LEFT JOIN seguridad.personas u ON u.id = a.usuario_id
        WHERE a.id = $1`,
       [id]
     );

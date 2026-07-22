@@ -40,60 +40,57 @@ export const registrarUsuario = async (req, res) => {
 
     await client.query('BEGIN');
 
-    // 1. Insertar el usuario en la tabla de acceso web (seguridad.usuarios)
-    const userResult = await client.query(
-      `INSERT INTO seguridad.usuarios (nombre, email, password_hash, telefono_contacto, cuenta_activa, email_verificado)
-       VALUES ($1, $2, $3, $4, FALSE, FALSE)
-       RETURNING id`,
-      [nombre.trim(), email.trim(), hashedPassword, telefono_contacto || null]
+    const mail = email.trim();
+    const tel = telefono_contacto?.trim() || null;
+
+    // 1. 🌟 OMNICANAL: ¿ya existe esa persona? (por correo o teléfono)
+    const { rows: encontradas } = await client.query(
+      `SELECT id, password_hash FROM seguridad.personas
+        WHERE LOWER(email) = LOWER($1)
+           OR ($2::text IS NOT NULL AND telefono = $2)
+        LIMIT 1`,
+      [mail, tel]
     );
-    const userId = userResult.rows[0].id;
+    const existente = encontradas[0] || null;
 
-    // 2. Asignar el rol de cliente por defecto
-    await client.query(
-      `INSERT INTO seguridad.usuario_roles (usuario_id, rol_id)
-       SELECT $1, id FROM seguridad.roles WHERE nombre = 'rol_cliente'`,
-      [userId]
-    );
-
-    // 3. 🌟 VINCULACIÓN OMNICANAL SILENCIOSA (De Web a Tienda)
-    let clienteId = null;
-
-    // Prioridad 1: Buscar por teléfono en ventas.clientes
-    if (telefono_contacto) {
-      const clienteRes = await client.query(
-        "SELECT id FROM ventas.clientes WHERE telefono = $1 LIMIT 1",
-        [telefono_contacto.trim()]
-      );
-      if (clienteRes.rows.length > 0) clienteId = clienteRes.rows[0].id;
+    // 2. Si ya tiene contraseña, es una cuenta web existente
+    if (existente?.password_hash) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "Este correo electrónico ya se encuentra registrado." });
     }
 
-    // Prioridad 2: Buscar por correo en ventas.clientes
-    if (!clienteId && email) {
-      const clienteRes = await client.query(
-        "SELECT id FROM ventas.clientes WHERE email = $1 LIMIT 1",
-        [email.trim()]
-      );
-      if (clienteRes.rows.length > 0) clienteId = clienteRes.rows[0].id;
-    }
+    let userId;
 
-    if (clienteId) {
-      // Escenario A: El cliente ya existía en la tienda. Lo vinculamos y autocompletamos datos faltantes.
-      await client.query(
-        `UPDATE ventas.clientes 
-         SET usuario_id = $1, 
-             email = COALESCE(email, $2),
-             telefono = COALESCE(telefono, $3)
-         WHERE id = $4`,
-        [userId, email.trim(), telefono_contacto || null, clienteId]
+    if (existente) {
+      // 3a. Era cliente de mostrador (sin login): se le añaden credenciales
+      //     sobre la MISMA fila, conservando su historial de compras.
+      const upd = await client.query(
+        `UPDATE seguridad.personas
+            SET nombre = $1,
+                email = COALESCE(email, $2),
+                telefono = COALESCE(telefono, $3),
+                password_hash = $4,
+                es_cliente = TRUE,
+                cuenta_activa = FALSE,
+                email_verificado = FALSE,
+                token_version = COALESCE(token_version, 0),
+                actualizado_en = NOW()
+          WHERE id = $5
+          RETURNING id`,
+        [nombre.trim(), mail, tel, hashedPassword, existente.id]
       );
+      userId = upd.rows[0].id;
     } else {
-      // Escenario B: Es totalmente nuevo. Se inserta en ventas.clientes con su usuario_id.
-      await client.query(
-        `INSERT INTO ventas.clientes (nombre, email, telefono, usuario_id) 
-         VALUES ($1, $2, $3, $4)`,
-        [nombre.trim(), email.trim(), telefono_contacto || null, userId]
+      // 3b. Persona nueva con cuenta web
+      const userResult = await client.query(
+        `INSERT INTO seguridad.personas
+           (nombre, email, password_hash, telefono, cuenta_activa, email_verificado,
+            es_cliente, es_empleado, rol_id, token_version)
+         VALUES ($1, $2, $3, $4, FALSE, FALSE, TRUE, FALSE, 4, 0)
+         RETURNING id`,
+        [nombre.trim(), mail, hashedPassword, tel]
       );
+      userId = userResult.rows[0].id;
     }
 
     // 4. Generar token de verificación por correo
@@ -123,7 +120,7 @@ export const registrarUsuario = async (req, res) => {
     await client.query('ROLLBACK'); // Deshacemos todo si hay un error
     
     if (error.code === "23505") {
-      // Código 23505 = Unique Violation. Significa que el correo ya está en seguridad.usuarios
+      // Código 23505 = Unique Violation. Significa que el correo ya está en seguridad.personas
       // Mensaje seguro que no revela más información de la necesaria.
       return res.status(400).json({ message: "Este correo electrónico ya se encuentra registrado." });
     }
@@ -164,8 +161,8 @@ export const activarCuenta = async (req, res) => {
 
     // Activar usuario
     await pool.query(
-      `UPDATE usuarios
-       SET cuenta_activa = TRUE, email_verificado = TRUE, updated_at = CURRENT_TIMESTAMP
+      `UPDATE seguridad.personas
+       SET cuenta_activa = TRUE, email_verificado = TRUE, actualizado_en = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [tkn.usuario_id]
     );
@@ -193,14 +190,14 @@ export const loginUsuario = async (req, res) => {
     // 🔥 Modificación: Añadimos requiere_cambio_password y apuntamos al esquema seguridad
     const result = await pool.query(
       `SELECT u.id, u.nombre, u.password_hash, u.cuenta_activa, u.login_attempts, u.lock_until, u.token_version, u.requiere_cambio_password, r.nombre AS rol
-       FROM seguridad.usuarios u
-       LEFT JOIN seguridad.usuario_roles ur ON u.id = ur.usuario_id
-       LEFT JOIN seguridad.roles r ON ur.rol_id = r.id
-       WHERE u.email = $1`,
+       FROM seguridad.personas u
+       LEFT JOIN seguridad.roles r ON r.id = u.rol_id
+       WHERE LOWER(u.email) = LOWER($1)`,
       [email]
     );
 
-    if (result.rows.length === 0) {
+    // Sin fila, o persona sin credenciales (cliente de mostrador): mismo mensaje
+    if (result.rows.length === 0 || !result.rows[0].password_hash) {
       await bcrypt.hash("dummy", 12); // prevenir timing attack
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
@@ -220,7 +217,7 @@ export const loginUsuario = async (req, res) => {
       const attempts  = (user.login_attempts || 0) + 1;
       const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
       await pool.query(
-        "UPDATE seguridad.usuarios SET login_attempts = $1, lock_until = $2 WHERE id = $3",
+        "UPDATE seguridad.personas SET login_attempts = $1, lock_until = $2 WHERE id = $3",
         [attempts, lockUntil, user.id]
       );
       return res.status(401).json({
@@ -230,8 +227,8 @@ export const loginUsuario = async (req, res) => {
 
     // Resetear intentos
     await pool.query(
-      `UPDATE seguridad.usuarios
-       SET login_attempts = 0, lock_until = NULL, updated_at = CURRENT_TIMESTAMP
+      `UPDATE seguridad.personas
+       SET login_attempts = 0, lock_until = NULL, actualizado_en = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [user.id]
     );
@@ -283,8 +280,8 @@ export const loginUsuario = async (req, res) => {
 export const logoutUsuario = async (req, res) => {
   try {
     await pool.query(
-      `UPDATE usuarios
-       SET token_version = token_version + 1, updated_at = CURRENT_TIMESTAMP
+      `UPDATE seguridad.personas
+       SET token_version = token_version + 1, actualizado_en = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [req.user.id]
     );
@@ -303,7 +300,7 @@ export const requestPasswordReset = async (req, res) => {
     const { email } = req.body;
 
     const result = await pool.query(
-      "SELECT id, nombre FROM usuarios WHERE email = $1",
+      "SELECT id, nombre FROM seguridad.personas WHERE email = $1",
       [email]
     );
 
@@ -409,8 +406,8 @@ export const resetPassword = async (req, res) => {
     const hashed = await bcrypt.hash(nueva_password, BCRYPT_ROUNDS);
 
     await pool.query(
-      `UPDATE usuarios
-       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+      `UPDATE seguridad.personas
+       SET password_hash = $1, actualizado_en = CURRENT_TIMESTAMP
        WHERE id = $2`,
       [hashed, row.usuario_id]
     );
@@ -430,7 +427,8 @@ export const resetPassword = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, nombre, email, telefono_contacto FROM usuarios WHERE id = $1",
+      // telefono AS telefono_contacto: se conserva el nombre del contrato de la API
+      "SELECT id, nombre, email, telefono AS telefono_contacto FROM seguridad.personas WHERE id = $1",
       [req.user.id]
     );
     if (result.rows.length === 0) {
@@ -447,8 +445,8 @@ export const updateProfile = async (req, res) => {
   try {
     const { nombre, email, telefono_contacto } = req.body;
     await pool.query(
-      `UPDATE usuarios
-       SET nombre = $1, email = $2, telefono_contacto = $3, updated_at = CURRENT_TIMESTAMP
+      `UPDATE seguridad.personas
+       SET nombre = $1, email = $2, telefono = $3, actualizado_en = CURRENT_TIMESTAMP
        WHERE id = $4`,
       [nombre, email, telefono_contacto || null, req.user.id]
     );
@@ -480,11 +478,11 @@ export const forcePasswordChange = async (req, res) => {
     const hashedNewPassword = await bcrypt.hash(nueva_password, salt);
 
     const query = `
-      UPDATE seguridad.usuarios 
+      UPDATE seguridad.personas 
       SET password_hash = $1, 
           requiere_cambio_password = FALSE, 
           token_version = token_version + 1, 
-          updated_at = CURRENT_TIMESTAMP
+          actualizado_en = CURRENT_TIMESTAMP
       WHERE id = $2
       RETURNING email;
     `;
@@ -498,9 +496,8 @@ export const forcePasswordChange = async (req, res) => {
     
     const rolQuery = await pool.query(`
        SELECT u.token_version, r.nombre AS rol
-       FROM seguridad.usuarios u
-       LEFT JOIN seguridad.usuario_roles ur ON u.id = ur.usuario_id
-       LEFT JOIN seguridad.roles r ON ur.rol_id = r.id
+       FROM seguridad.personas u
+       LEFT JOIN seguridad.roles r ON r.id = u.rol_id
        WHERE u.id = $1
     `, [userId]);
 
@@ -534,7 +531,7 @@ export const actualizarPin = async (req, res) => {
   try {
     const lookup = hashPin(String(nuevoPin));
     await pool.query(
-      `UPDATE seguridad.usuarios SET pin_lookup = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      `UPDATE seguridad.personas SET pin_lookup = $1, actualizado_en = CURRENT_TIMESTAMP WHERE id = $2`,
       [lookup, id]
     );
     return res.status(200).json({ message: "PIN actualizado correctamente." });
@@ -557,7 +554,7 @@ export const adminAsignarPinVendedor = async (req, res) => {
   try {
     const lookup = hashPin(String(nuevoPin));
     const { rowCount } = await pool.query(
-      `UPDATE seguridad.usuarios SET pin_lookup = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      `UPDATE seguridad.personas SET pin_lookup = $1, actualizado_en = CURRENT_TIMESTAMP WHERE id = $2`,
       [lookup, vendedorId]
     );
     if (rowCount === 0) return res.status(404).json({ message: "Vendedor no encontrado." });

@@ -61,9 +61,8 @@ export const loginAlexa = async (req, res) => {
     // Buscamos a la PERSONA dueña de ese PIN
     const result = await pool.query(
       `SELECT u.id, u.nombre, u.cuenta_activa, r.nombre AS rol
-       FROM seguridad.usuarios u
-       LEFT JOIN seguridad.usuario_roles ur ON ur.usuario_id = u.id
-       LEFT JOIN seguridad.roles r ON r.id = ur.rol_id
+       FROM seguridad.personas u
+       LEFT JOIN seguridad.roles r ON r.id = u.rol_id
        WHERE u.pin_lookup = $1
        LIMIT 1`,
       [lookup]

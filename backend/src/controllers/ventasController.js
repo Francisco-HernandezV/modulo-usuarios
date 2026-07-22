@@ -135,10 +135,12 @@ export const buscarClientePos = async (req, res) => {
     const { q } = req.query;
     if (!q) return res.json([]);
 
+    // Tras la unificación, los clientes viven en personas con es_cliente = TRUE
     const query = `
-      SELECT id, nombre, telefono, email, rfc 
-      FROM ventas.clientes
-      WHERE telefono ILIKE $1 OR nombre ILIKE $2 OR email ILIKE $3
+      SELECT id, nombre, telefono, email, rfc
+      FROM seguridad.personas
+      WHERE es_cliente = TRUE
+        AND (telefono ILIKE $1 OR nombre ILIKE $2 OR email ILIKE $3)
       LIMIT 10;
     `;
     const { rows } = await pool.query(query, [`%${q}%`, `%${q}%`, `%${q}%`]);
@@ -163,8 +165,8 @@ export const getHistorialVentas = async (req, res) => {
              c.nombre AS cliente_nombre, c.telefono AS cliente_tel,
              u.nombre AS vendedor_nombre
       FROM ventas.ventas v
-      LEFT JOIN ventas.clientes c ON v.cliente_id = c.id
-      JOIN seguridad.usuarios u ON v.usuario_id = u.id
+      LEFT JOIN seguridad.personas c ON v.cliente_id = c.id
+      JOIN seguridad.personas u ON v.usuario_id = u.id
     `;
     let params = [];
 
@@ -194,8 +196,8 @@ export const getDetalleTicket = async (req, res) => {
              u.nombre AS vendedor_nombre,
              p.metodo, p.monto AS monto_pagado
       FROM ventas.ventas v
-      LEFT JOIN ventas.clientes c ON v.cliente_id = c.id
-      JOIN seguridad.usuarios u ON v.usuario_id = u.id
+      LEFT JOIN seguridad.personas c ON v.cliente_id = c.id
+      JOIN seguridad.personas u ON v.usuario_id = u.id
       LEFT JOIN ventas.pagos p ON p.venta_id = v.id
       WHERE v.id = $1
     `;
@@ -239,8 +241,8 @@ export const generarTicketPDF = async (req, res) => {
     const ventaRes = await pool.query(`
       SELECT v.*, c.nombre as cliente_nombre, u.nombre as vendedor_nombre 
       FROM ventas.ventas v 
-      LEFT JOIN ventas.clientes c ON v.cliente_id = c.id 
-      JOIN seguridad.usuarios u ON v.usuario_id = u.id 
+      LEFT JOIN seguridad.personas c ON v.cliente_id = c.id 
+      JOIN seguridad.personas u ON v.usuario_id = u.id 
       WHERE v.id = $1`, [id]);
       
     const detalleRes = await pool.query(`

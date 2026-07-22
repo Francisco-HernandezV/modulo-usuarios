@@ -229,7 +229,7 @@ export const getBalanceActual = async (req, res) => {
     const { rows: retiros } = await pool.query(
       `SELECT r.id, r.monto, r.tipo_retiro, r.motivo, r.creado_en, u.nombre AS usuario_nombre
        FROM ventas.retiros_caja r
-       LEFT JOIN seguridad.usuarios u ON u.id = r.usuario_id
+       LEFT JOIN seguridad.personas u ON u.id = r.usuario_id
        WHERE r.turno_caja_id = $1 ORDER BY r.creado_en DESC`,
       [turno.id]
     );
@@ -329,8 +329,8 @@ export const generarCortePDF = async (req, res) => {
     const { rows } = await pool.query(
       `SELECT t.*, ua.nombre AS apertura_nombre, uc.nombre AS cierre_nombre
        FROM ventas.turnos_caja t
-       LEFT JOIN seguridad.usuarios ua ON ua.id = t.usuario_apertura_id
-       LEFT JOIN seguridad.usuarios uc ON uc.id = t.usuario_cierre_id
+       LEFT JOIN seguridad.personas ua ON ua.id = t.usuario_apertura_id
+       LEFT JOIN seguridad.personas uc ON uc.id = t.usuario_cierre_id
        WHERE t.id = $1`,
       [id]
     );

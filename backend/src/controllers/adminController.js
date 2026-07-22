@@ -408,9 +408,16 @@ export const deleteVariante = async (req, res) => {
 //  CLIENTES
 // ════════════════════════════════════════════════════════════
 
+// Columnas públicas de una persona-cliente. Nunca exponer password_hash / pin_lookup.
+const COLS_CLIENTE = "id, nombre, telefono, email, rfc, notas, creado_en";
+
 export const getClientes = async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM clientes ORDER BY nombre ASC");
+    const result = await pool.query(
+      `SELECT ${COLS_CLIENTE} FROM seguridad.personas
+        WHERE es_cliente = TRUE
+        ORDER BY nombre ASC`
+    );
     return res.json(result.rows);
   } catch (error) {
     console.error("getClientes:", error);
@@ -427,70 +434,58 @@ export const createCliente = async (req, res) => {
     const { nombre, telefono, email, rfc, notas } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
 
-    // 1. 🛡️ VALIDACIÓN PREVIA (Con privacidad estricta)
-    let queryVal = "";
-    let paramsVal = [];
-    
-    if (telefono && email) {
-        queryVal = "SELECT id FROM ventas.clientes WHERE telefono = $1 OR email = $2 LIMIT 1";
-        paramsVal = [telefono.trim(), email.trim()];
-    } else if (telefono) {
-        queryVal = "SELECT id FROM ventas.clientes WHERE telefono = $1 LIMIT 1";
-        paramsVal = [telefono.trim()];
-    } else if (email) {
-        queryVal = "SELECT id FROM ventas.clientes WHERE email = $1 LIMIT 1";
-        paramsVal = [email.trim()];
-    }
+    const tel = telefono?.trim() || null;
+    const mail = email?.trim() || null;
 
-    if (queryVal) {
-        const existeCliente = await pool.query(queryVal, paramsVal);
-        if (existeCliente.rows.length > 0) {
-            // ⚠️ CUMPLIENDO LA REGLA: Mensaje genérico, sin revelar datos del cliente
-            return res.status(400).json({ 
-                message: "No se puede registrar. Este cliente ya existe en el sistema." 
-            });
-        }
-    }
-
-    // 2. 🌟 MAGIA OMNICANAL INVERSA (De Tienda a Web)
-    let usuarioId = null;
-
-    if (telefono) {
-      const userRes = await pool.query(
-        "SELECT id FROM seguridad.usuarios WHERE telefono_contacto = $1 LIMIT 1",
-        [telefono.trim()]
+    // 1. ¿Ya existe esa persona? (misma búsqueda por teléfono o correo)
+    let existente = null;
+    if (tel || mail) {
+      const { rows } = await pool.query(
+        `SELECT id, es_cliente FROM seguridad.personas
+          WHERE ($1::text IS NOT NULL AND telefono = $1)
+             OR ($2::text IS NOT NULL AND LOWER(email) = LOWER($2))
+          LIMIT 1`,
+        [tel, mail]
       );
-      if (userRes.rows.length > 0) {
-        usuarioId = userRes.rows[0].id; // Se encontró su cuenta web por teléfono
-      }
+      existente = rows[0] || null;
     }
 
-    if (!usuarioId && email?.trim()) {
-      const userRes = await pool.query(
-        "SELECT id FROM seguridad.usuarios WHERE email = $1 LIMIT 1",
-        [email.trim()]
+    // 2. Si ya es cliente, es un duplicado (mensaje genérico, sin revelar datos)
+    if (existente?.es_cliente) {
+      return res.status(400).json({
+        message: "No se puede registrar. Este cliente ya existe en el sistema."
+      });
+    }
+
+    // 3. Omnicanal: si la persona existe pero aún no era cliente (p. ej. tenía
+    //    cuenta web o es empleado), la marcamos como cliente y conservamos su
+    //    historial en vez de duplicar la fila.
+    if (existente) {
+      const result = await pool.query(
+        `UPDATE seguridad.personas
+            SET es_cliente = TRUE,
+                nombre = $1,
+                telefono = COALESCE($2, telefono),
+                email = COALESCE($3, email),
+                rfc = COALESCE($4, rfc),
+                notas = COALESCE($5, notas),
+                actualizado_en = NOW()
+          WHERE id = $6
+          RETURNING ${COLS_CLIENTE}`,
+        [nombre.trim(), tel, mail, rfc || null, notas || null, existente.id]
       );
-      if (userRes.rows.length > 0) {
-        usuarioId = userRes.rows[0].id; // Se encontró su cuenta web por correo
-      }
+      return res.status(201).json(result.rows[0]);
     }
 
-    // 3. INSERCIÓN FINAL
-    // Si usuarioId es null, es un cliente exclusivo de tienda.
-    // Si usuarioId tiene un valor, se relacionan los registros de tienda y web.
+    // 4. Cliente de mostrador nuevo: sin campos de login
     const result = await pool.query(
-      `INSERT INTO ventas.clientes (nombre, telefono, email, rfc, notas, usuario_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [
-        nombre.trim(), 
-        telefono || null, 
-        email?.trim() || null, 
-        rfc || null, 
-        notas || null, 
-        usuarioId
-      ]
+      `INSERT INTO seguridad.personas
+         (nombre, telefono, email, rfc, notas, es_cliente, es_empleado, rol_id)
+       VALUES ($1, $2, $3, $4, $5, TRUE, FALSE, 4)
+       RETURNING ${COLS_CLIENTE}`,
+      [nombre.trim(), tel, mail, rfc || null, notas || null]
     );
-    
+
     return res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error("createCliente:", error);
@@ -505,9 +500,11 @@ export const updateCliente = async (req, res) => {
     if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
 
     const result = await pool.query(
-      `UPDATE clientes
-       SET nombre = $1, telefono = $2, email = $3, rfc = $4, notas = $5
-       WHERE id = $6 RETURNING *`,
+      `UPDATE seguridad.personas
+       SET nombre = $1, telefono = $2, email = $3, rfc = $4, notas = $5,
+           actualizado_en = NOW()
+       WHERE id = $6 AND es_cliente = TRUE
+       RETURNING ${COLS_CLIENTE}`,
       [nombre.trim(), telefono || null, email || null, rfc || null, notas || null, id]
     );
     return result.rows.length ? res.json(result.rows[0]) : res.status(404).json({ message: "No encontrado" });
@@ -518,9 +515,18 @@ export const updateCliente = async (req, res) => {
 
 export const deleteCliente = async (req, res) => {
   try {
-    const result = await pool.query("DELETE FROM clientes WHERE id = $1 RETURNING id", [req.params.id]);
+    // Baja lógica: ventas y apartados históricos referencian a esta persona,
+    // por eso nunca se borra la fila; solo deja de ser cliente.
+    const result = await pool.query(
+      `UPDATE seguridad.personas
+          SET es_cliente = FALSE, actualizado_en = NOW()
+        WHERE id = $1 AND es_cliente = TRUE
+        RETURNING id`,
+      [req.params.id]
+    );
     return result.rows.length ? res.json({ message: "Eliminado" }) : res.status(404).json({ message: "No encontrado" });
   } catch (error) {
+    console.error("deleteCliente:", error);
     return res.status(500).json({ message: "Error al eliminar cliente" });
   }
 };
@@ -613,29 +619,70 @@ export const createEmpleado = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Encriptar contraseña temporal
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password_temporal, salt);
+    const mail = email.trim();
+    const tel = telefono?.trim() || null;
 
-    // 2. Insertar en la tabla usuarios (Esquema seguridad)
-    const userQuery = `
-      INSERT INTO seguridad.usuarios (nombre, email, password_hash, telefono_contacto, cuenta_activa, email_verificado, requiere_cambio_password)
-      VALUES ($1, $2, $3, $4, $5, TRUE, TRUE)
-      RETURNING id;
-    `;
-    const userRes = await client.query(userQuery, [
-      nombre.trim(),
-      email.trim(),
-      hashedPassword,
-      telefono || null,
-      activo
-    ]);
-    
-    const nuevoUsuarioId = userRes.rows[0].id;
+    // 1. ¿La persona ya existe? (por correo o teléfono)
+    const { rows: encontradas } = await client.query(
+      `SELECT id, password_hash FROM seguridad.personas
+        WHERE LOWER(email) = LOWER($1)
+           OR ($2::text IS NOT NULL AND telefono = $2)
+        LIMIT 1`,
+      [mail, tel]
+    );
+    const existente = encontradas[0] || null;
 
-    // 3. Asignar el rol al empleado (Esquema seguridad)
-    const rolQuery = `INSERT INTO seguridad.usuario_roles (usuario_id, rol_id) VALUES ($1, $2)`;
-    await client.query(rolQuery, [nuevoUsuarioId, rol_id]);
+    let nuevoUsuarioId;
+
+    if (existente && existente.password_hash) {
+      // 2a. Ya tiene cuenta: NO se regenera su contraseña, solo se le da el rol
+      const upd = await client.query(
+        `UPDATE seguridad.personas
+            SET nombre = $1, email = $2, telefono = COALESCE($3, telefono),
+                es_empleado = TRUE, rol_id = $4, cuenta_activa = $5,
+                actualizado_en = NOW()
+          WHERE id = $6
+          RETURNING id`,
+        [nombre.trim(), mail, tel, rol_id, activo, existente.id]
+      );
+      nuevoUsuarioId = upd.rows[0].id;
+
+    } else if (existente) {
+      // 2b. Existía como cliente de mostrador (sin login): se le crean credenciales
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(password_temporal, salt);
+
+      const upd = await client.query(
+        `UPDATE seguridad.personas
+            SET nombre = $1, email = $2, telefono = COALESCE($3, telefono),
+                password_hash = $4, es_empleado = TRUE, rol_id = $5,
+                cuenta_activa = $6, email_verificado = TRUE,
+                requiere_cambio_password = TRUE, token_version = COALESCE(token_version, 0),
+                actualizado_en = NOW()
+          WHERE id = $7
+          RETURNING id`,
+        [nombre.trim(), mail, tel, hashedPassword, rol_id, activo, existente.id]
+      );
+      nuevoUsuarioId = upd.rows[0].id;
+
+    } else {
+      // 2c. Persona nueva
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(password_temporal, salt);
+
+      const userRes = await client.query(
+        `INSERT INTO seguridad.personas
+           (nombre, email, password_hash, telefono, cuenta_activa, email_verificado,
+            requiere_cambio_password, es_empleado, es_cliente, rol_id, token_version)
+         VALUES ($1, $2, $3, $4, $5, TRUE, TRUE, TRUE, FALSE, $6, 0)
+         RETURNING id`,
+        [nombre.trim(), mail, hashedPassword, tel, activo, rol_id]
+      );
+      nuevoUsuarioId = userRes.rows[0].id;
+    }
+
+    // 3. Departamentos: se reemplazan por los enviados
+    await client.query(`DELETE FROM seguridad.usuario_departamentos WHERE usuario_id = $1`, [nuevoUsuarioId]);
 
     // 4. Asignar departamentos (Tabla pivote en Esquema seguridad)
     if (Array.isArray(departamentos) && departamentos.length > 0) {
@@ -666,17 +713,18 @@ export const getEmpleados = async (req, res) => {
     // 🔥 MEJORA: Ahora traemos el rol_id y un arreglo JSON con los departamentos asignados
     // Esto es vital para poder rellenar el formulario al momento de Editar.
     const query = `
-      SELECT u.id, u.nombre, u.email, u.telefono_contacto, u.cuenta_activa, 
+      SELECT u.id, u.nombre, u.email,
+             u.telefono AS telefono_contacto,   -- se conserva el nombre del contrato de la API
+             u.cuenta_activa,
              r.id AS rol_id, r.nombre AS rol,
              COALESCE(
-               (SELECT json_agg(ud.departamento_id) 
-                FROM seguridad.usuario_departamentos ud 
+               (SELECT json_agg(ud.departamento_id)
+                FROM seguridad.usuario_departamentos ud
                 WHERE ud.usuario_id = u.id), '[]'::json
              ) AS departamentos
-      FROM seguridad.usuarios u
-      JOIN seguridad.usuario_roles ur ON u.id = ur.usuario_id
-      JOIN seguridad.roles r ON ur.rol_id = r.id
-      WHERE r.nombre != 'rol_cliente'
+      FROM seguridad.personas u
+      JOIN seguridad.roles r ON r.id = u.rol_id
+      WHERE u.es_empleado = TRUE AND r.nombre != 'rol_cliente'
       ORDER BY u.id DESC
     `;
     const { rows } = await pool.query(query);
@@ -700,16 +748,14 @@ export const updateEmpleado = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Actualizar datos básicos
+    // 1. Datos básicos y rol (el rol ahora vive en la misma fila)
     await client.query(
-      `UPDATE seguridad.usuarios 
-       SET nombre = $1, email = $2, telefono_contacto = $3, cuenta_activa = $4, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $5`,
-      [nombre.trim(), email.trim(), telefono || null, activo, id]
+      `UPDATE seguridad.personas
+       SET nombre = $1, email = $2, telefono = $3, cuenta_activa = $4,
+           rol_id = $5, es_empleado = TRUE, actualizado_en = CURRENT_TIMESTAMP
+       WHERE id = $6`,
+      [nombre.trim(), email.trim(), telefono || null, activo, rol_id, id]
     );
-
-    // 2. Actualizar el rol
-    await client.query(`UPDATE seguridad.usuario_roles SET rol_id = $1 WHERE usuario_id = $2`, [rol_id, id]);
 
     // 3. Recrear departamentos (Borramos los viejos y metemos los nuevos)
     await client.query(`DELETE FROM seguridad.usuario_departamentos WHERE usuario_id = $1`, [id]);
@@ -740,13 +786,23 @@ export const deleteEmpleado = async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // Eliminamos registros pivote por seguridad antes de borrar al usuario
+    // Baja LÓGICA: la fila se conserva porque ventas, turnos de caja y retiros
+    // históricos la referencian. Se le quitan accesos y vuelve a rol_cliente.
     await client.query(`DELETE FROM seguridad.usuario_departamentos WHERE usuario_id = $1`, [id]);
-    await client.query(`DELETE FROM seguridad.usuario_roles WHERE usuario_id = $1`, [id]);
     await client.query(`DELETE FROM seguridad.tokens WHERE usuario_id = $1`, [id]);
-    
-    const { rows } = await client.query(`DELETE FROM seguridad.usuarios WHERE id = $1 RETURNING id`, [id]);
-    
+
+    const { rows } = await client.query(
+      `UPDATE seguridad.personas
+          SET es_empleado = FALSE,
+              cuenta_activa = FALSE,
+              rol_id = 4,
+              token_version = COALESCE(token_version, 0) + 1,  -- invalida sesiones abiertas
+              actualizado_en = NOW()
+        WHERE id = $1 AND es_empleado = TRUE
+        RETURNING id`,
+      [id]
+    );
+
     if (rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: "Empleado no encontrado" });

@@ -366,8 +366,8 @@ export const getHistorialEntradas = async (req, res) => {
         (SELECT COUNT(*) FROM inventario.detalle_entrada de WHERE de.entrada_id = ei.id) AS total_renglones,
         (SELECT COALESCE(SUM(de.cantidad), 0) FROM inventario.detalle_entrada de WHERE de.entrada_id = ei.id) AS total_piezas
       FROM inventario.entradas_inventario ei
-      JOIN seguridad.usuarios u ON u.id = ei.usuario_id
-      LEFT JOIN seguridad.usuarios ua ON ua.id = ei.anulada_por
+      JOIN seguridad.personas u ON u.id = ei.usuario_id
+      LEFT JOIN seguridad.personas ua ON ua.id = ei.anulada_por
       ORDER BY ei.fecha_entrada DESC
       LIMIT 100;
     `;
@@ -392,8 +392,8 @@ export const getDetalleEntrada = async (req, res) => {
         u.nombre AS usuario_nombre,
         ua.nombre AS anulada_por_nombre
       FROM inventario.entradas_inventario ei
-      JOIN seguridad.usuarios u ON u.id = ei.usuario_id
-      LEFT JOIN seguridad.usuarios ua ON ua.id = ei.anulada_por
+      JOIN seguridad.personas u ON u.id = ei.usuario_id
+      LEFT JOIN seguridad.personas ua ON ua.id = ei.anulada_por
       WHERE ei.id = $1
     `, [id]);
 

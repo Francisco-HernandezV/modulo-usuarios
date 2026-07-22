@@ -26,7 +26,7 @@
 BEGIN;
 
 -- 1) Alinear las secuencias con el MAX(id) actual (evita choques de PK)
-SELECT setval(pg_get_serial_sequence('ventas.clientes','id'),          COALESCE((SELECT MAX(id) FROM ventas.clientes), 1));
+SELECT setval(pg_get_serial_sequence('seguridad.personas','id'),          COALESCE((SELECT MAX(id) FROM seguridad.personas), 1));
 SELECT setval(pg_get_serial_sequence('ventas.ventas','id'),            COALESCE((SELECT MAX(id) FROM ventas.ventas), 1));
 SELECT setval(pg_get_serial_sequence('ventas.detalle_venta','id'),     COALESCE((SELECT MAX(id) FROM ventas.detalle_venta), 1));
 SELECT setval(pg_get_serial_sequence('ventas.pagos','id'),             COALESCE((SELECT MAX(id) FROM ventas.pagos), 1));
@@ -71,8 +71,8 @@ DECLARE
   n_apartados   INT := 0;
 BEGIN
   -- Vendedor que "atiende" (id 6 = rol_vendedor). Cae a un admin si no existe.
-  SELECT id INTO v_vend FROM seguridad.usuarios WHERE id = 6;
-  IF v_vend IS NULL THEN SELECT MIN(id) INTO v_vend FROM seguridad.usuarios; END IF;
+  SELECT id INTO v_vend FROM seguridad.personas WHERE id = 6 AND es_empleado = TRUE;
+  IF v_vend IS NULL THEN SELECT MIN(id) INTO v_vend FROM seguridad.personas WHERE es_empleado = TRUE; END IF;
 
   -- Muestra de variantes disponibles (activas y con stock real)
   SELECT array_agg(id), array_agg(precio) INTO v_variantes, v_precios
@@ -88,14 +88,15 @@ BEGIN
 
   -- 2) Clientes sintéticos
   FOR v_i IN 1..array_length(v_nombres,1) LOOP
-    INSERT INTO ventas.clientes (nombre, telefono, email, rfc, notas, creado_en)
+    INSERT INTO seguridad.personas (nombre, telefono, email, rfc, notas, creado_en, es_cliente, es_empleado, rol_id)
     VALUES (
       v_nombres[v_i],
       lpad((floor(random()*9000000000)::bigint)::text, 10, '0'),
       'demo_seed_' || v_i || '_' || floor(random()*100000)::int || '@example.com',
       NULL,
       'SEED_DEMO_20260720',
-      now() - ((random()*40)::int || ' days')::interval
+      now() - ((random()*40)::int || ' days')::interval,
+      TRUE, FALSE, 4   -- cliente de mostrador: sin credenciales de acceso
     )
     RETURNING id INTO v_cid;
     v_clientes := array_append(v_clientes, v_cid);
@@ -227,18 +228,18 @@ COMMIT;
 --  Descomenta y ejecuta si necesitas limpiar.
 -- ----------------------------------------------------------------------------
 -- BEGIN;
--- WITH cli AS (SELECT id FROM ventas.clientes WHERE notas = 'SEED_DEMO_20260720')
+-- WITH cli AS (SELECT id FROM seguridad.personas WHERE notas = 'SEED_DEMO_20260720')
 -- DELETE FROM ventas.abonos          WHERE apartado_id IN (SELECT id FROM ventas.apartados WHERE cliente_id IN (SELECT id FROM cli));
--- WITH cli AS (SELECT id FROM ventas.clientes WHERE notas = 'SEED_DEMO_20260720')
+-- WITH cli AS (SELECT id FROM seguridad.personas WHERE notas = 'SEED_DEMO_20260720')
 -- DELETE FROM ventas.detalle_apartado WHERE apartado_id IN (SELECT id FROM ventas.apartados WHERE cliente_id IN (SELECT id FROM cli));
--- WITH cli AS (SELECT id FROM ventas.clientes WHERE notas = 'SEED_DEMO_20260720')
+-- WITH cli AS (SELECT id FROM seguridad.personas WHERE notas = 'SEED_DEMO_20260720')
 -- DELETE FROM ventas.apartados       WHERE cliente_id IN (SELECT id FROM cli);
--- WITH cli AS (SELECT id FROM ventas.clientes WHERE notas = 'SEED_DEMO_20260720')
+-- WITH cli AS (SELECT id FROM seguridad.personas WHERE notas = 'SEED_DEMO_20260720')
 -- DELETE FROM ventas.pagos           WHERE venta_id IN (SELECT id FROM ventas.ventas WHERE cliente_id IN (SELECT id FROM cli));
--- WITH cli AS (SELECT id FROM ventas.clientes WHERE notas = 'SEED_DEMO_20260720')
+-- WITH cli AS (SELECT id FROM seguridad.personas WHERE notas = 'SEED_DEMO_20260720')
 -- DELETE FROM ventas.detalle_venta   WHERE venta_id IN (SELECT id FROM ventas.ventas WHERE cliente_id IN (SELECT id FROM cli));
--- WITH cli AS (SELECT id FROM ventas.clientes WHERE notas = 'SEED_DEMO_20260720')
+-- WITH cli AS (SELECT id FROM seguridad.personas WHERE notas = 'SEED_DEMO_20260720')
 -- DELETE FROM ventas.ventas          WHERE cliente_id IN (SELECT id FROM cli);
--- DELETE FROM ventas.clientes        WHERE notas = 'SEED_DEMO_20260720';
+-- DELETE FROM seguridad.personas        WHERE notas = 'SEED_DEMO_20260720';
 -- COMMIT;
 -- ============================================================================
