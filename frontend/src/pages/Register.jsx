@@ -8,7 +8,8 @@ function Register() {
     nombre: "",
     email: "",
     password: "",
-    telefono_contacto: "", 
+    telefono_contacto: "",
+    fecha_nacimiento: "",
   });
   
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +31,7 @@ function Register() {
     try {
       await api.post("/users/register", form);
       setMensaje("✅ Registro exitoso. Revisa tu correo para activar la cuenta.");
-      setForm({ nombre: "", email: "", password: "", telefono_contacto: "" });
+      setForm({ nombre: "", email: "", password: "", telefono_contacto: "", fecha_nacimiento: "" });
     } catch (error) {
       if (error.response?.data?.errors) {
         const erroresBackend = {};
@@ -94,6 +95,24 @@ function Register() {
             style={errores.telefono_contacto ? { borderColor: "red", marginBottom: "5px" } : {}}
           />
           {errores.telefono_contacto && <small style={{ color: "red", display: "block", textAlign: "left" }}>{errores.telefono_contacto}</small>}
+        </div>
+
+        {/* FECHA DE NACIMIENTO (obligatoria en el registro web) */}
+        <div style={{ marginBottom: "15px" }}>
+          <label htmlFor="fecha_nacimiento" style={{ display: "block", textAlign: "left", fontSize: "12px", color: "var(--text-muted)", marginBottom: "6px" }}>
+            Fecha de nacimiento *
+          </label>
+          <input
+            id="fecha_nacimiento"
+            type="date"
+            name="fecha_nacimiento"
+            required
+            max={new Date().toISOString().slice(0, 10)}
+            value={form.fecha_nacimiento}
+            onChange={handleChange}
+            style={errores.fecha_nacimiento ? { borderColor: "red", marginBottom: "5px" } : {}}
+          />
+          {errores.fecha_nacimiento && <small style={{ color: "red", display: "block", textAlign: "left" }}>{errores.fecha_nacimiento}</small>}
         </div>
 
         {/* PASSWORD CON OJITO */}

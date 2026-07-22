@@ -8,7 +8,7 @@ const IconEdit   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="n
 const IconTrash = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconPlus  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
-const EMPTY_FORM = { nombre: "", telefono: "", email: "", rfc: "", notas: "" };
+const EMPTY_FORM = { nombre: "", telefono: "", email: "", rfc: "", notas: "", fecha_nacimiento: "" };
 const COLORS = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444","#06b6d4"];
 
 const colorFor   = (id) => COLORS[id % COLORS.length];
@@ -75,6 +75,7 @@ export default function AdminClientes() {
       telefono: c.telefono || "",
       email:    c.email    || "",
       rfc:      c.rfc      || "",
+      fecha_nacimiento: c.fecha_nacimiento ? String(c.fecha_nacimiento).slice(0, 10) : "",
       notas:    c.notas    || "",
     });
     setErrors({});
@@ -240,9 +241,18 @@ export default function AdminClientes() {
                   <input id="cli_email" type="email" className="adm-input" value={form.email} onChange={e => handleChange("email", e.target.value)} />
                 </div>
               </div>
-              <div className="adm-form-group">
-                <label htmlFor="cli_rfc">RFC</label>
-                <input id="cli_rfc" className="adm-input" value={form.rfc} onChange={e => handleChange("rfc", e.target.value.toUpperCase())} maxLength={13} />
+              <div className="adm-form-row">
+                <div className="adm-form-group">
+                  <label htmlFor="cli_rfc">RFC (opcional)</label>
+                  <input id="cli_rfc" className="adm-input" value={form.rfc} onChange={e => handleChange("rfc", e.target.value.toUpperCase())} maxLength={13} />
+                </div>
+                <div className="adm-form-group">
+                  <label htmlFor="cli_nacimiento">Fecha de nacimiento (opcional)</label>
+                  <input id="cli_nacimiento" type="date" className="adm-input"
+                    max={new Date().toISOString().slice(0, 10)}
+                    value={form.fecha_nacimiento}
+                    onChange={e => handleChange("fecha_nacimiento", e.target.value)} />
+                </div>
               </div>
               <div className="adm-form-group">
                 <label htmlFor="cli_notas">Notas</label>

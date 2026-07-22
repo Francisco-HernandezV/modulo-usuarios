@@ -35,13 +35,16 @@ export const registrarUsuario = async (req, res) => {
   const client = await pool.connect(); // Usamos client para manejar la transacción
 
   try {
-    const { nombre, email, password, telefono_contacto } = req.body;
+    // En el registro web la fecha de nacimiento es obligatoria (la valida
+    // registerValidator). El RFC no se pide aquí, solo en el alta desde el POS.
+    const { nombre, email, password, telefono_contacto, fecha_nacimiento } = req.body;
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     await client.query('BEGIN');
 
     const mail = email.trim();
     const tel = telefono_contacto?.trim() || null;
+    const nacimiento = fecha_nacimiento?.trim() || null;
 
     // 1. 🌟 OMNICANAL: ¿ya existe esa persona? (por correo o teléfono)
     const { rows: encontradas } = await client.query(
@@ -69,26 +72,27 @@ export const registrarUsuario = async (req, res) => {
             SET nombre = $1,
                 email = COALESCE(email, $2),
                 telefono = COALESCE(telefono, $3),
-                password_hash = $4,
+                fecha_nacimiento = COALESCE($4::date, fecha_nacimiento),
+                password_hash = $5,
                 es_cliente = TRUE,
                 cuenta_activa = FALSE,
                 email_verificado = FALSE,
                 token_version = COALESCE(token_version, 0),
                 actualizado_en = NOW()
-          WHERE id = $5
+          WHERE id = $6
           RETURNING id`,
-        [nombre.trim(), mail, tel, hashedPassword, existente.id]
+        [nombre.trim(), mail, tel, nacimiento, hashedPassword, existente.id]
       );
       userId = upd.rows[0].id;
     } else {
       // 3b. Persona nueva con cuenta web
       const userResult = await client.query(
         `INSERT INTO seguridad.personas
-           (nombre, email, password_hash, telefono, cuenta_activa, email_verificado,
-            es_cliente, es_empleado, rol_id, token_version)
-         VALUES ($1, $2, $3, $4, FALSE, FALSE, TRUE, FALSE, 4, 0)
+           (nombre, email, password_hash, telefono, fecha_nacimiento, cuenta_activa,
+            email_verificado, es_cliente, es_empleado, rol_id, token_version)
+         VALUES ($1, $2, $3, $4, $5, FALSE, FALSE, TRUE, FALSE, 4, 0)
          RETURNING id`,
-        [nombre.trim(), mail, hashedPassword, tel]
+        [nombre.trim(), mail, hashedPassword, tel, nacimiento]
       );
       userId = userResult.rows[0].id;
     }

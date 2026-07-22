@@ -36,7 +36,20 @@ export const registerValidator = [
     .optional({ checkFalsy: true })
     .matches(/^\d{10}$/)
     .withMessage("El teléfono debe contener exactamente 10 dígitos numéricos"),
-    
+
+  // 🎂 En el registro web la fecha de nacimiento SÍ es obligatoria
+  body("fecha_nacimiento")
+    .trim()
+    .notEmpty().withMessage("La fecha de nacimiento es obligatoria")
+    .isISO8601().withMessage("La fecha de nacimiento no es válida")
+    .custom((valor) => {
+      const fecha = new Date(valor);
+      const hoy = new Date();
+      if (fecha > hoy) throw new Error("La fecha de nacimiento no puede ser futura");
+      if (fecha.getFullYear() < 1900) throw new Error("Revisa la fecha de nacimiento");
+      return true;
+    }),
+
   handleValidationErrors
 ];
 

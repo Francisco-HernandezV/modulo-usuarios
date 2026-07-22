@@ -409,7 +409,7 @@ export const deleteVariante = async (req, res) => {
 // ════════════════════════════════════════════════════════════
 
 // Columnas públicas de una persona-cliente. Nunca exponer password_hash / pin_lookup.
-const COLS_CLIENTE = "id, nombre, telefono, email, rfc, notas, creado_en";
+const COLS_CLIENTE = "id, nombre, telefono, email, rfc, fecha_nacimiento, notas, creado_en";
 
 export const getClientes = async (req, res) => {
   try {
@@ -431,11 +431,13 @@ export const getClientes = async (req, res) => {
 
 export const createCliente = async (req, res) => {
   try {
-    const { nombre, telefono, email, rfc, notas } = req.body;
+    // En el POS, tanto el RFC como la fecha de nacimiento son OPCIONALES
+    const { nombre, telefono, email, rfc, notas, fecha_nacimiento } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
 
     const tel = telefono?.trim() || null;
     const mail = email?.trim() || null;
+    const nacimiento = fecha_nacimiento?.trim() || null;
 
     // 1. ¿Ya existe esa persona? (misma búsqueda por teléfono o correo)
     let existente = null;
@@ -469,10 +471,11 @@ export const createCliente = async (req, res) => {
                 email = COALESCE($3, email),
                 rfc = COALESCE($4, rfc),
                 notas = COALESCE($5, notas),
+                fecha_nacimiento = COALESCE($6::date, fecha_nacimiento),
                 actualizado_en = NOW()
-          WHERE id = $6
+          WHERE id = $7
           RETURNING ${COLS_CLIENTE}`,
-        [nombre.trim(), tel, mail, rfc || null, notas || null, existente.id]
+        [nombre.trim(), tel, mail, rfc || null, notas || null, nacimiento, existente.id]
       );
       return res.status(201).json(result.rows[0]);
     }
@@ -480,10 +483,10 @@ export const createCliente = async (req, res) => {
     // 4. Cliente de mostrador nuevo: sin campos de login
     const result = await pool.query(
       `INSERT INTO seguridad.personas
-         (nombre, telefono, email, rfc, notas, es_cliente, es_empleado, rol_id)
-       VALUES ($1, $2, $3, $4, $5, TRUE, FALSE, 4)
+         (nombre, telefono, email, rfc, notas, fecha_nacimiento, es_cliente, es_empleado, rol_id)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE, FALSE, 4)
        RETURNING ${COLS_CLIENTE}`,
-      [nombre.trim(), tel, mail, rfc || null, notas || null]
+      [nombre.trim(), tel, mail, rfc || null, notas || null, nacimiento]
     );
 
     return res.status(201).json(result.rows[0]);
@@ -496,16 +499,17 @@ export const createCliente = async (req, res) => {
 export const updateCliente = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, telefono, email, rfc, notas } = req.body;
+    const { nombre, telefono, email, rfc, notas, fecha_nacimiento } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ message: "El nombre es obligatorio" });
 
     const result = await pool.query(
       `UPDATE seguridad.personas
        SET nombre = $1, telefono = $2, email = $3, rfc = $4, notas = $5,
-           actualizado_en = NOW()
-       WHERE id = $6 AND es_cliente = TRUE
+           fecha_nacimiento = $6::date, actualizado_en = NOW()
+       WHERE id = $7 AND es_cliente = TRUE
        RETURNING ${COLS_CLIENTE}`,
-      [nombre.trim(), telefono || null, email || null, rfc || null, notas || null, id]
+      [nombre.trim(), telefono || null, email || null, rfc || null, notas || null,
+       fecha_nacimiento?.trim() || null, id]
     );
     return result.rows.length ? res.json(result.rows[0]) : res.status(404).json({ message: "No encontrado" });
   } catch (error) {
