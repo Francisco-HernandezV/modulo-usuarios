@@ -10,6 +10,7 @@ import ventasRoutes from "./routes/ventasRoutes.js";
 import inventarioRoutes from "./routes/inventarioRoutes.js";
 import { raspProtection } from "./middlewares/rasp.js";
 import alexaRoutes from "./routes/alexaRoutes.js";
+import mlRoutes from "./routes/mlRoutes.js";
 const app = express();
 
 app.set("trust proxy", 1);
@@ -37,6 +38,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ventas", ventasRoutes);
 app.use("/api/inventario", inventarioRoutes);
+app.use("/api/ml", mlRoutes);
 app.use("/api/alexa", alexaRoutes);
 
 const PORT = process.env.PORT || 4000;
