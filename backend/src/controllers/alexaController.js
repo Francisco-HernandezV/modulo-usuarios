@@ -1,9 +1,38 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { hashPin } from "../services/tokenService.js"; // ⬅️ agrega este import arriba
+import { hashPin } from "../services/tokenService.js";
 
 const ALEXA_TOKEN_EXP_HOURS = 8;
+
+// Query base del inventario (compartido por el endpoint autenticado y el público)
+const QUERY_INVENTARIO = `
+  SELECT vp.id, vp.sku, vp.stock, vp.stock_apartado, vp.precio, vp.activo,
+         p.nombre AS producto_nombre, p.activo AS producto_activo,
+         c.nombre AS categoria_nombre,
+         m.nombre AS marca_nombre,
+         t.valor AS talla,
+         col.nombre AS color,
+         p.id AS producto_id,
+         -- Foto: primero la de la variante (si el color tiene la suya),
+         -- si no, la portada del producto. NULL si aun no sube ninguna.
+         COALESCE(
+           (SELECT ip.url FROM inventario.imagenes_producto ip
+             WHERE ip.variante_id = vp.id
+             ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1),
+           (SELECT ip.url FROM inventario.imagenes_producto ip
+             WHERE ip.producto_id = p.id
+             ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1)
+         ) AS imagen
+  FROM inventario.variantes_producto vp
+  JOIN inventario.productos p ON p.id = vp.producto_id
+  LEFT JOIN catalogo.categorias c ON c.id = p.categoria_id
+  LEFT JOIN catalogo.marcas m ON m.id = p.marca_id
+  JOIN catalogo.tallas t ON t.id = vp.talla_id
+  JOIN catalogo.colores col ON col.id = vp.color_id
+  WHERE vp.activo = TRUE AND p.activo = TRUE
+  ORDER BY p.nombre ASC
+`;
 
 // ════════════════════════════════════════════════════════════
 //  MIDDLEWARE: valida secret compartido de la skill
@@ -96,7 +125,7 @@ export const loginAlexa = async (req, res) => {
 
     return res.json({
       token,
-      usuario: { nombre: usuario.nombre, rol: usuario.rol || 'rol_cliente' }, // ⬅️ ahora el nombre REAL
+      usuario: { nombre: usuario.nombre, rol: usuario.rol || 'rol_cliente' },
       expira_en_horas: ALEXA_TOKEN_EXP_HOURS
     });
   } catch (error) {
@@ -104,43 +133,40 @@ export const loginAlexa = async (req, res) => {
     return res.status(500).json({ message: "Error interno" });
   }
 };
+
 // ════════════════════════════════════════════════════════════
 //  GET /api/alexa/inventario  → mismo query, con JWT
 // ════════════════════════════════════════════════════════════
 export const getInventarioAutenticado = async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT vp.id, vp.sku, vp.stock, vp.stock_apartado, vp.precio, vp.activo,
-             p.nombre AS producto_nombre, p.activo AS producto_activo,
-             c.nombre AS categoria_nombre,
-             m.nombre AS marca_nombre,
-             t.valor AS talla,
-             col.nombre AS color,
-             p.id AS producto_id,
-             -- Foto: primero la de la variante (si el color tiene la suya),
-             -- si no, la portada del producto. NULL si aun no sube ninguna.
-             COALESCE(
-               (SELECT ip.url FROM inventario.imagenes_producto ip
-                 WHERE ip.variante_id = vp.id
-                 ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1),
-               (SELECT ip.url FROM inventario.imagenes_producto ip
-                 WHERE ip.producto_id = p.id
-                 ORDER BY ip.principal DESC, ip.orden ASC, ip.id ASC LIMIT 1)
-             ) AS imagen
-      FROM inventario.variantes_producto vp
-      JOIN inventario.productos p ON p.id = vp.producto_id
-      LEFT JOIN catalogo.categorias c ON c.id = p.categoria_id
-      LEFT JOIN catalogo.marcas m ON m.id = p.marca_id
-      JOIN catalogo.tallas t ON t.id = vp.talla_id
-      JOIN catalogo.colores col ON col.id = vp.color_id
-      WHERE vp.activo = TRUE AND p.activo = TRUE
-      ORDER BY p.nombre ASC
-    `);
+    const result = await pool.query(QUERY_INVENTARIO);
     return res.json(result.rows);
   } catch (error) {
     console.error("Error getInventarioAutenticado:", error);
     return res.status(500).json({ message: "Error al obtener inventario" });
   }
+};
+
+// ════════════════════════════════════════════════════════════
+//  GET /api/alexa/catalogo  → catálogo PÚBLICO (modo invitado)
+//  Solo requiere el secret de la skill, sin JWT. Es la misma
+//  información que ya es visible en el catálogo web público.
+// ════════════════════════════════════════════════════════════
+export const getCatalogoPublico = async (req, res) => {
+  try {
+    const result = await pool.query(QUERY_INVENTARIO);
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("Error getCatalogoPublico:", error);
+    return res.status(500).json({ message: "Error al obtener catálogo" });
+  }
+};
+
+// ════════════════════════════════════════════════════════════
+//  GET /api/alexa/health  → keep-alive para que Render no duerma
+// ════════════════════════════════════════════════════════════
+export const healthCheck = (req, res) => {
+  return res.json({ ok: true, ts: Date.now() });
 };
 
 // ════════════════════════════════════════════════════════════
