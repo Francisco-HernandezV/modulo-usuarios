@@ -4,6 +4,8 @@ import AdminLayout from "../../components/AdminLayout";
 import VendedorLayout from "../../components/VendedorLayout";
 import api from "../../services/api";
 import { useConfig } from "../../context/ConfigContext";
+import RiesgoApartado from "../../components/RiesgoApartado";
+import SegmentoCliente from "../../components/SegmentoCliente";
 
 const IconTrash = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
@@ -67,7 +69,7 @@ export default function POS() {
     }
   };
 
-// Búsqueda de productos
+  // Búsqueda de productos
   useEffect(() => {
     const delay = setTimeout(async () => {
       if (busqueda.trim().length > 1) {
@@ -204,7 +206,6 @@ export default function POS() {
         
         {/* PANEL IZQUIERDO: BÚSQUEDA */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", overflow: "hidden" }}>
-          {/* 🔥 Corrección de Layout: display block para usar todo el ancho */}
           <div className="adm-stat-card" style={{ padding: "16px", display: "block" }}>
             <input className="adm-input" placeholder="Buscar producto por nombre o SKU..." value={busqueda} onChange={e => setBusqueda(e.target.value)} autoFocus />
           </div>
@@ -251,7 +252,6 @@ export default function POS() {
         </div>
 
         {/* PANEL DERECHO: TICKET */}
-        {/* 🔥 Corrección de Layout: alignItems stretch obliga a usar todo el ancho */}
         <div className="adm-stat-card" style={{ padding: 0, flexDirection: "column", borderLeft: `4px solid ${modo === "apartado" ? "var(--color-yellow)" : "var(--color-accent)"}`, overflow: "hidden", alignItems: "stretch" }}>
 
           {/* Selector de modo: Venta directa o Apartado */}
@@ -277,9 +277,13 @@ export default function POS() {
           </div>
 
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #30363d", background: "rgba(255,255,255,0.02)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <span style={{ fontSize: "11px", color: "#8b949e", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "2px" }}>Cliente Asignado</span>
               <span style={{ fontWeight: "bold", fontSize: "15px", color: "white" }}>{cliente ? cliente.nombre : "Público General"}</span>
+              
+              {/* COMPONENTE ML: Muestra si el cliente es VIP, Frecuente, etc. */}
+              {cliente && <SegmentoCliente clienteId={cliente.id} />}
+              
             </div>
             <button className="adm-btn-sm adm-btn-ghost" style={{ border: "1px solid #4b5563" }} onClick={() => setShowClientes(true)}>
               {cliente ? "Cambiar" : "Asignar"}
@@ -300,7 +304,6 @@ export default function POS() {
                       <div style={{ fontSize: "14px", fontWeight: "bold", color: "white", lineHeight: 1.3 }}>{item.producto_nombre}</div>
                       <div style={{ fontSize: "12px", color: "#8b949e", marginTop: "4px" }}>Talla: {item.talla} | Color: {item.color}</div>
                     </div>
-                    {/* 🔥 Botón de basura con tamaño fijo */}
                     <button 
                       onClick={() => eliminarDelCarrito(item.variante_id)} 
                       title="Quitar producto"
@@ -338,7 +341,6 @@ export default function POS() {
             )}
           </div>
 
-          {/* 🔥 Total y botón a pantalla completa horizontalmente */}
           <div style={{ padding: "24px", background: "var(--bg-card, #161b22)", borderTop: "1px solid var(--border-color, #30363d)", flexShrink: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px" }}>
               <span style={{ fontSize: "16px", fontWeight: "bold", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "1px" }}>TOTAL</span>
@@ -494,6 +496,17 @@ export default function POS() {
                   ${Math.max(0, total - (Number(anticipo) || 0)).toFixed(2)}
                 </span>
               </div>
+
+              {/* COMPONENTE ML: Barra de probabilidad de cancelación */}
+              <div style={{ marginTop: "20px" }}>
+                <RiesgoApartado
+                  clienteId={cliente?.id}
+                  total={total}
+                  anticipo={Number(anticipo) || 0}
+                  diasDePlazo={diasApartado}
+                />
+              </div>
+
             </div>
             <div className="adm-modal-footer">
               <button className="adm-btn adm-btn-ghost" onClick={() => setShowApartado(false)}>Cancelar</button>
