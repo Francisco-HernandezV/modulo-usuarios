@@ -53,11 +53,12 @@ function Navbar() {
     <>
       <header className="header">
         <Link to="/" className="logo" aria-label="Inicio">
-          {config?.logo ? (
-            <img src={config.logo} alt={config.nombre_tienda || "DAN ELEMENT"} className="logo-img" />
-          ) : (
-            config?.nombre_tienda || "DAN ELEMENT"
+          {config?.logo && (
+            <span className="logo-badge">
+              <img src={config.logo} alt="" className="logo-img" />
+            </span>
           )}
+          <span className="logo-text">{config?.nombre_tienda || "DAN ELEMENT"}</span>
         </Link>
         <div className="search-wrapper">
           <label htmlFor="navbar-search" className="sr-only" style={{display: 'none'}}>Buscar</label>

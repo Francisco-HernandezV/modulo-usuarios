@@ -41,7 +41,14 @@ function ProductDetails() {
     justifyContent: "center", backgroundColor: "#0f1115", color: "white",
   };
 
-  if (loading) return <div style={estadoStyle}>Cargando detalles...</div>;
+  if (loading) return (
+    <div style={estadoStyle}>
+      <div className="state-block">
+        <div className="spinner"></div>
+        <h3>Cargando detalles...</h3>
+      </div>
+    </div>
+  );
   if (!product) return <div className="not-found" style={estadoStyle}>Producto no encontrado</div>;
 
   const imagenes = product.imagenes || [];
@@ -57,31 +64,30 @@ function ProductDetails() {
         />
 
         <div className="details-card">
-          <div className="details-image-container">
-            <img
-              src={principal ? cldUrl(principal, "w_900") : PLACEHOLDER}
-              className="details-main-img"
-              alt={product.nombre}
-            />
+          {/* ── GALERÍA ── */}
+          <div className="details-gallery">
+            <div className="details-image-container">
+              <img
+                src={principal ? cldUrl(principal, "w_1000") : PLACEHOLDER}
+                className="details-main-img"
+                alt={product.nombre}
+              />
+            </div>
 
             {/* Miniaturas: solo aparecen si hay más de una foto */}
             {imagenes.length > 1 && (
-              <div style={{ display: "flex", gap: "10px", marginTop: "14px", flexWrap: "wrap" }}>
+              <div className="details-thumbs">
                 {imagenes.map((img, idx) => (
                   <button
                     key={img.id}
                     type="button"
+                    className={`details-thumb ${idx === imagenActiva ? "active" : ""}`}
                     onClick={() => setImagenActiva(idx)}
-                    style={{
-                      padding: 0, borderRadius: "8px", overflow: "hidden", cursor: "pointer",
-                      border: `2px solid ${idx === imagenActiva ? "#3b82f6" : "#30363d"}`,
-                      background: "transparent", lineHeight: 0,
-                    }}
+                    aria-label={`Ver imagen ${idx + 1}`}
                   >
                     <img
                       src={cldUrl(img.url, "w_160,h_160,c_fill")}
                       alt={`${product.nombre} vista ${idx + 1}`}
-                      style={{ width: "64px", height: "64px", objectFit: "cover", display: "block" }}
                       loading="lazy"
                     />
                   </button>
@@ -90,18 +96,27 @@ function ProductDetails() {
             )}
           </div>
 
+          {/* ── INFORMACIÓN ── */}
           <div className="details-content">
             <div className="details-header-row">
               <div className="details-text">
                 <span className="details-category">{product.categoria_display}</span>
                 <h1>{product.nombre}</h1>
+
+                {(product.marca_nombre || product.departamento_nombre) && (
+                  <div className="details-meta">
+                    {product.marca_nombre && <span className="details-chip">{product.marca_nombre}</span>}
+                    {product.departamento_nombre && <span className="details-chip">{product.departamento_nombre}</span>}
+                  </div>
+                )}
+
                 <div className="details-price">${product.precio}</div>
                 <p className="details-description">
                   {product.descripcion || "Este producto no cuenta con descripción detallada en este momento."}
                 </p>
               </div>
               <div className="details-qr">
-                <img src={qrImage} alt="QR Code" />
+                <img src={qrImage} alt="Código QR del producto" />
                 <span>Escanear</span>
               </div>
             </div>
