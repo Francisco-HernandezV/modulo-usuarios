@@ -71,6 +71,8 @@ function ProductDetails() {
                 src={principal ? cldUrl(principal, "w_1000") : PLACEHOLDER}
                 className="details-main-img"
                 alt={product.nombre}
+                width="1000"
+                height="1000"
               />
             </div>
 
@@ -88,6 +90,8 @@ function ProductDetails() {
                     <img
                       src={cldUrl(img.url, "w_160,h_160,c_fill")}
                       alt={`${product.nombre} vista ${idx + 1}`}
+                      width="160"
+                      height="160"
                       loading="lazy"
                     />
                   </button>
@@ -116,7 +120,7 @@ function ProductDetails() {
                 </p>
               </div>
               <div className="details-qr">
-                <img src={qrImage} alt="Código QR del producto" />
+                <img src={qrImage} alt="Código QR del producto" width="92" height="92" loading="lazy" />
                 <span>Escanear</span>
               </div>
             </div>

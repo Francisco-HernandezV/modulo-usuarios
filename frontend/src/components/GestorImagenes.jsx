@@ -192,6 +192,9 @@ export default function GestorImagenes({ productoId, onCambio }) {
                 <img
                   src={cldUrl(img.url, "w_300,h_300,c_fill")}
                   alt="Foto del producto"
+                  width="300"
+                  height="300"
+                  loading="lazy"
                   style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }}
                 />
 

@@ -2,7 +2,9 @@
 /* --- HERO SECTION --- */
 .hero {
   position: relative;
-  background-image: url('https://images.unsplash.com/photo-1523398002811-999ca8dec234?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+  /* auto=format sirve webp/avif según el navegador; w/q reducidos para bajar el
+     peso del LCP (la imagen de fondo suele ser el elemento LCP del Home). */
+  background-image: url('https://images.unsplash.com/photo-1523398002811-999ca8dec234?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=70');
   background-size: cover;
   background-position: center;
   height: 400px;

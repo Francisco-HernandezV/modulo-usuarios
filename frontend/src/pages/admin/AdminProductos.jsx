@@ -181,6 +181,9 @@ export default function AdminProductos() {
                         <img
                           src={p.imagen ? cldUrl(p.imagen, "w_120,h_120,c_fill") : PLACEHOLDER}
                           alt={p.nombre}
+                          width="48"
+                          height="48"
+                          loading="lazy"
                           style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "8px", border: "1px solid #374151", display: "block" }}
                         />
                       </td>
