@@ -44,6 +44,19 @@ a { text-decoration: none; color: inherit; }
 ul { list-style: none; padding: 0; margin: 0; }
 
 /* =========================================
+   0. SALVAGUARDAS RESPONSIVE GLOBALES
+   ========================================= */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Evita cualquier scroll horizontal accidental en cualquier resolución.
+   Se aplica en <html> para no interferir con el header sticky. */
+html { overflow-x: hidden; }
+body { max-width: 100%; }
+
+/* Todo elemento multimedia se adapta al ancho de su contenedor por defecto. */
+img, svg, video, canvas { max-width: 100%; }
+
+/* =========================================
    2. ESTILOS DE FORMULARIOS (LOGIN, REGISTER, ETC)
    ========================================= */
 .form-container {
@@ -454,6 +467,21 @@ button:active { transform: translateY(0); }
 .nav-bar a:hover, .nav-bar a.active { color: var(--text-main); }
 .sale-link { color: var(--color-yellow) !important; font-weight: 700; }
 
+/* Botón hamburguesa: oculto en escritorio, visible en móvil (ver media query).
+   Anula el `button { width:100% }` global de este archivo. */
+.nav-toggle {
+  display: none;
+  width: auto;
+  background: none;
+  border: none;
+  padding: 6px;
+  color: var(--text-main);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+.nav-toggle:hover { background: none; color: var(--color-accent); transform: none; box-shadow: none; }
+
 /* =========================================
    4. FOOTER (GLOBAL)
    ========================================= */
@@ -572,12 +600,46 @@ button:active { transform: translateY(0); }
 /* =========================================
    MEDIA QUERIES (RESPONSIVE)
    ========================================= */
-@media (max-width: 600px) {
-  .header { flex-direction: column; gap: 15px; }
-  .search-wrapper { width: 100%; order: 3; }
-  .actions { position: absolute; top: 20px; right: 20px; }
-  .nav-bar { overflow-x: auto; justify-content: flex-start; padding-left: 20px; }
-  .footer-content { grid-template-columns: 1fr; text-align: center; }
+/* ── TABLET Y MÓVIL: header con menú hamburguesa (< 768px) ── */
+@media (max-width: 768px) {
+  .header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 4%;
+  }
+  .logo-text { font-size: 20px; }
+
+  /* La búsqueda pasa a una fila propia, a todo el ancho */
+  .search-wrapper { width: 100%; max-width: none; order: 3; }
+  .actions { order: 2; margin-left: auto; gap: 16px; }
+
+  /* Se muestra el botón hamburguesa */
+  .nav-toggle { display: inline-flex; }
+
+  /* La navegación secundaria colapsa: oculta salvo cuando se abre el menú */
+  .nav-bar {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+  .nav-bar.open { display: flex; }
+  .nav-bar a {
+    width: 100%;
+    padding: 14px 6%;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  /* Footer en una sola columna y centrado */
+  .footer-content { grid-template-columns: 1fr; text-align: center; gap: 28px; }
+  .social-icons { justify-content: center; }
+  .site-footer { padding: 40px 5% 20px; }
+}
+
+/* ── TABLET: footer a 2 columnas antes de colapsar a 1 ── */
+@media (min-width: 769px) and (max-width: 1000px) {
+  .footer-content { grid-template-columns: 1fr 1fr; gap: 30px; }
 }
 
 @media (max-width: 1150px) {

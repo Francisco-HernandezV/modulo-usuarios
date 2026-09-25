@@ -302,12 +302,18 @@
   background: var(--bg-card, #161b22);
   border: 1px solid var(--border-color, #30363d);
   border-radius: var(--adm-radius);
-  overflow: hidden;
+  /* Scroll horizontal en pantallas pequeñas en vez de romper el layout */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .adm-table {
   width: 100%; border-collapse: collapse;
   font-size: 13px;
+  /* Garantiza que las columnas no se compriman ilegiblemente; el contenedor
+     aporta scroll horizontal cuando no cabe. */
+  min-width: 560px;
 }
 
 .adm-table thead tr {
@@ -449,10 +455,75 @@
 
 .adm-stock-num { font-size: 12px; font-weight: 600; white-space: nowrap; min-width: 28px; text-align: right; }
 
+/* Backdrop del sidebar móvil (oculto por defecto / en escritorio) */
+.adm-sidebar-backdrop { display: none; }
+
+/* Botón de menú exclusivo de móvil (p. ej. panel de vendedor, cuyo sidebar
+   siempre está visible en escritorio y no necesita el botón). */
+.adm-menu-btn-mobile { display: none; }
+
 @media (max-width: 768px) {
-  .adm-sidebar { position: fixed; left: -240px; transition: left var(--adm-transition); }
+  /* Sidebar fuera de pantalla que entra deslizándose al abrir el menú */
+  .adm-sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100vh;
+    width: var(--adm-sidebar-w);
+    min-width: var(--adm-sidebar-w);
+    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.45);
+    transition: left var(--adm-transition);
+  }
   .adm-layout.sidebar-open .adm-sidebar { left: 0; }
+
+  /* En móvil el modo "colapsado" de escritorio no aplica: mostramos todo */
+  .sidebar-collapsed .adm-sidebar { width: var(--adm-sidebar-w); min-width: var(--adm-sidebar-w); }
+  .sidebar-collapsed .adm-logo-text,
+  .sidebar-collapsed .adm-logo-sub,
+  .sidebar-collapsed .adm-nav-label,
+  .sidebar-collapsed .adm-nav-section,
+  .sidebar-collapsed .adm-avatar-info,
+  .sidebar-collapsed .adm-logout-btn span { display: revert; }
+  .sidebar-collapsed .adm-sidebar-logo { padding: 22px 20px 16px; justify-content: flex-start; }
+  .sidebar-collapsed .adm-nav-item { justify-content: flex-start; padding: 10px 18px; }
+
+  /* Capa oscura detrás del sidebar abierto */
+  .adm-layout.sidebar-open .adm-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 55;
+    border: none;
+    animation: adm-fadein .2s ease;
+  }
+
+  .adm-menu-btn-mobile { display: flex; }
+  .adm-topbar { padding: 0 16px; }
   .adm-content { padding: 16px; }
   .adm-form-row { grid-template-columns: 1fr; }
   .adm-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .adm-stats-grid { grid-template-columns: 1fr; }
+  /* La marca "Ver tienda" se compacta para no empujar el topbar */
+  .adm-topbar-right .adm-btn span { display: none; }
+}
+
+/* ============================================================
+   POS — layout de dos columnas que apila en pantallas pequeñas
+   ============================================================ */
+.pos-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+  height: calc(100vh - 190px);
+}
+
+@media (max-width: 900px) {
+  .pos-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
 }

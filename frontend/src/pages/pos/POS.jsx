@@ -202,8 +202,8 @@ export default function POS() {
         <Link to="/caja" className="adm-btn adm-btn-ghost adm-btn-sm">Corte de caja →</Link>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: "24px", height: "calc(100vh - 190px)" }}>
-        
+      <div className="pos-layout">
+
         {/* PANEL IZQUIERDO: BÚSQUEDA */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", overflow: "hidden" }}>
           <div className="adm-stat-card" style={{ padding: "16px", display: "block" }}>

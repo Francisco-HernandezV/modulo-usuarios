@@ -9,6 +9,8 @@ import { cldUrl } from "../utils/cloudinary";
 const SearchIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
 const CartIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>);
 const UserIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
+const MenuIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>);
+const CloseIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
 
 function Navbar() {
   const navigate = useNavigate();
@@ -18,9 +20,15 @@ function Navbar() {
   const [userRole, setUserRole] = useState(null); 
   
   const [showDropdown, setShowDropdown] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { searchTerm, setSearchTerm } = useSearch();
   const { config } = useConfig();
+
+  // Cierra el menú móvil al cambiar de ruta
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
 
   const handleSearchSubmit = (e) => {
     if (e.key === 'Enter') {
@@ -140,8 +148,8 @@ function Navbar() {
               </div>
             )}
           </div>
-          <button 
-            className="cart-container icon-link" 
+          <button
+            className="cart-container icon-link"
             aria-label="Ver carrito"
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
             type="button"
@@ -149,13 +157,23 @@ function Navbar() {
             <CartIcon />
             <span className="cart-badge">3</span>
           </button>
+          <button
+            className="nav-toggle"
+            type="button"
+            aria-label={navOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={navOpen}
+            aria-controls="primary-nav"
+            onClick={() => setNavOpen(v => !v)}
+          >
+            {navOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
         </div>
       </header>
-      <nav className="nav-bar">
-        <Link to="/" className={location.pathname === "/" ? "active" : ""}>Inicio</Link>
-        <Link to="/catalogo/hombre" className={location.pathname.includes("hombre") ? "active" : ""}>Hombre</Link>
-        <Link to="/catalogo/mujer" className={location.pathname.includes("mujer") ? "active" : ""}>Mujer</Link>
-        <Link to="/catalogo/ofertas" className={`sale-link ${location.pathname.includes("ofertas") ? "active" : ""}`}>Ofertas</Link>
+      <nav id="primary-nav" className={`nav-bar ${navOpen ? "open" : ""}`}>
+        <Link to="/" className={location.pathname === "/" ? "active" : ""} onClick={() => setNavOpen(false)}>Inicio</Link>
+        <Link to="/catalogo/hombre" className={location.pathname.includes("hombre") ? "active" : ""} onClick={() => setNavOpen(false)}>Hombre</Link>
+        <Link to="/catalogo/mujer" className={location.pathname.includes("mujer") ? "active" : ""} onClick={() => setNavOpen(false)}>Mujer</Link>
+        <Link to="/catalogo/ofertas" className={`sale-link ${location.pathname.includes("ofertas") ? "active" : ""}`} onClick={() => setNavOpen(false)}>Ofertas</Link>
       </nav>
     </>
   );
