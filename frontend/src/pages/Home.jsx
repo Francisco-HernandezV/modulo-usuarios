@@ -110,7 +110,7 @@ function Home() {
                 className="product-card"
               >
                 <div className="image-wrapper">
-                  <img src={cldUrl(p.imagen, "w_400,h_400,c_fill")} alt={p.nombre} loading="lazy" />
+                  <img src={cldUrl(p.imagen, "w_400,h_400,c_fill")} alt={p.nombre} width="400" height="400" loading="lazy" />
                   <ProductStatusBadge esOferta={p.esOferta} />
                 </div>
                 <div className="card-info">

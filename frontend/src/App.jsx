@@ -1,53 +1,66 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SearchProvider } from "./context/SearchContext";
 import { ConfigProvider } from "./context/ConfigContext";
 
-// ── VISTAS PÚBLICAS ──
+// ── VISTA INICIAL (carga inmediata: es la primera pantalla / LCP) ──
 import Home             from "./pages/Home";
-import Catalog          from "./pages/Catalog";
-import ProductDetails   from "./pages/ProductDetails";
-import Login            from "./pages/Login";
-import Register         from "./pages/Register";
-import RecoverPassword  from "./pages/RecoverPassword";
-import AccountActivation from "./pages/AccountActivation";
-
-// ── VISTAS PRIVADAS / USUARIO ──
-import UserProfile      from "./pages/UserProfile";
 import ProtectedRoute   from "./components/ProtectedRoute";
 
+// ── VISTAS PÚBLICAS (carga diferida) ──
+const Catalog           = lazy(() => import("./pages/Catalog"));
+const ProductDetails    = lazy(() => import("./pages/ProductDetails"));
+const Login             = lazy(() => import("./pages/Login"));
+const Register          = lazy(() => import("./pages/Register"));
+const RecoverPassword   = lazy(() => import("./pages/RecoverPassword"));
+const AccountActivation = lazy(() => import("./pages/AccountActivation"));
+
+// ── VISTAS PRIVADAS / USUARIO ──
+const UserProfile       = lazy(() => import("./pages/UserProfile"));
+
 // ── ERRORES ──
-import Error404 from "./pages/Error404";
-import Error500 from "./pages/Error500";
-import Error400 from "./pages/Error400";
+const Error404 = lazy(() => import("./pages/Error404"));
+const Error500 = lazy(() => import("./pages/Error500"));
+const Error400 = lazy(() => import("./pages/Error400"));
 
 // ── VISTAS ADMINISTRADOR ──
-import AdminDashboard   from "./pages/admin/AdminDashboard";
-import AdminCatalogos   from "./pages/admin/AdminCatalogos";
-import AdminProductos   from "./pages/admin/AdminProductos";
-import AdminClientes    from "./pages/admin/AdminClientes";
-import AdminInventario  from "./pages/admin/AdminInventario";
-import AdminRespaldos   from "./pages/admin/AdminRespaldos";
-import AdminEmpleados   from "./pages/admin/AdminEmpleados";
-import AdminPredictivo  from "./pages/admin/AdminPredictivo";
-import AdminReportes    from './pages/admin/AdminReportes';
-import AdminConfiguracion from "./pages/admin/AdminConfiguracion";
-import IngresoMercancia from "./pages/admin/IngresoMercancia";
+const AdminDashboard    = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminCatalogos    = lazy(() => import("./pages/admin/AdminCatalogos"));
+const AdminProductos    = lazy(() => import("./pages/admin/AdminProductos"));
+const AdminClientes     = lazy(() => import("./pages/admin/AdminClientes"));
+const AdminInventario   = lazy(() => import("./pages/admin/AdminInventario"));
+const AdminRespaldos    = lazy(() => import("./pages/admin/AdminRespaldos"));
+const AdminEmpleados    = lazy(() => import("./pages/admin/AdminEmpleados"));
+const AdminPredictivo   = lazy(() => import("./pages/admin/AdminPredictivo"));
+const AdminReportes     = lazy(() => import("./pages/admin/AdminReportes"));
+const AdminConfiguracion = lazy(() => import("./pages/admin/AdminConfiguracion"));
+const IngresoMercancia  = lazy(() => import("./pages/admin/IngresoMercancia"));
 
 // ── VISTAS PUNTO DE VENTA (POS) ──
-import POS              from "./pages/pos/POS";
-import HistorialVentas  from "./pages/pos/HistorialVentas";
-import GestionApartados from "./pages/pos/GestionApartados";
-import CorteCaja        from "./pages/pos/CorteCaja";
+const POS               = lazy(() => import("./pages/pos/POS"));
+const HistorialVentas   = lazy(() => import("./pages/pos/HistorialVentas"));
+const GestionApartados  = lazy(() => import("./pages/pos/GestionApartados"));
+const CorteCaja         = lazy(() => import("./pages/pos/CorteCaja"));
 
 // ── PIN (Alexa) ──
-import ChangePin          from "./pages/ChangePin";
-import AsignarPinVendedor from "./pages/admin/AsignarPinVendedor";
+const ChangePin          = lazy(() => import("./pages/ChangePin"));
+const AsignarPinVendedor = lazy(() => import("./pages/admin/AsignarPinVendedor"));
+
+// Indicador ligero mientras se descarga el chunk de la ruta solicitada.
+function RouteFallback() {
+  return (
+    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="spinner" aria-label="Cargando" />
+    </div>
+  );
+}
 
 function App() {
   return (
     <ConfigProvider>
     <SearchProvider>
       <BrowserRouter>
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* ── RUTAS PÚBLICAS ── */}
           <Route path="/"                   element={<Home />} />
@@ -108,6 +121,7 @@ function App() {
           {/* Fallback para URLs no encontradas */}
           <Route path="*" element={<Error404 />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </SearchProvider>
     </ConfigProvider>

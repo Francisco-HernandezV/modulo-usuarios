@@ -1,6 +1,7 @@
 import React from "react";
 import "../styles/theme.css";
 import { useConfig } from "../context/ConfigContext";
+import { cldUrl } from "../utils/cloudinary";
 
 function Footer() {
   const { config } = useConfig();
@@ -26,7 +27,7 @@ function Footer() {
       <div className="footer-content">
         <div className="footer-column">
           {config?.logo ? (
-            <img src={config.logo} alt={nombre} className="logo-footer-img" />
+            <img src={cldUrl(config.logo, "h_92,c_fit")} alt={nombre} className="logo-footer-img" width="220" height="46" loading="lazy" />
           ) : (
             <div className="logo logo-footer">{nombre}</div>
           )}

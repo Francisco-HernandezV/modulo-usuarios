@@ -114,7 +114,7 @@ function Catalog() {
                     className="product-card"
                   >
                     <div className="image-wrapper">
-                      <img src={p.imagen} alt={p.nombre} loading="lazy" />
+                      <img src={p.imagen} alt={p.nombre} width="600" height="600" loading="lazy" />
                       <ProductTag esOferta={p.esOferta} />
                     </div>
                     <div className="card-info">

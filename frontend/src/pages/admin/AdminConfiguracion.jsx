@@ -169,7 +169,7 @@ export default function AdminConfiguracion() {
                   overflow: "hidden", flexShrink: 0,
                 }}>
                   {logoMostrado ? (
-                    <img src={logoMostrado} alt="Logo de la tienda" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", padding: "10px" }} />
+                    <img src={logoMostrado} alt="Logo de la tienda" width="140" height="140" loading="lazy" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", padding: "10px" }} />
                   ) : (
                     <span style={{ fontSize: 34, opacity: 0.3 }}>🖼️</span>
                   )}

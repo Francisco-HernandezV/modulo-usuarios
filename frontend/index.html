@@ -8,12 +8,32 @@
     <meta name="description" content="DanElement Boutique — Panel administrativo y tienda en línea." />
 
     <!-- Tipografía declarada por el sistema de diseño (Montserrat + Poppins) -->
+    <!-- Se carga de forma no bloqueante (media=print + onload) para no retrasar
+         el primer render (FCP/LCP). Si no hay JS, el <noscript> la aplica igual. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Imagen de fondo del hero: es el elemento LCP del inicio. Se preconecta y
+         precarga para que el navegador la descubra antes de parsear el CSS. -->
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    <link
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1523398002811-999ca8dec234?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=70"
+      fetchpriority="high"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
 
     <title>DanElement Boutique</title>
   </head>
