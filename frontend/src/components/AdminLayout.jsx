@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PropTypes from "prop-types";
 import "../styles/admin.css";
@@ -42,11 +42,33 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children, pageTitle, breadcrumb }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const sections = [...new Set(NAV_ITEMS.map(i => i.section))];
 
+  // Cierra el sidebar móvil al navegar a otra sección
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // El botón de menú abre/cierra el panel deslizante en móvil (< 768px)
+  // y mantiene el colapso de riel en escritorio.
+  const handleMenuClick = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+      setMobileOpen(v => !v);
+    } else {
+      setSidebarOpen(v => !v);
+    }
+  };
+
   return (
-    <div className={`adm-layout ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
+    <div className={`adm-layout ${sidebarOpen ? "" : "sidebar-collapsed"} ${mobileOpen ? "sidebar-open" : ""}`}>
+      <button
+        className="adm-sidebar-backdrop"
+        type="button"
+        aria-label="Cerrar menú"
+        onClick={() => setMobileOpen(false)}
+      />
       <aside className="adm-sidebar">
         <div className="adm-sidebar-logo">
           <span className="adm-logo-text">DAN ELEMENT</span>
@@ -92,7 +114,7 @@ export default function AdminLayout({ children, pageTitle, breadcrumb }) {
           <div className="adm-topbar-left">
             <button
               className="adm-menu-btn"
-              onClick={() => setSidebarOpen(v => !v)}
+              onClick={handleMenuClick}
               aria-label="Toggle sidebar"
             >
               <IconMenu />
